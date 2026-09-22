@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/hero.svg" alt="JevAny: calibrated decisions from Qwen3.8" width="100%">
+  <img src="docs/hero.svg" alt="JevAny: calibration-aware reinforcement learning for adaptive decision systems" width="100%">
 </p>
 
 <p align="center">
@@ -30,6 +30,20 @@ Many applications need a decision, not another paragraph: route a case, choose a
 - **Trainable on your schema.** Fine-tuning data uses the same JSON shape as inference, plus labels.
 
 This release is the text decision core. The roadmap extends that core to complex tasks, agent trajectories, vision and video, long context, test-time training, evaluation harnesses, and symbolic task-specific decision trees.
+
+## Roadmap
+
+JevAny is growing from a typed decision model into a general decision system.
+
+- [x] Calibration-aware RL for text decisions
+- [ ] Complex tasks and agent trajectory data
+- [ ] Image and video evidence
+- [ ] Long-context state and persistent memory
+- [ ] Test-time training with safe rollback
+- [ ] A unified evaluation and agent harness
+- [ ] LLM-generated symbolic decision trees with JevAny at the leaves
+
+See [ROADMAP.md](ROADMAP.md) for milestones and acceptance criteria.
 
 ## Quick Start
 
@@ -89,10 +103,8 @@ All rows below were evaluated on the same held-out `transfer-v9` development pan
 
 | Model | Knowable accuracy | MMLU-Pro | Buried evidence | Brier ↓ | Coverage @ 5% error | Unknowable mean confidence ↓ |
 |---|---:|---:|---:|---:|---:|---:|
-| Kev-9B | 77.15% | 51.50% | 73.75% | 0.341 | 39.29% | 0.412 |
 | JevAny-27B-SFT | 81.36% | 64.00% | 73.75% | 0.273 | 51.63% | 0.499 |
 | **JevAny-27B-RLCR** | **81.84%** | **66.00%** | **73.75%** | **0.269** | **54.11%** | **0.428** |
-| Jev | 85.37% | 84.00% | 70.00% | 0.212 | 69.50% | 0.610 |
 
 RLCR changes accuracy by +0.48 percentage points over SFT on this panel (11 fixes, 6 regressions; exact McNemar `p=0.332`). The clearer result is better uncertainty behavior: lower Brier score, higher selective coverage, and lower confidence on unknowable inputs. Treat the accuracy difference as directional, not conclusive.
 
@@ -143,29 +155,13 @@ torchrun --nproc_per_node=8 -m jevany.train \
 
 Training supports multi-node DDP, distributed evaluation before training and at fixed step intervals, checkpointing, and W&B. The exact v0.1 commands are in [`scripts/train_sft.sh`](scripts/train_sft.sh) and [`scripts/train_rlcr.sh`](scripts/train_rlcr.sh).
 
-## Roadmap
-
-JevAny is aimed at decision systems that can improve the task representation as well as the model.
-
-- [x] Text-only typed decision model on Qwen3.8-27B
-- [x] LoRA SFT, distributed training/evaluation, and calibrated checkpoints
-- [x] Decision-only RLCR with hard-example replay and knowable/unknowable pairs
-- [ ] Complex-task and agent-trajectory data generation with auditable labels
-- [ ] Image and video evidence as first-class state
-- [ ] Long-context retrieval, state compression, and persistent decision memory
-- [ ] Test-time training with rollback, contamination checks, and budget controls
-- [ ] A task harness for calibration, robustness, latency, and agent outcomes
-- [ ] LLM-generated task-specific symbolic decision trees that route into JevAny leaves
-
-The detailed milestones and acceptance criteria are in [ROADMAP.md](ROADMAP.md).
-
 ## Scope
 
 The v0.1 checkpoints accept text or JSON-renderable state. Although the Qwen3.8 base includes a vision tower, this release does not connect images or video to the decision path. The training envelope is 2,048 packed tokens; serving allows up to 8,192 state tokens and 8,192 tokens per question branch, but that longer range was not trained as a first-class capability. Probabilities are calibrated measurements on the published evaluation distribution, not guarantees for a new deployment.
 
 ## Attribution
 
-JevAny is a modified derivative of [Kev](https://github.com/jaredpalmer/kev) by Jared Palmer, used under Apache-2.0. The repository keeps attribution in [NOTICE](NOTICE), marks derived files, and summarizes the changes in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). It contains no Jev weights or private implementation. See the acknowledgements for Qwen, Jev/System One, and the RLCR paper.
+Some infrastructure code is adapted from Apache-2.0 licensed [Kev](https://github.com/jaredpalmer/kev). Required notices are in [NOTICE](NOTICE) and [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). JevAny develops its own RL training, models, evaluation, and roadmap. It contains no Jev weights or private implementation.
 
 ## License
 

@@ -1,32 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="JevAny, calibrated decisions from Qwen3.8">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-label="JevAny, calibration-aware reinforcement learning for adaptive decision systems">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#080b12"/>
-      <stop offset="1" stop-color="#171d2e"/>
+      <stop offset="0" stop-color="#070911"/>
+      <stop offset="0.55" stop-color="#101629"/>
+      <stop offset="1" stop-color="#071d20"/>
     </linearGradient>
-    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#7c5cff"/>
-      <stop offset="1" stop-color="#32d6c5"/>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
     </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#74809a" stroke-width="0.7" opacity="0.12"/>
+    </pattern>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#667594"/>
+    </marker>
   </defs>
-  <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
-  <g fill="none" stroke="url(#line)" stroke-width="4" opacity="0.9">
-    <path d="M110 180 H270 M390 180 H550 M670 180 H830"/>
-    <path d="M830 180 C900 180 900 105 970 105 M830 180 C900 180 900 255 970 255"/>
+
+  <rect width="1200" height="440" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="440" rx="28" fill="url(#grid)"/>
+  <circle cx="600" cy="256" r="135" fill="#7357ff" opacity="0.08" filter="url(#glow)"/>
+
+  <g font-family="Inter,Arial,sans-serif" text-anchor="middle">
+    <text x="600" y="70" fill="#f7f8ff" font-size="42" font-weight="760" letter-spacing="1">JevAny</text>
+    <text x="600" y="104" fill="#9ca8c2" font-size="17" letter-spacing="2">ADAPTIVE DECISION SYSTEMS</text>
   </g>
-  <g fill="#111726" stroke="#5c6b8a" stroke-width="2">
-    <rect x="70" y="130" width="200" height="100" rx="18"/>
-    <rect x="390" y="130" width="280" height="100" rx="18"/>
-    <rect x="970" y="65" width="160" height="80" rx="18"/>
-    <rect x="970" y="215" width="160" height="80" rx="18"/>
+
+  <g fill="none" stroke="#667594" stroke-width="2" opacity="0.8" marker-end="url(#arrow)">
+    <path d="M300 188C360 188 360 214 420 214"/>
+    <path d="M300 256H420"/>
+    <path d="M300 324C360 324 360 298 420 298"/>
+    <path d="M780 214C840 214 840 188 900 188"/>
+    <path d="M780 256H900"/>
+    <path d="M780 298C840 298 840 324 900 324"/>
   </g>
-  <g fill="#f5f7ff" font-family="Inter,Arial,sans-serif" text-anchor="middle">
-    <text x="170" y="175" font-size="25" font-weight="650">state + questions</text>
-    <text x="170" y="207" font-size="16" fill="#aab4cc">typed input</text>
-    <text x="530" y="173" font-size="28" font-weight="700">JevAny</text>
-    <text x="530" y="207" font-size="16" fill="#aab4cc">Qwen3.8 + pointer head</text>
-    <text x="1050" y="105" font-size="21" font-weight="650">answer</text>
-    <text x="1050" y="255" font-size="21" font-weight="650">confidence</text>
+
+  <g fill="#11182a" stroke="#35415d" stroke-width="1.5">
+    <rect x="62" y="160" width="238" height="56" rx="14"/>
+    <rect x="62" y="228" width="238" height="56" rx="14"/>
+    <rect x="62" y="296" width="238" height="56" rx="14"/>
+    <rect x="900" y="160" width="238" height="56" rx="14"/>
+    <rect x="900" y="228" width="238" height="56" rx="14"/>
+    <rect x="900" y="296" width="238" height="56" rx="14"/>
   </g>
-  <text x="600" y="320" fill="#8f9bb7" font-family="Inter,Arial,sans-serif" text-anchor="middle" font-size="15">prefill only · no decoded answer tokens · calibrated probabilities</text>
+
+  <rect x="420" y="154" width="360" height="196" rx="26" fill="#111728" stroke="url(#accent)" stroke-width="3"/>
+  <circle cx="600" cy="217" r="31" fill="none" stroke="url(#accent)" stroke-width="5"/>
+  <path d="M584 218L595 229L617 204" fill="none" stroke="#e8eaff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g font-family="Inter,Arial,sans-serif" text-anchor="middle">
+    <g fill="#dbe2f5" font-size="15" font-weight="650" letter-spacing="1.1">
+      <text x="181" y="194">AGENT TRAJECTORIES</text>
+      <text x="181" y="262">VISION + VIDEO</text>
+      <text x="181" y="330">LONG CONTEXT</text>
+      <text x="1019" y="194">TEST TIME TRAINING</text>
+      <text x="1019" y="262">EVAL HARNESS</text>
+      <text x="1019" y="330">SYMBOLIC CONTROL</text>
+    </g>
+    <text x="600" y="274" fill="#ffffff" font-size="31" font-weight="760">RL DECISION CORE</text>
+    <text x="600" y="307" fill="#8fe4d7" font-size="17" font-weight="600">accuracy × calibrated confidence</text>
+    <text x="600" y="401" fill="#8895b1" font-size="15" letter-spacing="1.2">FROM TYPED DECISIONS TO GENERAL DECISION INTELLIGENCE</text>
+  </g>
 </svg>
