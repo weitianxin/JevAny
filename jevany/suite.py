@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from .data import EVAL_ONLY
+from .data import EVAL_ONLY, resolve_media
 
 ENCODING = "utf-8"
 SPLITS = ("train", "calibration", "development", "test")
@@ -58,7 +58,7 @@ def load_split(directory, split, allow_test=False):
     expected = manifest["files"][path.name]
     if digest(path) != expected["sha256"]:
         raise ValueError(f"suite checksum mismatch: {path}")
-    records = read_jsonl(path)
+    records = [resolve_media(record, path.parent) for record in read_jsonl(path)]
     if len(records) != expected["records"]:
         raise ValueError(f"suite record count mismatch: {path}")
     return records

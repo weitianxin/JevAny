@@ -36,7 +36,8 @@ Models = "https://huggingface.co/collections/tianxinwei/jevany-6ab2c941bcecb4d2c
 
 [project.optional-dependencies]
 serve = ["fastapi>=0.115", "uvicorn>=0.30"]
-train = ["wandb>=0.19"]
+train = ["datasets>=3.0", "wandb>=0.19"]
+multimodal = ["av>=14", "pillow>=10", "torchvision>=0.21,<0.24"]
 dev = ["httpx>=0.28", "pytest>=9"]
 
 [tool.pytest.ini_options]

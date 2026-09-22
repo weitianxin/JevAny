@@ -27,11 +27,22 @@ def source_seed(seed, source):
     return int.from_bytes(hashlib.sha256(f"{seed}:{source}".encode()).digest()[:8], "big")
 
 
+def resolve_media(record, directory):
+    """Resolve relative media URIs against the JSONL file that contains the record."""
+    for media in record.get("media", []):
+        uri = Path(media["uri"])
+        if not uri.is_absolute() and "://" not in media["uri"]:
+            media["uri"] = str((Path(directory) / uri).resolve())
+    return record
+
+
 def augment(request, rng, p_none=0.1, p_none_distract=0.12, p_distract=0.15):
     """Permute choice options and optionally add a none option or distractor."""
     if min(p_none, p_none_distract, p_distract) < 0 or p_none + p_none_distract + p_distract > 1:
         raise ValueError("augmentation probabilities must be nonnegative and sum to at most one")
     result = {"state": request["state"], "questions": {}}
+    if request.get("media"):
+        result["media"] = request["media"]
     for question_id, question in request["questions"].items():
         if question["type"] != "choice":
             result["questions"][question_id] = question
@@ -80,10 +91,10 @@ def none_pair(request, rng):
     rng.shuffle(keys)
     present = {**question, "criteria": {item: description if item == key else question["criteria"][item] for item in keys}}
     absent = {**present, "criteria": {item: value for item, value in present["criteria"].items() if item != question["label"]}, "label": key}
-    return [
-        {"state": request["state"], "questions": {question_id: present}},
-        {"state": request["state"], "questions": {question_id: absent}},
-    ]
+    common = {"state": request["state"]}
+    if request.get("media"):
+        common["media"] = request["media"]
+    return [{**common, "questions": {question_id: present}}, {**common, "questions": {question_id: absent}}]
 
 
 def load_records(path, source="custom"):
@@ -99,6 +110,10 @@ def load_records(path, source="custom"):
             if "label" not in question:
                 raise ValueError(f"{path}:{index + 1}: question {question_id!r} has no label")
             question.setdefault("src", f"{source}_{question['type']}")
+        for media in record.get("media", []):
+            if media.get("type") not in ("image", "video") or not media.get("uri"):
+                raise ValueError(f"{path}:{index + 1}: invalid media entry")
+        resolve_media(record, Path(path).parent)
         text = record["state"] if isinstance(record["state"], str) else json.dumps(record["state"], sort_keys=True, ensure_ascii=False)
         defaults = {
             "source": source,
@@ -118,13 +133,16 @@ def load_records(path, source="custom"):
 
 def api_request(record):
     """Remove labels, soft targets and metadata from a labelled request."""
-    return {
+    request = {
         "state": record["state"],
         "questions": {
             question_id: {key: value for key, value in question.items() if key in ("type", "instructions", "criteria")}
             for question_id, question in record["questions"].items()
         },
     }
+    if record.get("media"):
+        request["media"] = record["media"]
+    return request
 
 
 def materialize(request):

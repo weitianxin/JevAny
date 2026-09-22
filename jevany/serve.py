@@ -43,7 +43,7 @@ class Server:
         cache, hit = self.prefix_cache, False
         with self.lock:
             sync(self.device); t = time.time()
-            eligible = PREFIX_CACHE_SIZE and Ls >= PREFIX_MIN_TOKENS
+            eligible = PREFIX_CACHE_SIZE and Ls >= PREFIX_MIN_TOKENS and not enc.get("multimodal")
             if eligible and key in cache:
                 prefix = cache.pop(key)                            # pop + reinsert = LRU order
                 ps = self.model.probs_with_prefix(enc, prefix); cache[key] = prefix

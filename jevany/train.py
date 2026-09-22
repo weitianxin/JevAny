@@ -20,7 +20,7 @@ from .checkpoint import Checkpoint, Meta, write_meta
 from .device import allocated_bytes, default_device, empty_cache
 from .data import EVAL_ONLY, augment, load_records, materialize, none_pair, source_seed
 from .suite import ENCODING, digest, load_split, read_manifest, validate_training, write_json
-from .model import MAX_BRANCH, MAX_PACKED, MAX_STATE, DecisionModel, fits, load_tokenizer
+from .model import MAX_BRANCH, MAX_PACKED, MAX_STATE, DecisionModel, load_preprocessor
 
 
 # --- losses -----------------------------------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ def reduce_max(value, device):
 
 # --- data -------------------------------------------------------------------------------------------------------------
 
-def training_requests(a, tok, manifest):
+def training_requests(a, tok, manifest, model):
     """Load labelled JSONL or a frozen suite, optionally mixing suite replay into custom data."""
     # the suite's rules (declared trainable sources, no held-out structures) apply to every record taken from it
     if a.data:
@@ -134,7 +134,14 @@ def training_requests(a, tok, manifest):
         raise ValueError("pass --data or --suite")
     if not manifest or a.data:
         # Custom records have not passed suite admission, so apply the same context rule before strict encoding.
-        kept = [r for r in reqs if fits(materialize(r), tok)]
+        kept = []
+        for request in reqs:
+            try:
+                encoding = model.encode(tok, materialize(request), strict=True)
+                if len(encoding["ids"]) <= MAX_PACKED:
+                    kept.append(request)
+            except ValueError:
+                pass
         if len(kept) < len(reqs):
             print(f"dropped {len(reqs) - len(kept)} of {len(reqs)} records that exceed the training context "
                   f"({MAX_STATE} state / {MAX_BRANCH} branch / {MAX_PACKED} packed tokens)", flush=True)
@@ -242,6 +249,7 @@ def parse_args():
     ap.add_argument("--checkpointing", type=int, choices=[0, 1], default=0)
     ap.add_argument("--option_isolation", type=int, choices=[0, 1], default=0, help="option spans are isolated sub-branches with shared positions (exact permutation invariance)")
     ap.add_argument("--special_embeddings", type=int, choices=[0, 1], default=0, help="also train the embeddings of the 5 delimiter tokens")
+    ap.add_argument("--multimodal", action="store_true", help="load the Qwen vision tower and accept image or video media entries")
     ap.add_argument("--head_dim", type=int, default=256, help="pointer head dimension")
     ap.add_argument("--lora_targets", choices=["all", "dense", "attn", "qv"], default="all", help="LoRA module set; fewer modules = less drift from the base; dense = all minus the DeltaNet projections on hybrid bases")
     ap.add_argument("--base_revision", default="", help="pin the base commit when the suite manifest does not pin this base")
@@ -459,18 +467,20 @@ def main():
     manifest = read_manifest(a.suite) if a.suite else None
     revision = pinned_revision(a, manifest)
     holdout = manifest["holdout_sources"] if manifest else []
-    tok = load_tokenizer(a.base, revision=revision)
+    tok = load_preprocessor(a.base, revision=revision, multimodal=a.multimodal)
     model = DecisionModel(a.base, tok, dev, lora=a.lora, revision=revision,
                           head_dim=a.head_dim, lora_targets=a.lora_targets,
                           option_isolation=bool(a.option_isolation), special_embeddings=bool(a.special_embeddings),
-                          dtype=torch.bfloat16 if a.weights_dtype == "bf16" else torch.float32)
+                          dtype=torch.bfloat16 if a.weights_dtype == "bf16" else torch.float32,
+                          multimodal=a.multimodal)
     if a.checkpointing:
         model.lm.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     model.lm.config.use_cache = False
     # what this run will save as head.pt; also the architecture a warm start must match
     meta = Meta(base=a.base, base_revision=revision, lora=a.lora, head_dim=a.head_dim,
                 option_isolation=bool(a.option_isolation),
-                special_embeddings=bool(a.special_embeddings), weights_dtype=a.weights_dtype, holdout=holdout)
+                special_embeddings=bool(a.special_embeddings), multimodal=a.multimodal,
+                weights_dtype=a.weights_dtype, holdout=holdout)
     init_source = None
     if a.init_from:
         # Start from an already trained adapter and pointer head for the RLCR or domain-adaptation stage.
@@ -480,7 +490,7 @@ def main():
     if main_process:
         print(f"device={dev} world_size={world_size} trainable params={sum(p.numel() for p in model.trainable_parameters())/1e6:.1f}M", flush=True)
 
-    reqs = training_requests(a, tok, manifest)
+    reqs = training_requests(a, tok, manifest, model)
     suite_hash = digest(Path(a.suite) / "manifest.json") if manifest else None
     _, padding_per_epoch = distributed_slice(reqs, rank, world_size)
     per_rank_records = math.ceil(len(reqs) / world_size)

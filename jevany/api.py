@@ -42,9 +42,15 @@ class Score(BaseModel):
 Question = Union[Noul, Choice, Score]
 
 
+class Media(BaseModel):
+    type: Literal["image", "video"]
+    uri: str = Field(min_length=1)
+
+
 class SystemOneRequest(BaseModel):
     state: JSONContent
     model: str = "jevany-27b"
+    media: list[Media] = Field(default_factory=list, max_length=32)
     questions: dict[str, Question] = Field(min_length=1)
 
 
@@ -116,7 +122,10 @@ def to_record(req: SystemOneRequest):
             opts = [render(x) for x in q.criteria]
             m["legend"] = dict(zip(m["keys"], opts))
         qs.append({"instr": render(q.instructions), "options": opts, "label": 0}); meta.append(m)
-    return {"state": render(req.state), "questions": qs}, meta
+    record = {"state": render(req.state), "questions": qs}
+    if req.media:
+        record["media"] = [item.model_dump() for item in req.media]
+    return record, meta
 
 
 def choice_confidence(p: list[float]) -> float:
@@ -151,4 +160,5 @@ def to_answers(probs: list[list[float]], meta: list[dict]) -> dict[str, Any]:
 
 def output_tokens(tok, answers: dict) -> int:
     """Billing-style figure: tokens of the serialised answers. Not a measure of generation (there is none)."""
+    tok = getattr(tok, "tokenizer", tok)
     return len(tok(json.dumps(answers), add_special_tokens=False).input_ids)

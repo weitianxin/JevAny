@@ -5,18 +5,26 @@ import copy, math, os, re
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import AutoModelForCausalLM, AutoTokenizer, DynamicCache
+from transformers import AutoModel, AutoModelForCausalLM, AutoProcessor, AutoTokenizer, DynamicCache
 
 # Reuse existing rarely-used Qwen special tokens as delimiters (state, q, opt, /opt, decide) so no
 # embedding rows need to be added/trained; LoRA adapts their meaning.
 SPECIAL = ["<|fim_prefix|>", "<|fim_middle|>", "<|box_start|>", "<|box_end|>", "<|fim_suffix|>"]
 # training context: state tokens, tokens per question branch, and the whole packed record. Frozen suites are admitted with
 # this rule (jevany.suite) and training applies it to records built on the fly, so train and eval see the same population.
-MAX_STATE, MAX_BRANCH, MAX_PACKED = 384, 1024, 2048
+MAX_STATE, MAX_BRANCH, MAX_PACKED = 1024, 2048, 2048
 
 
 def load_tokenizer(name, revision=None):
     return AutoTokenizer.from_pretrained(name, revision=revision)
+
+
+def load_preprocessor(name, revision=None, multimodal=False):
+    return AutoProcessor.from_pretrained(name, revision=revision) if multimodal else load_tokenizer(name, revision)
+
+
+def tokenizer_of(preprocessor):
+    return getattr(preprocessor, "tokenizer", preprocessor)
 
 
 _SPECIAL_RE = re.compile(r"<\|([A-Za-z0-9_]+)\|>")
@@ -26,6 +34,10 @@ def user_tokens(tok, text):
     """Tokenize caller-supplied text so it can never produce delimiter/control tokens (option boundaries are unforgeable).
     The fast tokenizer ignores split_special_tokens, so `<|name|>` is rewritten to `<¦name¦>` before tokenizing."""
     return tok(_SPECIAL_RE.sub(r"<¦\1¦>", text), add_special_tokens=False).input_ids
+
+
+def safe_text(text):
+    return _SPECIAL_RE.sub(r"<¦\1¦>", text)
 
 
 OPT_NONE, OPT_DECIDE = -1, -2   # values of enc["opt"]: instruction/state tokens, and the <decide> token
@@ -69,6 +81,68 @@ def encode(tok, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH, strict=False, o
         decide_idx.append(base + len(br) - 1); opt_idx.append([base + e for e in ends])
     return {"ids": ids, "seg": seg, "pos": pos, "opt": opt, "option_isolation": option_isolation, "decide_idx": decide_idx, "opt_idx": opt_idx,
             "labels": [q["label"] for q in rec["questions"]], "state_truncated": len(state_tokens) + 1 > max_state}
+
+
+def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH, strict=False):
+    """Encode one image or video decision request with the base model's native multimodal processor."""
+    media = rec.get("media") or []
+    if not media:
+        return encode(processor.tokenizer, rec, max_state=max_state, max_branch=max_branch, strict=strict)
+    if len(rec["questions"]) != 1:
+        raise ValueError("multimodal records must contain exactly one isolated question")
+    prefix, images, videos = [], [], []
+    for item in media:
+        if item["type"] == "image":
+            prefix.append(processor.vision_start_token + processor.image_token + processor.vision_end_token)
+            images.append(item["uri"])
+        elif item["type"] == "video":
+            prefix.append(processor.vision_start_token + processor.video_token + processor.vision_end_token)
+            videos.append(item["uri"])
+        else:
+            raise ValueError(f"unsupported media type: {item['type']}")
+    parts = prefix + [SPECIAL[0], safe_text(rec["state"])]
+    for question in rec["questions"]:
+        parts.extend((SPECIAL[1], safe_text(question["instr"])))
+        for option in question["options"]:
+            parts.extend((SPECIAL[2], safe_text(option), SPECIAL[3]))
+        parts.append(SPECIAL[4])
+    processor_kwargs = {"return_tensors": "pt"}
+    if images:
+        # Keep the combined visual budget roughly constant for multi-image questions.
+        processor_kwargs["size"] = {
+            "shortest_edge": 32 * 32,
+            "longest_edge": max(128 * 128, (512 * 512) // len(images)),
+        }
+    if videos:
+        processor_kwargs.update({"max_video_tokens": 256, "cap_pixels_per_frame": True})
+    batch = processor(text=["".join(parts)], images=images or None, videos=videos or None, **processor_kwargs)
+    ids = batch["input_ids"][0].tolist()
+    tok = processor.tokenizer
+    q_id, close_id, decide_id = (tok.convert_tokens_to_ids(SPECIAL[index]) for index in (1, 3, 4))
+    question_starts = [index for index, token in enumerate(ids) if token == q_id]
+    decide_idx = [index for index, token in enumerate(ids) if token == decide_id]
+    if len(question_starts) != len(rec["questions"]) or len(decide_idx) != len(rec["questions"]):
+        raise ValueError("multimodal delimiter layout mismatch")
+    state_len = question_starts[0]
+    text_state_len = len(user_tokens(tok, rec["state"])) + 1
+    if strict and text_state_len > max_state:
+        raise ValueError(f"multimodal text state exceeds {max_state} tokens: {text_state_len}")
+    opt_idx, seg = [], [0] * state_len
+    for index, (start, end, question) in enumerate(zip(question_starts, decide_idx, rec["questions"]), start=1):
+        ends = [position for position in range(start, end) if ids[position] == close_id]
+        if len(ends) != len(question["options"]):
+            raise ValueError("multimodal option delimiter layout mismatch")
+        if end - start + 1 + state_len > max_branch:
+            raise ValueError(f"multimodal branch exceeds {max_branch} tokens")
+        opt_idx.append(ends)
+        seg.extend([index] * (end - start + 1))
+    if len(seg) != len(ids):
+        raise ValueError("multimodal branch layout mismatch")
+    mm = {key: value.cpu() for key, value in batch.items() if key not in ("input_ids", "attention_mask")}
+    return {"ids": ids, "seg": seg, "pos": list(range(len(ids))), "opt": [OPT_NONE] * len(ids),
+            "option_isolation": False, "decide_idx": decide_idx, "opt_idx": opt_idx,
+            "labels": [q["label"] for q in rec["questions"]], "state_truncated": False,
+            "multimodal": True, "mm": mm}
 
 
 def fits(rec, *tokenizers, max_state=MAX_STATE, max_branch=MAX_BRANCH, max_packed=MAX_PACKED):
@@ -149,14 +223,21 @@ class PointerHead(nn.Module):
 
 class DecisionModel(nn.Module):
     def __init__(self, name, tok, device, lora=None, revision=None, attn=None, head_dim=256, option_isolation=False,
-                 special_embeddings=False, lora_targets="all", dtype=torch.float32):
+                 special_embeddings=False, lora_targets="all", dtype=torch.float32, multimodal=False):
         super().__init__()
         # backbone only (no vocab head): we never generate text.
         # eager on MPS/CPU (known-good with our float 4D mask); SDPA on CUDA (accepts arbitrary additive masks).
         attn = attn or ("sdpa" if str(device).startswith("cuda") else "eager")
         # Use fp32 for exact evaluation or bf16 to reduce accelerator memory.
-        self.lm = AutoModelForCausalLM.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn).model
-        self.pad_id = tok.pad_token_id if tok.pad_token_id is not None else 0
+        self.multimodal = multimodal
+        self.mm = AutoModel.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn) if multimodal else None
+        self.lm = self.mm.language_model if self.mm is not None else AutoModelForCausalLM.from_pretrained(
+            name, revision=revision, dtype=dtype, attn_implementation=attn
+        ).model
+        if self.mm is not None:
+            self.mm.visual.requires_grad_(False)
+        tokenizer = tokenizer_of(tok)
+        self.pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
         # hybrid backbones (Qwen3.5: Gated DeltaNet layers, recurrent) cannot honour the block-causal mask, so every
         # question runs as its own causal row continuing from the state (rows_of). Attention-only backbones keep the
         # packed form; parity was verified before the v0.1 release.
@@ -166,7 +247,7 @@ class DecisionModel(nn.Module):
         self.option_isolation = option_isolation
         if lora:
             from peft import LoraConfig, get_peft_model
-            extra = {"trainable_token_indices": {"embed_tokens": [tok.convert_tokens_to_ids(t) for t in SPECIAL]}} if special_embeddings else {}
+            extra = {"trainable_token_indices": {"embed_tokens": [tokenizer.convert_tokens_to_ids(t) for t in SPECIAL]}} if special_embeddings else {}
             targets = {"all": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
                        "dense": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],   # "all" minus the DeltaNet projections on hybrids (retention ablation)
                        "attn": ["q_proj", "k_proj", "v_proj", "o_proj"], "qv": ["q_proj", "v_proj"]}[lora_targets]
@@ -174,14 +255,29 @@ class DecisionModel(nn.Module):
                 # Gated DeltaNet projections (transformers 5 names, verified on Qwen3_5TextModel); the mixer's out_proj too
                 targets = targets + ["in_proj_qkv", "in_proj_z", "in_proj_a", "in_proj_b", "out_proj"]
             cfg = LoraConfig(task_type="FEATURE_EXTRACTION", r=lora, lora_alpha=2 * lora, lora_dropout=0.05, target_modules=targets, **extra)
-            self.lm = get_peft_model(self.lm, cfg)
+            self.set_language_model(get_peft_model(self.lm, cfg))
         self.head = PointerHead(self.lm.config.hidden_size, dp=head_dim)
         self.device = device
         self.to(device)
 
     def encode(self, tok, rec, **kw):
         """encode() with this model's option-isolation setting; use this from serving/eval code."""
-        return encode(tok, rec, option_isolation=self.option_isolation, **kw)
+        if rec.get("media"):
+            if not self.multimodal:
+                raise ValueError("checkpoint does not support media")
+            return encode_multimodal(tok, rec, **kw)
+        return encode(tokenizer_of(tok), rec, option_isolation=self.option_isolation, **kw)
+
+    def set_language_model(self, language_model):
+        self.lm = language_model
+        if self.mm is not None:
+            self.mm.language_model = language_model
+
+    def train(self, mode=True):
+        super().train(mode)
+        if self.mm is not None:
+            self.mm.visual.eval()
+        return self
 
     def hidden(self, enc):
         return self.hidden_batch([enc])[0, : len(enc["ids"])]
@@ -235,9 +331,20 @@ class DecisionModel(nn.Module):
         """Returns list of logits tensors, one per question."""
         return self.forward_batch([enc])[0]
 
+    def forward_multimodal(self, enc):
+        if self.mm is None:
+            raise ValueError("multimodal encoding requires a multimodal checkpoint")
+        kwargs = {key: value.to(self.device) for key, value in enc["mm"].items()}
+        ids = torch.tensor([enc["ids"]], device=self.device)
+        attention = torch.ones_like(ids)
+        hidden = self.mm(input_ids=ids, attention_mask=attention, **kwargs).last_hidden_state[0].float()
+        return self._readout(hidden, enc)
+
     def forward_batch(self, encs):
         """List (per record) of lists (per question) of logits, from one padded forward pass. Hybrid backbones take the
         row form; attention-only ones use the packed block-causal mask."""
+        if any(enc.get("multimodal") for enc in encs):
+            return [self.forward_multimodal(enc) if enc.get("multimodal") else self.forward_rows_batch([enc])[0] for enc in encs]
         if self.hybrid: return self.forward_rows_batch(encs)
         hs = self.hidden_batch(encs)
         return [self._readout(hs[b], e) for b, e in enumerate(encs)]

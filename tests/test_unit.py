@@ -34,6 +34,16 @@ def test_to_record_maps_all_three_types():
     assert [m["keys"] for m in meta] == [["false", "true"], ["calm", "angry"], ["0", "1"]] and meta[2]["legend"] == {"0": "can wait", "1": "today"}
 
 
+def test_to_record_preserves_media():
+    req = SystemOneRequest.model_validate({
+        "state": "Inspect the evidence.",
+        "media": [{"type": "image", "uri": "evidence.jpg"}, {"type": "video", "uri": "clip.mp4"}],
+        "questions": {"valid": {"type": "noul", "instructions": "Is the evidence valid?"}},
+    })
+    record, _ = to_record(req)
+    assert record["media"] == [{"type": "image", "uri": "evidence.jpg"}, {"type": "video", "uri": "clip.mp4"}]
+
+
 def test_to_answers_shapes_and_formulas():
     _, meta = to_record(SystemOneRequest.model_validate({"state": "s", "model": "m", "questions": {
         "n": {"type": "noul", "instructions": "i"},
@@ -193,7 +203,7 @@ def test_checkpoint_meta_round_trip_and_defaults(tmp_path):
     from jevany.checkpoint import LoadOptions, Meta, read_meta, write_meta
     old = {"head": {"w": torch.zeros(1)}, "base": "Qwen/Qwen2.5-0.5B", "lora": 16, "args": {"lr": 1}, "suite_sha256": "abc"}
     m = Meta.from_dict(old)
-    assert (m.head_dim, m.option_isolation, m.temperature, m.holdout, m.weights_dtype) == (256, False, 1.0, [], "fp32")
+    assert (m.head_dim, m.option_isolation, m.multimodal, m.temperature, m.holdout, m.weights_dtype) == (256, False, False, 1.0, [], "fp32")
     assert m.extra == {"args": {"lr": 1}, "suite_sha256": "abc"}
     m.temperature = 2.3; m.extra["temperature_fit"] = {"n": 10}
     write_meta(tmp_path, m); back = read_meta(tmp_path)

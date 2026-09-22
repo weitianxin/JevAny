@@ -17,7 +17,7 @@ from pathlib import Path
 
 import torch
 
-from .model import DecisionModel, load_tokenizer
+from .model import DecisionModel, load_preprocessor
 
 HUB_ID = re.compile(r"[\w.-]+/[\w.-]+(@[\w.-]+)?")
 
@@ -47,12 +47,13 @@ class Meta:
     head_dim: int = 256
     option_isolation: bool = False
     special_embeddings: bool = False
+    multimodal: bool = False
     weights_dtype: str = "fp32"
     temperature: float = 1.0
     holdout: list = field(default_factory=list)
     extra: dict = field(default_factory=dict)
 
-    KNOWN = ("base", "head", "base_revision", "lora", "head_dim", "option_isolation", "special_embeddings", "weights_dtype", "temperature", "holdout")
+    KNOWN = ("base", "head", "base_revision", "lora", "head_dim", "option_isolation", "special_embeddings", "multimodal", "weights_dtype", "temperature", "holdout")
 
     @classmethod
     def from_dict(cls, d):
@@ -120,24 +121,25 @@ class Checkpoint:
             # Keep a fp32 adapter unmerged when the checkpoint was trained over a bf16 backbone.
             dtype, merge = torch.bfloat16, False
         source, revision = meta.base, meta.base_revision
-        tok = load_tokenizer(source, revision=revision)
+        tok = load_preprocessor(source, revision=revision, multimodal=meta.multimodal)
         from peft import PeftModel
         merge = merge and not self.adapter_config().get("trainable_token_indices")   # token-trained adapters stay unmerged
         m = DecisionModel(source, tok, device, lora=None, revision=revision, head_dim=meta.head_dim,
-                          option_isolation=meta.option_isolation, dtype=torch.float32 if merge else dtype, attn=opts.attn)
-        m.lm = PeftModel.from_pretrained(m.lm, self.path, torch_device=str(device)).to(device)   # trainable token embeddings, if any, live in the adapter
+                          option_isolation=meta.option_isolation, dtype=torch.float32 if merge else dtype,
+                          attn=opts.attn, multimodal=meta.multimodal)
+        m.set_language_model(PeftModel.from_pretrained(m.lm, self.path, torch_device=str(device)).to(device))
         if opts.lora_scale != 1:
             for module in m.lm.modules():
                 if isinstance(getattr(module, "scaling", None), dict):
                     for k in module.scaling: module.scaling[k] *= opts.lora_scale
             m.lora_scale = opts.lora_scale
-        if merge: m.lm = m.lm.merge_and_unload()     # in fp32: exact
-        if dtype != torch.float32: m.lm = m.lm.to(dtype)
+        if merge: m.set_language_model(m.lm.merge_and_unload())
+        if dtype != torch.float32: m.set_language_model(m.lm.to(dtype))
         m.head.load_state_dict(meta.head); m.eval()
         m.head.temperature = meta.temperature if opts.temperature is None else opts.temperature
         return tok, m
 
-    COMPAT_FIELDS = ("base", "base_revision", "lora", "head_dim", "option_isolation", "special_embeddings")
+    COMPAT_FIELDS = ("base", "base_revision", "lora", "head_dim", "option_isolation", "special_embeddings", "multimodal")
 
     def warm_start(self, model, ours):
         """Delta training: load this checkpoint's adapter and pointer head into `model` (a fresh DecisionModel built with
