@@ -10,12 +10,12 @@ from jevany.suite import digest, load_split, write_json, write_jsonl
 
 
 QUOTAS = {
-    "preference": 5000,
-    "agent": 5000,
-    "hard_reasoning": 4000,
-    "image": 3000,
-    "video": 2000,
-    "core": 3000,
+    "preference": 7000,
+    "agent": 7000,
+    "hard_reasoning": 6000,
+    "image": 5000,
+    "video": 3000,
+    "core": 4000,
 }
 
 
