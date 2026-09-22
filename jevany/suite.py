@@ -33,7 +33,8 @@ def write_json(path, value):
 
 
 def read_jsonl(path):
-    return [json.loads(line) for line in Path(path).read_text(encoding=ENCODING).splitlines() if line.strip()]
+    with Path(path).open(encoding=ENCODING) as stream:
+        return [json.loads(line) for line in stream if line.strip()]
 
 
 def write_jsonl(path, records):
