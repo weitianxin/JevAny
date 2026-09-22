@@ -1,0 +1,54 @@
+{
+  "date": "2026-09-22",
+  "evaluation": "transfer-v9 development",
+  "models": {
+    "kev-9b": {
+      "knowable_accuracy": 0.77151,
+      "mmlu_pro_accuracy": 0.515,
+      "buried_evidence_accuracy": 0.7375,
+      "brier": 0.3412,
+      "coverage_at_5pct_error": 0.3929,
+      "unknowable_mean_confidence": 0.41246
+    },
+    "jevany-27b-sft": {
+      "knowable_accuracy": 0.8135755,
+      "mmlu_accuracy": 0.8125,
+      "mmlu_pro_accuracy": 0.64,
+      "buried_evidence_accuracy": 0.7375,
+      "brier": 0.273379,
+      "coverage_at_5pct_error": 0.51625,
+      "unknowable_mean_confidence": 0.49916,
+      "latency_h200_ms": {"median": 156.84, "p95": 162.68}
+    },
+    "jevany-27b-rlcr": {
+      "knowable_accuracy": 0.8183556,
+      "mmlu_accuracy": 0.8125,
+      "mmlu_pro_accuracy": 0.66,
+      "buried_evidence_accuracy": 0.7375,
+      "brier": 0.268814,
+      "coverage_at_5pct_error": 0.54111,
+      "unknowable_mean_confidence": 0.428156,
+      "latency_h200_ms": {"median": 153.75, "p95": 160.11}
+    },
+    "jev": {
+      "knowable_accuracy": 0.853728,
+      "mmlu_accuracy": 0.9,
+      "mmlu_pro_accuracy": 0.84,
+      "buried_evidence_accuracy": 0.7,
+      "brier": 0.2121,
+      "coverage_at_5pct_error": 0.695,
+      "unknowable_mean_confidence": 0.61
+    }
+  },
+  "paired_sft_vs_rlcr": {
+    "accuracy_delta_percentage_points": 0.48,
+    "fixes": 11,
+    "regressions": 6,
+    "mcnemar_exact_p": 0.332
+  },
+  "notes": [
+    "Accuracy excludes explicitly unknowable questions.",
+    "Brier and coverage use each checkpoint's fitted temperature.",
+    "Latency is one one-question query on one H200 and excludes network and queueing."
+  ]
+}

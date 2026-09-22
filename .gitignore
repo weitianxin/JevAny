@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+.coverage
+.wandb/
+wandb/
+runs/
+models/
+release/
+*.tar.gz
+*.log
+.DS_Store

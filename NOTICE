@@ -1,0 +1,15 @@
+JevAny
+Copyright 2026 Tianxin Wei
+
+This product includes modified source code from Kev by Jared Palmer:
+https://github.com/jaredpalmer/kev
+
+Kev is distributed under the Apache License 2.0. JevAny keeps that license,
+marks derived source files, and documents the changes in ACKNOWLEDGEMENTS.md.
+
+The released adapters require Qwen3.8-27B by the Qwen team. The base model is
+distributed separately under its own Apache License 2.0 terms.
+
+JevAny's decision interface is compatible with the public System One request
+shape. Jev and TypeSafe are names of their respective owners; this project is
+not affiliated with or endorsed by them.

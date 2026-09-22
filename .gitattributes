@@ -1,0 +1,3 @@
+# Frozen suites and their manifests are sha256-checked byte for byte: never convert their line endings on checkout.
+*.json text eol=lf
+*.jsonl text eol=lf

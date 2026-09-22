@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jevany"
+version = "0.1.0"
+description = "A Qwen3.8-27B decision model with calibrated answer probabilities"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Tianxin Wei" }]
+requires-python = ">=3.12"
+keywords = ["decision-model", "calibration", "rlcr", "lora", "qwen"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "accelerate>=1.15.0",
+    "huggingface-hub>=0.34",
+    "numpy>=2.2",
+    "peft>=0.21",
+    "pydantic>=2.9",
+    "scikit-learn>=1.6",
+    "torch>=2.6,<2.9",
+    "transformers>=5.17,<6",
+]
+
+[project.urls]
+Repository = "https://github.com/weitianxin/JevAny"
+Issues = "https://github.com/weitianxin/JevAny/issues"
+Models = "https://huggingface.co/collections/tianxinwei/jevany-6ab2c941bcecb4d2c61d1326"
+
+[project.optional-dependencies]
+serve = ["fastapi>=0.115", "uvicorn>=0.30"]
+train = ["wandb>=0.19"]
+dev = ["httpx>=0.28", "pytest>=9"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["server: needs a running JevAny server"]
+
+[tool.setuptools]
+packages = ["jevany"]

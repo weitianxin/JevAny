@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: JevAny
+message: "If you use JevAny, cite this repository and the upstream projects listed in ACKNOWLEDGEMENTS.md."
+type: software
+authors:
+  - family-names: Wei
+    given-names: Tianxin
+repository-code: https://github.com/weitianxin/JevAny
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-09-22
