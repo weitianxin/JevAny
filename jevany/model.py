@@ -114,7 +114,13 @@ def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH
             "longest_edge": max(128 * 128, (512 * 512) // len(images)),
         }
     if videos:
-        processor_kwargs.update({"max_video_tokens": 256, "cap_pixels_per_frame": True})
+        processor_kwargs.update({
+            "size": {"shortest_edge": 32 * 32, "longest_edge": 512 * 512},
+            "num_frames": 8,
+            "fps": None,
+            "max_video_tokens": 512,
+            "cap_pixels_per_frame": True,
+        })
     batch = processor(text=["".join(parts)], images=images or None, videos=videos or None, **processor_kwargs)
     ids = batch["input_ids"][0].tolist()
     tok = processor.tokenizer

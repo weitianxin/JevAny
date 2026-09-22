@@ -14,7 +14,7 @@ from pathlib import Path
 from datasets import load_dataset
 
 from jevany.data import materialize
-from jevany.model import MAX_BRANCH, MAX_PACKED, MAX_STATE, fits, load_tokenizer
+from jevany.model import MAX_BRANCH, MAX_PACKED, MAX_STATE, encode, load_tokenizer
 from jevany.suite import digest, read_jsonl, write_json, write_jsonl
 
 
@@ -303,6 +303,17 @@ def unique(records, excluded):
     return output
 
 
+def admitted(item, tokenizer):
+    """Apply the text limits and reserve room for visual tokens before expensive media processing."""
+    try:
+        encoded = encode(tokenizer, materialize(item), strict=True)
+    except ValueError:
+        return False
+    media_types = {media["type"] for media in item.get("media", [])}
+    reserve = 512 if "video" in media_types else 384 if media_types else 0
+    return len(encoded["ids"]) <= MAX_PACKED - reserve
+
+
 def eval_split(rows, per_source, seed):
     by_source = {}
     for row in rows:
@@ -446,9 +457,9 @@ def main():
     evaluation = unique(evaluation, excluded | {content_hash(row) for row in train})
     tokenizer = load_tokenizer(args.tokenizer, revision=args.tokenizer_revision or None)
     before = len(train)
-    train = [row for row in train if fits(materialize(row), tokenizer)]
+    train = [row for row in train if admitted(row, tokenizer)]
     before_evaluation = len(evaluation)
-    evaluation = [row for row in evaluation if fits(materialize(row), tokenizer)]
+    evaluation = [row for row in evaluation if admitted(row, tokenizer)]
     dropped = {"train": before - len(train), "evaluation": before_evaluation - len(evaluation)}
     calibration, development = eval_split(evaluation, args.eval_per_source, args.seed)
     random.Random(args.seed).shuffle(train)
