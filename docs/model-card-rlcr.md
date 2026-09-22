@@ -16,18 +16,12 @@ JevAny-27B-RLCR continues the released SFT checkpoint with decision-only reinfor
 
 ## Training
 
-- Parent: JevAny-27B-SFT v0.1.0, step 786
-- Selected checkpoint: optimizer step 384 of a planned 512-step epoch
-- Hardware: 16 H200 GPUs across two nodes
-- Data: 8,192 records; see the repository's [data documentation](https://github.com/weitianxin/JevAny/blob/main/docs/DATA.md)
-- Effective batch: 16 source records
-- LoRA learning rate: `5e-6`; pointer-head learning rate: `1e-5`
-- RLCR group size: 32
-- Exploration sigma: linear decay from `0.4` to `0.1`
-- Supervised cross-entropy weight: `0.25`
-- Temperature: `1.319507910772894`, fitted on 1,264 held-out development questions
+- Parent: JevAny-27B-SFT v0.1.0
+- Data: hard examples, broad replay, compositional decisions, policy decisions, and knowable/unknowable pairs
+- Objective: group-relative RLCR with a supervised cross-entropy anchor
+- Calibration: temperature fitted on a separate development partition
 
-The formal RLCR run took 14 minutes 28 seconds. Evaluation ran every 128 optimizer steps; step 384 was selected before the end of the epoch.
+The detailed data design is documented in the repository's [data guide](https://github.com/weitianxin/JevAny/blob/main/docs/DATA.md).
 
 ## Evaluation
 

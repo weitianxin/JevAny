@@ -75,7 +75,7 @@ When creating data:
 
 ## v0.1 Mixtures
 
-The SFT run saw 12,576 source records per epoch:
+The SFT mixture contains 12,576 source records:
 
 | Group | Records |
 |---|---:|
@@ -83,7 +83,7 @@ The SFT run saw 12,576 source records per epoch:
 | Compositional decisions | 1,680 |
 | Policy decisions | 896 |
 
-Online augmentation permuted choices and inserted none/distractor cases with probabilities `0.10`, `0.12`, and `0.15`; `0.25` of eligible rows also emitted a none-present/none-absent pair. The released model is the epoch-1 checkpoint.
+Online augmentation permuted choices and inserted none and distractor cases. Eligible rows could also emit a matched pair with the correct option present or absent.
 
 The RLCR stage used exactly 8,192 records:
 

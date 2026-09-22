@@ -2,7 +2,7 @@
 
 JevAny starts with a narrow primitive: map a state and explicit options to a decision distribution. The next releases make the state richer, the tasks harder, and the decision process inspectable.
 
-## 0.1 — Decision Core
+## 0.1: Decision Core
 
 - Release Qwen3.8-27B LoRA SFT and RLCR checkpoints.
 - Keep training and serving on the same typed request format.
@@ -11,7 +11,7 @@ JevAny starts with a narrow primitive: map a state and explicit options to a dec
 
 Exit criterion: a clean public repository and reproducible local loading of both checkpoints.
 
-## 0.2 — Complex and Agent Data
+## 0.2: Complex and Agent Data
 
 - Define multi-step decision tasks with observable intermediate state and verifiable terminal outcomes.
 - Generate task candidates with language models, then deduplicate, validate, and retain source provenance.
@@ -20,7 +20,7 @@ Exit criterion: a clean public repository and reproducible local loading of both
 
 Exit criterion: a frozen evaluation panel with no prompt or source overlap and human-audited subsets for every task family.
 
-## 0.3 — Multimodal Decisions
+## 0.3: Multimodal Decisions
 
 - Connect the Qwen3.8 vision tower to the decision path.
 - Support images, document pages, and sampled video clips in state.
@@ -28,7 +28,7 @@ Exit criterion: a frozen evaluation panel with no prompt or source overlap and h
 
 Exit criterion: image and video inputs share the same typed output contract and report modality-specific calibration.
 
-## 0.4 — Long Context and Memory
+## 0.4: Long Context and Memory
 
 - Replace the current 2,048-token training envelope with long-context training and evaluation.
 - Add retrieval and state compression without hiding dropped evidence.
@@ -36,7 +36,7 @@ Exit criterion: image and video inputs share the same typed output contract and 
 
 Exit criterion: accuracy and confidence remain stable as relevant evidence moves deeper into context.
 
-## 0.5 — Test-Time Training and Harness
+## 0.5: Test-Time Training and Harness
 
 - Adapt on deployment feedback under an explicit budget.
 - Add rollback, held-out canaries, contamination detection, and per-update provenance.
@@ -44,7 +44,7 @@ Exit criterion: accuracy and confidence remain stable as relevant evidence moves
 
 Exit criterion: every online update is reversible and must pass frozen safety and calibration gates before promotion.
 
-## 0.6 — Symbolic Decision Programs
+## 0.6: Symbolic Decision Programs
 
 - Use an LLM to propose a task-specific decision tree from a schema, examples, and constraints.
 - Validate each branch against labelled and counterfactual cases.

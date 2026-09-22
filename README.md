@@ -14,8 +14,8 @@ JevAny turns context into typed decisions and calibrated probabilities. It is a 
 
 The first release contains two LoRA checkpoints:
 
-- [**JevAny-27B-SFT**](https://huggingface.co/tianxinwei/JevAny-27B-SFT) — the selected epoch-1 supervised checkpoint.
-- [**JevAny-27B-RLCR**](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) — the SFT model refined with reinforcement learning with calibration rewards.
+- [**JevAny-27B-SFT**](https://huggingface.co/tianxinwei/JevAny-27B-SFT): supervised fine-tuning for typed decisions.
+- [**JevAny-27B-RLCR**](https://huggingface.co/tianxinwei/JevAny-27B-RLCR): calibration-aware reinforcement learning built on the SFT model.
 
 Both checkpoints are grouped in the [JevAny collection](https://huggingface.co/collections/tianxinwei/jevany-6ab2c941bcecb4d2c61d1326). They require the separately distributed `Qwen/Qwen3.8-27B` base model.
 
@@ -127,7 +127,7 @@ torchrun --nproc_per_node=8 -m jevany.train \
   --base Qwen/Qwen3.8-27B \
   --data examples/train.jsonl \
   --lora 16 --weights_dtype bf16 --dtype bf16 \
-  --epochs 1 --out runs/my-sft
+  --out runs/my-sft
 ```
 
 Continue from SFT with calibration-aware RL:
@@ -138,7 +138,7 @@ torchrun --nproc_per_node=8 -m jevany.train \
   --data data/rlcr.jsonl --init_from runs/my-sft \
   --rlcr --rlcr_group_size 32 \
   --rlcr_sigma_start 0.4 --rlcr_sigma_end 0.1 --rlcr_ce_w 0.25 \
-  --weights_dtype bf16 --dtype bf16 --epochs 1 --out runs/my-rlcr
+  --weights_dtype bf16 --dtype bf16 --out runs/my-rlcr
 ```
 
 Training supports multi-node DDP, distributed evaluation before training and at fixed step intervals, checkpointing, and W&B. The exact v0.1 commands are in [`scripts/train_sft.sh`](scripts/train_sft.sh) and [`scripts/train_rlcr.sh`](scripts/train_rlcr.sh).

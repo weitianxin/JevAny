@@ -16,16 +16,12 @@ JevAny-27B-SFT is a rank-16 LoRA adapter and pointer head for `Qwen/Qwen3.8-27B`
 ## Training
 
 - Base revision: `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`
-- Selected checkpoint: optimizer step 786, end of epoch 1
-- Hardware: 16 H200 GPUs across two nodes
-- Effective batch: 16 source records
-- Learning rate: `5e-5`; AdamW weight decay: `0.01`
-- Adapter: rank 16, alpha 32, dropout 0.05
+- Adapter: rank 16 LoRA
 - Pointer dimension: 256
-- Forward/master behavior: bf16 backbone, fp32 LoRA and pointer parameters
-- Temperature: `1.4142135623730947`, fitted on 1,264 held-out development questions
+- Training data: public classification, compositional, policy, and missing-option decisions
+- Calibration: temperature fitted on a separate development partition
 
-The full two-epoch run took 39 minutes 28 seconds. This release uses epoch 1 because later training did not improve the selection criteria.
+The base weights remain frozen. JevAny trains the adapter and pointer head together.
 
 ## Evaluation
 
