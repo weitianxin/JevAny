@@ -21,6 +21,15 @@
       "coverage_at_5pct_error": 0.54111,
       "unknowable_mean_confidence": 0.428156,
       "latency_h200_ms": {"median": 153.75, "p95": 160.11}
+    },
+    "jev": {
+      "knowable_accuracy": 0.853728,
+      "mmlu_accuracy": 0.9,
+      "mmlu_pro_accuracy": 0.84,
+      "buried_evidence_accuracy": 0.7,
+      "brier": 0.2121,
+      "coverage_at_5pct_error": 0.695,
+      "unknowable_mean_confidence": 0.61
     }
   },
   "paired_sft_vs_rlcr": {

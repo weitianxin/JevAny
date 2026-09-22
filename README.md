@@ -105,6 +105,7 @@ All rows below were evaluated on the same held-out `transfer-v9` development pan
 |---|---:|---:|---:|---:|---:|---:|
 | JevAny-27B-SFT | 81.36% | 64.00% | 73.75% | 0.273 | 51.63% | 0.499 |
 | **JevAny-27B-RLCR** | **81.84%** | **66.00%** | **73.75%** | **0.269** | **54.11%** | **0.428** |
+| Jev | 85.37% | 84.00% | 70.00% | 0.212 | 69.50% | 0.610 |
 
 RLCR changes accuracy by +0.48 percentage points over SFT on this panel (11 fixes, 6 regressions; exact McNemar `p=0.332`). The clearer result is better uncertainty behavior: lower Brier score, higher selective coverage, and lower confidence on unknowable inputs. Treat the accuracy difference as directional, not conclusive.
 
