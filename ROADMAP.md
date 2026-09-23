@@ -43,7 +43,8 @@ JevAny starts with one primitive: map shared state and explicit options to a pro
 - [x] Connect native images and sampled video frames to the decision path.
 - [x] Train on A-OKVQA and ScienceQA images; exercise the native VideoFeedback path.
 - [x] Evaluate native AI2D and MMMU images.
-- [ ] Replace the single-class VideoFeedback slice with a label-balanced video benchmark.
+- [x] Evaluate a label-balanced MVBench panel with blank and group-shuffled video controls.
+- [x] Evaluate a decontaminated MMStar panel with blank and group-shuffled image controls.
 - [ ] Add broader document-page, temporal-ordering, OCR, and absent-evidence tests.
 - [ ] Report modality-specific calibration and failure slices.
 

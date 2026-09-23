@@ -1,0 +1,85 @@
+{
+  "media": "self-created synthetic examples released under Apache-2.0",
+  "selection": {
+    "success": "median reference-label probability among correct results from three predeclared examples",
+    "alternate": "highest-confidence error, or lowest reference-label probability when all three are correct"
+  },
+  "selected": {
+    "image": {
+      "success": "demo-image-route",
+      "alternate": "demo-image-status"
+    },
+    "video": {
+      "success": "demo-video-west",
+      "alternate": "demo-video-north"
+    }
+  },
+  "results": [
+    {
+      "id": "demo-image-status",
+      "modality": "image",
+      "correct": true,
+      "reference_probability": 0.9173167943954468,
+      "probabilities": {
+        "a": 0.003656581277027726,
+        "b": 0.9173167943954468,
+        "c": 0.07902660965919495
+      }
+    },
+    {
+      "id": "demo-image-route",
+      "modality": "image",
+      "correct": true,
+      "reference_probability": 0.9945189356803894,
+      "probabilities": {
+        "a": 0.9945189356803894,
+        "b": 0.0032039110083132982,
+        "c": 0.002277171239256859
+      }
+    },
+    {
+      "id": "demo-image-quality",
+      "modality": "image",
+      "correct": true,
+      "reference_probability": 0.9983787536621094,
+      "probabilities": {
+        "a": 0.0007681959541514516,
+        "b": 0.9983787536621094,
+        "c": 0.0008530152263119817
+      }
+    },
+    {
+      "id": "demo-video-north",
+      "modality": "video",
+      "correct": true,
+      "reference_probability": 0.9385983347892761,
+      "probabilities": {
+        "a": 0.03784993290901184,
+        "b": 0.9385983347892761,
+        "c": 0.023551709949970245
+      }
+    },
+    {
+      "id": "demo-video-east",
+      "modality": "video",
+      "correct": true,
+      "reference_probability": 0.9995080232620239,
+      "probabilities": {
+        "a": 0.000368851819075644,
+        "b": 0.00012305747077334672,
+        "c": 0.9995080232620239
+      }
+    },
+    {
+      "id": "demo-video-west",
+      "modality": "video",
+      "correct": true,
+      "reference_probability": 0.9725177884101868,
+      "probabilities": {
+        "a": 0.9725177884101868,
+        "b": 0.019224874675273895,
+        "c": 0.008257378824055195
+      }
+    }
+  ]
+}

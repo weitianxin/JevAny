@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 from jevany.api import SystemOneRequest, choice_confidence, render, score_confidence, to_answers, to_record, validate_response
+from jevany.data import api_request
 from jevany.model import SPECIAL, branch_mask, encode, user_tokens
 
 
@@ -125,6 +126,41 @@ def test_to_record_preserves_media():
     })
     record, _ = to_record(req)
     assert record["media"] == [{"type": "image", "uri": "evidence.jpg"}, {"type": "video", "uri": "clip.mp4"}]
+
+
+def test_multimodal_labels_never_reach_model_input():
+    request = {
+        "state": "Inspect the image",
+        "media": [{"type": "image", "uri": "evidence.jpg"}],
+        "questions": {
+            "answer": {
+                "type": "choice", "instructions": "Choose", "criteria": {"a": "A", "b": "B"},
+                "label": "a", "target": {"a": 0.8, "b": 0.2},
+            }
+        },
+    }
+    changed = {
+        **request,
+        "questions": {"answer": {**request["questions"]["answer"], "label": "b", "target": {"a": 0.1, "b": 0.9}}},
+    }
+    clean = api_request(request)
+    changed_clean = api_request(changed)
+    assert clean == changed_clean
+    assert to_record(SystemOneRequest.model_validate(clean))[0] == to_record(SystemOneRequest.model_validate(changed_clean))[0]
+
+
+def test_early_stop_update_resets_only_on_real_improvement():
+    from jevany.train import early_stop_update
+
+    assert early_stop_update(0.8, None, 0) == (0.8, 0, True)
+    assert early_stop_update(0.8, 0.8, 2) == (0.8, 3, False)
+    assert early_stop_update(0.811, 0.8, 3, min_delta=0.01) == (0.811, 0, True)
+    assert early_stop_update(0.39, 0.4, 2, maximize=False, min_delta=0.005) == (0.39, 0, True)
+    for value, best, min_delta in ((float("nan"), 0.8, 0), (0.8, float("inf"), 0), (0.8, 0.7, float("nan"))):
+        with pytest.raises(ValueError, match="finite"):
+            early_stop_update(value, best, 0, min_delta=min_delta)
+    with pytest.raises(ValueError, match="non-negative"):
+        early_stop_update(0.8, 0.7, 0, min_delta=-0.1)
 
 
 def test_to_answers_shapes_and_formulas():

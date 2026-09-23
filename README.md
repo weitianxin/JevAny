@@ -28,10 +28,10 @@ Both require separately distributed base weights and the JevAny runtime.
 | **Jev-Tool** | Selects tools, execution modes, and escalation paths | Prototype |
 | **Jev-Symbolic** | Runs LLM-authored, validated decision trees with JevAny at each node | Prototype |
 | **Jev-Test** | Adapts from repeated samples without ground-truth labels | Research result |
-| **Jev-Image** | Makes decisions from native image evidence | Trained and evaluated |
-| **Jev-Video** | Scores native video evidence | Pipeline exercised; meaningful benchmark planned |
+| **Jev-Image** | Makes decisions from native image evidence | Evaluated with blank and shuffled controls |
+| **Jev-Video** | Scores native video evidence | Evaluated on three temporal decision tasks |
 
-Next priorities are broader image and video evaluations, harder agent tasks, long context, computer use, coding, robotics, and guarded test-time updates. See [ROADMAP.md](ROADMAP.md) for acceptance criteria.
+Next priorities are harder agent tasks, long context, document images, broader temporal reasoning, computer use, coding, robotics, and guarded test-time updates. See [ROADMAP.md](ROADMAP.md) for acceptance criteria.
 
 ## Quick Start
 
@@ -97,6 +97,38 @@ Development accuracy and NLL exclude 100 VideoFeedback questions whose labels ar
 <p align="center">
   <img src="docs/results-v2.svg" alt="JevAny v2 evaluation overview" width="100%">
 </p>
+
+### Native Image And Video Decisions
+
+We evaluated the released SFT checkpoint with the real media, a neutral blank asset, and media shuffled between questions within each task. Shuffling operates on unique media groups, so questions that share one image or video always receive the same replacement. The media sensitivity gate requires full-media accuracy to exceed the stronger control by at least five points, with a positive paired media-group bootstrap interval. Passing it shows that the model uses the media; it does not by itself establish high task accuracy.
+
+| Panel | Questions | Full media | Blank | Shuffled | Gain over strongest control |
+|---|---:|---:|---:|---:|---:|
+| **MMStar clean image panel** | 1,330 | **74.5%** | 29.0% | 28.9% | **+45.5** `[+42.4, +48.6]` |
+| **MVBench three-task video panel** | 600 | **33.5%** | 12.3% | 15.3% | **+18.2** `[+13.9, +22.4]` |
+
+| MVBench task | Questions | Full media | Blank | Shuffled | Gain over strongest control |
+|---|---:|---:|---:|---:|---:|
+| Fine-grained action | 200 | **45.0%** | 14.0% | 16.5% | **+28.5** `[+19.5, +37.5]` |
+| Egocentric navigation | 200 | **43.5%** | 23.0% | 29.0% | **+14.5** `[+6.3, +22.4]` |
+| Action antonym | 200 | **12.0%** | 0.0% | 0.5% | **+11.5** `[+7.0, +16.0]` |
+
+The image panel removes invalid choices and every item matched to the training, calibration, or development splits by media or by normalized question and unordered option text. It has zero remaining exact or perceptual media overlap, question-option overlap, and source-ID overlap. Its task-macro random and label-position baselines are 26.7% and 31.8%. The video panel has the same zero-overlap checks. Its overall media gain is significant, but the low action-antonym score and poor video calibration are important limitations.
+
+Full metrics, per-task intervals, dataset revisions, checkpoint hashes, and control provenance are in [the image report](results/multimodal-image-v1.json) and [the video report](results/multimodal-video-v1.json). The internal evaluation checkpoint and public SFT release have identical LoRA and pointer-head tensors; [the equivalence record](results/release-equivalence-v0.2.json) accounts for the embedded release temperature. Benchmark media is not redistributed because its upstream terms apply.
+
+The examples below use self-created synthetic media released with this repository. Each modality shows one fixed middle-confidence success and one alternate case from three predeclared examples. [The selection record](docs/demos/multimodal-demo.json) includes every probability.
+
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/demos/jev-image-success.png" alt="JevAny image decision success" width="100%"><br><b>Jev-Image success</b></td>
+    <td width="50%" align="center"><img src="docs/demos/jev-image-alternate.png" alt="Alternate JevAny image decision" width="100%"><br><b>Jev-Image alternate</b></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/demos/jev-video-success.gif" alt="JevAny video decision success" width="100%"><br><b>Jev-Video success</b></td>
+    <td width="50%" align="center"><img src="docs/demos/jev-video-alternate.gif" alt="Alternate JevAny video decision" width="100%"><br><b>Jev-Video alternate</b></td>
+  </tr>
+</table>
 
 ### Jev-Agent
 

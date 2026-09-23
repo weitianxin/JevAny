@@ -1,0 +1,43 @@
+{
+  "equivalent": true,
+  "source": {
+    "head_sha256": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
+    "adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+    "adapter_config_sha256": "c018273f21cb4e1a04f2c8ceb59177b3398047781b3edf1cfffb97efb2859546",
+    "embedded_temperature": 1.0
+  },
+  "release": {
+    "repository": "tianxinwei/JevAny-27B-SFT",
+    "head_sha256": "e465a3d96cdc2505db97e9021f21e2ebb30329721b9d3bdd88f3919e5798d8d0",
+    "adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+    "adapter_config_sha256": "cad90469e81ee627b0061d1d88151ec7b7c11efc115cef62447e96345b66ccca",
+    "embedded_temperature": 1.8660659830736146
+  },
+  "evaluation_report": {
+    "sha256": "d6c338f02cb8512d9c794a7ee0cba01ece577a630f469b95f981f94979030609",
+    "checkpoint_artifacts_match_source": true
+  },
+  "evaluation_temperature": 1.8660659830736146,
+  "head_tensor_equality": {
+    "k.bias": true,
+    "k.weight": true,
+    "q.bias": true,
+    "q.weight": true
+  },
+  "head_metadata_equality": {
+    "base_revision": true,
+    "lora": true,
+    "head_dim": true,
+    "option_isolation": true,
+    "special_embeddings": true,
+    "multimodal": true,
+    "weights_dtype": true,
+    "lora_targets": true
+  },
+  "adapter_config_equality_except_base_path": true,
+  "allowed_adapter_config_difference": [
+    "base_model_name_or_path"
+  ],
+  "base_identity_match": true,
+  "interpretation": "The release uses the evaluated LoRA and pointer head, the same inference settings, and the evaluation temperature."
+}

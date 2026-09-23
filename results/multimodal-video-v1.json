@@ -1,0 +1,358 @@
+{
+  "protocol": {
+    "full": "native media",
+    "blank": "same questions and options with a neutral blank asset",
+    "shuffled": "same questions and options with media rotated within each source",
+    "media_sensitivity_gate": "full accuracy exceeds the strongest ablation by at least 5 points and the paired media-group bootstrap 95% lower bound is above zero",
+    "bootstrap_samples": 5000
+  },
+  "suite": {
+    "name": "mvbench-3task-v1-20260923",
+    "manifest_sha256": "eac1c0435e29a06b5ef62880f314700e6494b708282c60ad4d929c24c8a7e2de",
+    "media_audit_sha256": "9497f369b66620f7f9b1e7fe6a489d4d7a6ac9d581a14ceb0a85a28edcb1908b",
+    "records": 600,
+    "unique_media": 594,
+    "base_revisions": {
+      "OpenGVLab/MVBench": "230a2d4fac8900333c61754641c7a13e069ac9c6"
+    },
+    "licenses": {
+      "OpenGVLab/MVBench": "MIT metadata; source videos are academic-research-only under upstream terms"
+    },
+    "media_audit": {
+      "files": 600,
+      "unique_sha256": 594,
+      "group_sha256": "2decdc284fe4b913f622742a03fb5c3f27d2458c287a0691db1966cbecb58d1b",
+      "reference": {
+        "suite": "runs/data-v2-final-20260922",
+        "manifest_sha256": "5a9cdc1b15b470fd15032aeb6e8dbf7403ffbd4abd574577e76245a565fc1ec2",
+        "splits": {
+          "train": "a2b2241a4d34ca92b92b2ef65a3ed2f25480fbfe3459af9cf276c844c0634b42",
+          "calibration": "cd42977b5488db253c8a53c46a4a46c5dfba92c935c45f51d8b770fdd6ee21c2",
+          "development": "bc83f70850819901cb3b15d3290ce52f538cd15cfe12e4a9d5491959a2815dd7"
+        }
+      },
+      "reference_files_compared": 3954,
+      "exact_reference_overlap": 0,
+      "perceptual_reference_overlap": 0,
+      "evaluation_decode_errors": 0,
+      "reference_decode_errors": 0
+    },
+    "overlap_counts": {
+      "exact_media_overlap": 0,
+      "perceptual_media_overlap": 0,
+      "question_option_overlap": 0,
+      "source_id_overlap": 0
+    },
+    "data_quality": null,
+    "artifacts": {
+      "media-audit.json": {
+        "sha256": "9497f369b66620f7f9b1e7fe6a489d4d7a6ac9d581a14ceb0a85a28edcb1908b"
+      }
+    },
+    "label_distribution": {
+      "mvbench_action_antonym": {
+        "records": 200,
+        "option_counts": {
+          "3": 200
+        },
+        "label_position": {
+          "0": 74,
+          "1": 66,
+          "2": 60
+        },
+        "random_baseline": 0.33333333333333337,
+        "majority_position_baseline": 0.37,
+        "label_position_entropy_nats": 1.0949238485271433
+      },
+      "mvbench_fine_grained_action": {
+        "records": 200,
+        "option_counts": {
+          "4": 200
+        },
+        "label_position": {
+          "0": 51,
+          "1": 47,
+          "2": 55,
+          "3": 47
+        },
+        "random_baseline": 0.25,
+        "majority_position_baseline": 0.275,
+        "label_position_entropy_nats": 1.3841158314606765
+      },
+      "mvbench_egocentric_navigation": {
+        "records": 200,
+        "option_counts": {
+          "4": 200
+        },
+        "label_position": {
+          "0": 50,
+          "1": 46,
+          "2": 44,
+          "3": 60
+        },
+        "random_baseline": 0.25,
+        "majority_position_baseline": 0.3,
+        "label_position_entropy_nats": 1.3788990058698607
+      }
+    },
+    "task_macro_random_baseline": 0.2777777777777778,
+    "task_macro_majority_position_baseline": 0.315
+  },
+  "coverage": {
+    "full": {
+      "requested_records": 600,
+      "requested_questions": 600,
+      "evaluated_records": 600,
+      "evaluated_questions": 600,
+      "rejected_records": 0,
+      "truncated_records": 0
+    },
+    "blank": {
+      "requested_records": 600,
+      "requested_questions": 600,
+      "evaluated_records": 600,
+      "evaluated_questions": 600,
+      "rejected_records": 0,
+      "truncated_records": 0
+    },
+    "shuffled": {
+      "requested_records": 600,
+      "requested_questions": 600,
+      "evaluated_records": 600,
+      "evaluated_questions": 600,
+      "rejected_records": 0,
+      "truncated_records": 0
+    }
+  },
+  "evaluation": {
+    "checkpoint_artifacts": {
+      "adapter_model.safetensors": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+      "head.pt": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
+      "adapter_config.json": "c018273f21cb4e1a04f2c8ceb59177b3398047781b3edf1cfffb97efb2859546"
+    },
+    "base_loading": {
+      "canonical_base": "Qwen3.8-27B",
+      "canonical_base_is_local": true,
+      "canonical_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "override_used": false,
+      "override_config_sha256": null
+    },
+    "load_options": {
+      "dtype": null,
+      "merge": true,
+      "attn": null,
+      "lora_scale": 1.0,
+      "temperature": 1.8660659830736146,
+      "base_load_path_used": false
+    },
+    "calibration": {
+      "inference_temperature": 1.8660659830736146,
+      "additional_temperature": 1.0,
+      "logits_recorded": true
+    },
+    "controls": {
+      "full": {
+        "mode": "full",
+        "seed": null
+      },
+      "blank": {
+        "mode": "blank",
+        "seed": null,
+        "blank_sha256": {
+          "image": "c6bf3833f970df0472413fb4691b5e95e00c0e84449ee02aa08395c7e23699ae",
+          "video": "409cba964d091ffc93a86c24cab94474f48ba880ebe6e95a7001c34720812f3e"
+        }
+      },
+      "shuffled": {
+        "mode": "shuffled",
+        "seed": 17,
+        "mapping_sha256": "764a8b4f2a83f0dec0832cb8d4250031f809dff3df1519ee4d12d5e1492bddbd"
+      }
+    },
+    "release_equivalence": {
+      "sha256": "b92348b8bce6fbdeea7ffbbdafa8db580c60a8441eef12f513bc36518b56cb9f",
+      "report": {
+        "equivalent": true,
+        "source": {
+          "head_sha256": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
+          "adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+          "adapter_config_sha256": "c018273f21cb4e1a04f2c8ceb59177b3398047781b3edf1cfffb97efb2859546",
+          "embedded_temperature": 1.0
+        },
+        "release": {
+          "repository": "tianxinwei/JevAny-27B-SFT",
+          "head_sha256": "e465a3d96cdc2505db97e9021f21e2ebb30329721b9d3bdd88f3919e5798d8d0",
+          "adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+          "adapter_config_sha256": "cad90469e81ee627b0061d1d88151ec7b7c11efc115cef62447e96345b66ccca",
+          "embedded_temperature": 1.8660659830736146
+        },
+        "evaluation_report": {
+          "sha256": "d6c338f02cb8512d9c794a7ee0cba01ece577a630f469b95f981f94979030609",
+          "checkpoint_artifacts_match_source": true
+        },
+        "evaluation_temperature": 1.8660659830736146,
+        "head_tensor_equality": {
+          "k.bias": true,
+          "k.weight": true,
+          "q.bias": true,
+          "q.weight": true
+        },
+        "head_metadata_equality": {
+          "base_revision": true,
+          "lora": true,
+          "head_dim": true,
+          "option_isolation": true,
+          "special_embeddings": true,
+          "multimodal": true,
+          "weights_dtype": true,
+          "lora_targets": true
+        },
+        "adapter_config_equality_except_base_path": true,
+        "allowed_adapter_config_difference": [
+          "base_model_name_or_path"
+        ],
+        "base_identity_match": true,
+        "interpretation": "The release uses the evaluated LoRA and pointer head, the same inference settings, and the evaluation temperature."
+      }
+    }
+  },
+  "overall": {
+    "questions": 600,
+    "accuracy": {
+      "full": 0.335,
+      "blank": 0.12333333333333334,
+      "shuffled": 0.15333333333333332
+    },
+    "strongest_ablation": "shuffled",
+    "full_minus_strongest": 0.1816666666666667,
+    "paired_cluster_bootstrap": {
+      "micro_acc_delta": 0.1816666666666667,
+      "ci95": [
+        0.13907173838286357,
+        0.2238855887785154
+      ],
+      "samples": 5000,
+      "groups": 594,
+      "aggregation": "micro",
+      "unit": "source-stratified original record; sibling questions stay together",
+      "method": "paired cluster percentile bootstrap; full statistic recomputed in each resample"
+    },
+    "media_sensitivity_gate": true
+  },
+  "tasks": {
+    "mvbench_action_antonym": {
+      "questions": 200,
+      "accuracy": {
+        "full": 0.12,
+        "blank": 0.0,
+        "shuffled": 0.005
+      },
+      "strongest_ablation": "shuffled",
+      "full_minus_strongest": 0.11499999999999999,
+      "paired_cluster_bootstrap": {
+        "micro_acc_delta": 0.11499999999999999,
+        "ci95": [
+          0.07,
+          0.16
+        ],
+        "samples": 5000,
+        "groups": 200,
+        "aggregation": "micro",
+        "unit": "source-stratified original record; sibling questions stay together",
+        "method": "paired cluster percentile bootstrap; full statistic recomputed in each resample"
+      },
+      "media_sensitivity_gate": true
+    },
+    "mvbench_egocentric_navigation": {
+      "questions": 200,
+      "accuracy": {
+        "full": 0.435,
+        "blank": 0.23,
+        "shuffled": 0.29
+      },
+      "strongest_ablation": "shuffled",
+      "full_minus_strongest": 0.14500000000000002,
+      "paired_cluster_bootstrap": {
+        "micro_acc_delta": 0.14500000000000002,
+        "ci95": [
+          0.06336772983114448,
+          0.22388059701492535
+        ],
+        "samples": 5000,
+        "groups": 194,
+        "aggregation": "micro",
+        "unit": "source-stratified original record; sibling questions stay together",
+        "method": "paired cluster percentile bootstrap; full statistic recomputed in each resample"
+      },
+      "media_sensitivity_gate": true
+    },
+    "mvbench_fine_grained_action": {
+      "questions": 200,
+      "accuracy": {
+        "full": 0.45,
+        "blank": 0.14,
+        "shuffled": 0.165
+      },
+      "strongest_ablation": "shuffled",
+      "full_minus_strongest": 0.28500000000000003,
+      "paired_cluster_bootstrap": {
+        "micro_acc_delta": 0.28500000000000003,
+        "ci95": [
+          0.19500000000000003,
+          0.375
+        ],
+        "samples": 5000,
+        "groups": 200,
+        "aggregation": "micro",
+        "unit": "source-stratified original record; sibling questions stay together",
+        "method": "paired cluster percentile bootstrap; full statistic recomputed in each resample"
+      },
+      "media_sensitivity_gate": true
+    }
+  },
+  "full_metrics": {
+    "n": 600,
+    "nll": 2.728260358069345,
+    "acc": 0.335,
+    "ece": 0.40145339579317324,
+    "brier": 1.0354201703074832,
+    "mean_conf": 0.7320167894366993,
+    "confident_error_rate": 0.27166666666666667,
+    "coverage_at_0_9": 0.3233333333333333,
+    "accuracy_at_0_9": 0.15979381443298968,
+    "coverage_at_5pct_error": 0.0,
+    "coverage_at_1pct_error": 0.0,
+    "aurc": 0.7817524131983942,
+    "error_rate_at_0_9": 0.8402061855670103,
+    "confidence_bias": 0.3970167894366993,
+    "top_bins": {
+      "0.9": {
+        "n": 194,
+        "errors": 163,
+        "error_rate": 0.8402061855670103
+      },
+      "0.95": {
+        "n": 164,
+        "errors": 148,
+        "error_rate": 0.9024390243902439
+      },
+      "0.99": {
+        "n": 114,
+        "errors": 111,
+        "error_rate": 0.9736842105263158
+      }
+    },
+    "selective": {
+      "0.5": {
+        "coverage": 0.5,
+        "accuracy": 0.2866666666666667,
+        "confidence_cutoff": 0.7417765772889192
+      },
+      "0.8": {
+        "coverage": 0.8,
+        "accuracy": 0.32916666666666666,
+        "confidence_cutoff": 0.504664192063067
+      }
+    }
+  }
+}

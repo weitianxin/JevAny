@@ -80,6 +80,18 @@ def evaluation_due(step, total_steps, interval, before_start=False):
     return interval > 0 and (step % interval == 0 or step == total_steps)
 
 
+def early_stop_update(value, best, stale_evals, maximize=True, min_delta=0.0):
+    """Return the updated best value, stale-evaluation count, and improvement flag."""
+    if not math.isfinite(value):
+        raise ValueError("early-stop metric must be finite")
+    if not math.isfinite(min_delta) or min_delta < 0:
+        raise ValueError("early-stop min_delta must be finite and non-negative")
+    if best is not None and not math.isfinite(best):
+        raise ValueError("early-stop best value must be finite")
+    improved = best is None or (value > best + min_delta if maximize else value < best - min_delta)
+    return (value, 0, True) if improved else (best, stale_evals + 1, False)
+
+
 def limit_complete_groups(records, limit):
     """Take the groups represented by the first `limit` rows, including every later sibling in those groups."""
     if not limit or len(records) <= limit:
@@ -297,6 +309,9 @@ def parse_args():
     ap.add_argument("--eval_suite", default="", help="suite to score during training; defaults to --suite")
     ap.add_argument("--eval_transfer_suite", default="", help="optional out-of-domain suite whose development split is scored with the fitted temperature")
     ap.add_argument("--checkpoint_every_steps", type=int, default=0, help="save a model checkpoint after evaluations at this step interval; 0 saves only the final model")
+    ap.add_argument("--early_stop_patience", type=int, default=0, help="stop after this many consecutive periodic evaluations without improvement; 0 disables")
+    ap.add_argument("--early_stop_metric", choices=("development_acc", "development_nll", "transfer_acc", "transfer_nll"), default="development_acc")
+    ap.add_argument("--early_stop_min_delta", type=float, default=0.0)
     ap.add_argument("--wandb_project", default="", help="log training and periodic evaluation metrics to this W&B project")
     ap.add_argument("--wandb_name", default="")
     ap.add_argument("--wandb_group", default="")
@@ -311,12 +326,19 @@ def parse_args():
         ap.error("invalid learning rate or weight decay")
     if a.replay and not (a.data and a.suite):
         ap.error("--replay needs both --data and --suite")
-    if min(a.max_steps, a.eval_every_steps, a.eval_records, a.checkpoint_every_steps) < 0:
-        ap.error("--max_steps, --eval_every_steps, --eval_records and --checkpoint_every_steps must be nonnegative")
+    if min(a.max_steps, a.eval_every_steps, a.eval_records, a.checkpoint_every_steps,
+           a.early_stop_patience, a.early_stop_min_delta) < 0:
+        ap.error("step, evaluation, checkpoint and early-stop values must be nonnegative")
+    if not math.isfinite(a.early_stop_min_delta):
+        ap.error("--early_stop_min_delta must be finite")
     if (a.eval_before_start or a.eval_every_steps) and not (a.eval_suite or a.suite):
         ap.error("training-time evaluation needs --eval_suite or --suite")
     if a.checkpoint_every_steps and not a.eval_every_steps:
         ap.error("--checkpoint_every_steps requires --eval_every_steps")
+    if a.early_stop_patience and not a.eval_every_steps:
+        ap.error("--early_stop_patience requires --eval_every_steps")
+    if a.early_stop_patience and a.early_stop_metric.startswith("transfer_") and not a.eval_transfer_suite:
+        ap.error("transfer early stopping requires --eval_transfer_suite")
     if (a.rlcr_group_size < 2 or min(a.rlcr_sigma_start, a.rlcr_sigma_end) <= 0
             or min(a.rlcr_policy_w, a.rlcr_ce_w) < 0):
         ap.error("RLCR needs group_size >= 2, positive sigmas and nonnegative loss weights")
@@ -568,6 +590,9 @@ def main():
     eval_suite = a.eval_suite or a.suite
     model.train(); t0 = time.time(); run = Counter(); step_run = Counter(); step = seen = tokens_seen = peak_mem = 0
     last_eval_step = None
+    best_eval_metric = best_eval_step = None
+    stale_evals = 0
+    early_stopped = False
 
     def save_checkpoint(directory, checkpoint_step):
         directory = Path(directory)
@@ -587,22 +612,63 @@ def main():
             dist.barrier()
 
     def run_evaluation():
-        nonlocal last_eval_step
+        nonlocal last_eval_step, best_eval_metric, best_eval_step, stale_evals
         summary = evaluate_during_training(model, tok, dev, eval_suite, out_dir, step, a.eval_records,
                                            a.eval_transfer_suite or None)
         save_due = step > 0 and a.checkpoint_every_steps and (step % a.checkpoint_every_steps == 0 or step == steps)
         if main_process:
+            stop = improved = False
+            metric_value = None
+            if a.early_stop_patience:
+                split_name, metric_name = a.early_stop_metric.split("_", 1)
+                metric_report = summary["clean"] if split_name == "development" else summary["transfer"]["clean"]
+                metric_value = float(metric_report[metric_name])
+                best_eval_metric, stale_evals, improved = early_stop_update(
+                    metric_value, best_eval_metric, stale_evals,
+                    maximize=metric_name == "acc", min_delta=a.early_stop_min_delta,
+                )
+                if improved:
+                    best_eval_step = step
+                stop = step > 0 and stale_evals >= a.early_stop_patience
             print(f"eval step {step}/{steps} acc {summary['clean']['acc']:.3f} nll {summary['clean']['nll']:.3f} "
                   f"cal_nll {summary['calibrated_clean']['nll']:.3f} T {summary['temperature']:.3f}", flush=True)
-            if tracker: tracker.log(wandb_eval_metrics(summary))
-        if save_due:
+            if tracker:
+                metrics = wandb_eval_metrics(summary)
+                if a.early_stop_patience:
+                    metrics.update({"eval/early_stop_stale_evaluations": stale_evals,
+                                    "eval/early_stop_best": best_eval_metric})
+                tracker.log(metrics)
+        else:
+            stop = improved = False
+            metric_value = None
+        if distributed:
+            state = [stop, improved, metric_value, best_eval_metric, best_eval_step, stale_evals]
+            dist.broadcast_object_list(state, src=0)
+            stop, improved, metric_value, best_eval_metric, best_eval_step, stale_evals = state
+        if save_due or improved:
             checkpoint = out_dir / "checkpoints" / f"step-{step:06d}"
             save_checkpoint(checkpoint, step)
-            if main_process:
+            if main_process and save_due:
                 print(f"checkpoint step {step}: {checkpoint}", flush=True)
+        if main_process and a.early_stop_patience:
+            selected = f"checkpoints/step-{best_eval_step:06d}"
+            state = {
+                "metric": a.early_stop_metric, "patience": a.early_stop_patience,
+                "min_delta": a.early_stop_min_delta, "best": best_eval_metric,
+                "best_step": best_eval_step, "selected_checkpoint": selected,
+                "stale_evaluations": stale_evals, "last_step": step,
+                "last_value": metric_value, "stop": stop,
+            }
+            write_json(out_dir / "early_stopping.json", state)
+            write_json(out_dir / "selection.json", {
+                "selected_checkpoint": selected, "metric": a.early_stop_metric,
+                "value": best_eval_metric, "step": best_eval_step,
+                "root_checkpoint_semantics": "final training weights",
+            })
         if distributed:
             dist.barrier()
         last_eval_step = step
+        return stop
 
     if evaluation_due(0, steps, a.eval_every_steps, a.eval_before_start):
         run_evaluation()
@@ -656,10 +722,15 @@ def main():
                           f"grad_norm {reduced['grad_norm']/world_size:.3f} {(time.time()-t0)/seen:.3f}s/rec", flush=True)
                     run = Counter()
                 if evaluation_due(step, steps, a.eval_every_steps):
-                    run_evaluation()
+                    early_stopped = run_evaluation()
+                    if early_stopped:
+                        if main_process:
+                            print(f"early stop at step {step}: {a.early_stop_metric} did not improve for "
+                                  f"{stale_evals} evaluations", flush=True)
+                        break
                 if step >= steps:
                     break
-        if step >= steps:
+        if step >= steps or early_stopped:
             break
 
     if a.eval_every_steps and last_eval_step != step:
@@ -673,6 +744,11 @@ def main():
                    "requested_records": a.epochs * len(reqs), "distributed_padding_records": a.epochs * padding_per_epoch,
                    "truncated_records": 0, "rejected_records": 0, "optimizer_steps": step,
                    "planned_optimizer_steps": planned_steps, "forward_tokens": tokens_seen,
+                   "early_stopped": early_stopped, "early_stop_metric": a.early_stop_metric,
+                   "early_stop_best": best_eval_metric, "early_stop_best_step": best_eval_step,
+                   "selected_checkpoint": (f"checkpoints/step-{best_eval_step:06d}"
+                                           if best_eval_step is not None else None),
+                   "early_stop_stale_evaluations": stale_evals,
                    "peak_device_bytes": peak_mem, "device": dev, "dtype": a.dtype, "batch": a.batch,
                    "world_size": world_size, "global_effective_batch": global_batch, "peak_rss_bytes": peak_rss})
         if tracker:
