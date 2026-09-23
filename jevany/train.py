@@ -39,6 +39,11 @@ def rlcr_reward(correctness, confidence):
     return correctness - (confidence - correctness).square()
 
 
+def gaussian_location_log_probability(proposals, location, sigma):
+    """Log density up to constants for isotropic Gaussian pointer proposals."""
+    return -((proposals - location.unsqueeze(0)).square().sum(-1) / (2 * sigma ** 2))
+
+
 def rlcr_question_loss(z, q, dev, group_size, sigma, ce_weight):
     """Group-relative policy gradient over noisy pointer logits, with the selected option probability as confidence."""
     if q.get("target") is not None:
@@ -56,7 +61,7 @@ def rlcr_question_loss(z, q, dev, group_size, sigma, ce_weight):
     advantage = reward - reward.mean()
     # Isotropic Gaussian location log probability. Sum over option dimensions;
     # averaging here would suppress the policy gradient as the choice count grows.
-    log_probability = -((proposals - z.unsqueeze(0)).square().sum(-1) / (2 * sigma ** 2))
+    log_probability = gaussian_location_log_probability(proposals, z, sigma)
     policy_loss = -(advantage.detach() * log_probability).mean()
     ce = question_loss(z, q, dev)
     return policy_loss + ce_weight * ce, ce, reward.mean(), (confidence - correctness).square().mean(), correctness.mean()

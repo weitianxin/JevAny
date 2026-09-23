@@ -163,7 +163,7 @@ def test_soft_targets_and_date_facts():
 
 
 def test_rlcr_reward_and_pointer_policy_loss():
-    from jevany.train import rlcr_question_loss, rlcr_reward
+    from jevany.train import gaussian_location_log_probability, rlcr_question_loss, rlcr_reward
 
     correctness = torch.tensor([1.0, 0.0])
     confidence = torch.tensor([0.9, 0.9])
@@ -176,6 +176,10 @@ def test_rlcr_reward_and_pointer_policy_loss():
     loss.backward()
     assert all(torch.isfinite(value) for value in (loss, ce, reward, brier, correct))
     assert logits.grad is not None and torch.isfinite(logits.grad).all()
+
+    proposals = torch.tensor([[1.0, 1.0, 1.0]])
+    location = torch.zeros(3)
+    assert gaussian_location_log_probability(proposals, location, 1.0).item() == -1.5
 
 
 def test_training_evaluation_schedule_and_wandb_metrics():
