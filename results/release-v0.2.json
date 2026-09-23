@@ -73,9 +73,19 @@
     "regressions": 4,
     "bootstrap_95_percent_ci_percentage_points": [-0.579, 0.386]
   },
+  "public_artifacts": {
+    "jevany-27b-sft-v2": {
+      "adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+      "head_sha256": "e465a3d96cdc2505db97e9021f21e2ebb30329721b9d3bdd88f3919e5798d8d0"
+    },
+    "jevany-27b-rlcr-v2": {
+      "adapter_sha256": "d4282eb326b7a5ddb3665ffbb057e1a626ccf992f8b990753cf4729077786808",
+      "head_sha256": "747946cbeda8a47fc43168a582e142be7465878a53cb1ccc1cb26ebc7fe0011a"
+    }
+  },
   "agents": {
-    "checkpoint_adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
-    "checkpoint_head_sha256": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
+    "source_checkpoint_adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+    "source_checkpoint_head_sha256": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
     "ragen_revision": "d97bb3284e99568adfd44ee15c736d7685c07512",
     "ragen_frozen_lake": {"episodes": 50, "seed_start": 1000, "max_steps": 64, "success_rate": 0.98, "mean_steps": 3.18},
     "ragen_sokoban": {"episodes": 50, "seed_start": 2000, "max_steps": 64, "success_rate": 0.48, "mean_steps": 37.12}
