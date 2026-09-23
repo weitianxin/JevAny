@@ -84,21 +84,25 @@ class LoadOptions:
                  parity with eager and is a few percent faster.
     lora_scale   WiSE-FT-style interpolation between base (0) and fine-tuned weights (1), at inference.
     temperature  None = the temperature the checkpoint carries (fitted by scripts/calibrate_checkpoint.py); 1.0 = raw logits.
+    base_load_path
+                 optional node-local mirror for base-model I/O. Checkpoint metadata still names the canonical base.
     """
     dtype: torch.dtype | None = None
     merge: bool = True
     attn: str | None = None
     lora_scale: float = 1.0
     temperature: float | None = None
+    base_load_path: str | None = None
 
     @classmethod
     def from_env(cls, env=os.environ):
-        """JEVANY_DTYPE=bf16|fp16, JEVANY_MERGE=0, JEVANY_ATTN=sdpa|eager, JEVANY_LORA_SCALE, JEVANY_TEMPERATURE. For command-line entry
-        points only; library code passes an explicit LoadOptions."""
+        """Read JEVANY_DTYPE, JEVANY_MERGE, JEVANY_ATTN, JEVANY_LORA_SCALE,
+        JEVANY_TEMPERATURE, and JEVANY_BASE_LOAD_PATH at command-line entry points."""
         return cls(dtype={"bf16": torch.bfloat16, "fp16": torch.float16}.get(env.get("JEVANY_DTYPE", "")),
                    merge=env.get("JEVANY_MERGE", "1") != "0", attn=env.get("JEVANY_ATTN") or None,
                    lora_scale=float(env.get("JEVANY_LORA_SCALE", "1")),
-                   temperature=float(env["JEVANY_TEMPERATURE"]) if env.get("JEVANY_TEMPERATURE") else None)
+                   temperature=float(env["JEVANY_TEMPERATURE"]) if env.get("JEVANY_TEMPERATURE") else None,
+                   base_load_path=env.get("JEVANY_BASE_LOAD_PATH") or None)
 
 
 class Checkpoint:
@@ -121,6 +125,10 @@ class Checkpoint:
             # Keep a fp32 adapter unmerged when the checkpoint was trained over a bf16 backbone.
             dtype, merge = torch.bfloat16, False
         source, revision = meta.base, meta.base_revision
+        if opts.base_load_path:
+            if not Path(opts.base_load_path).is_dir():
+                raise ValueError(f"base load path does not exist: {opts.base_load_path}")
+            source, revision = opts.base_load_path, None
         tok = load_preprocessor(source, revision=revision, multimodal=meta.multimodal)
         from peft import PeftModel
         merge = merge and not self.adapter_config().get("trainable_token_indices")   # token-trained adapters stay unmerged

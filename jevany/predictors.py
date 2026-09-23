@@ -8,6 +8,7 @@ import json
 import math
 import time
 import urllib.request
+from pathlib import Path
 
 import torch
 
@@ -16,6 +17,19 @@ from jevany.checkpoint import Checkpoint, LoadOptions
 from jevany.data import api_request, materialize
 from jevany.device import sync
 from jevany.model import MAX_PACKED
+from jevany.suite import digest
+
+
+def base_loading_provenance(meta, options):
+    config = Path(options.base_load_path) / "config.json" if options.base_load_path else None
+    canonical_base_is_local = Path(meta.base).is_absolute()
+    return {
+        "canonical_base": Path(meta.base).name if canonical_base_is_local else meta.base,
+        "canonical_base_is_local": canonical_base_is_local,
+        "canonical_revision": meta.base_revision,
+        "override_used": bool(options.base_load_path),
+        "override_config_sha256": digest(config) if config and config.is_file() else None,
+    }
 
 
 class ModelPredictor:
@@ -54,6 +68,7 @@ class LocalPredictor(ModelPredictor):
             raise ValueError("temperature must be finite and positive")
         checkpoint = Checkpoint(run)
         self.run = checkpoint.path
+        self.base_loading = base_loading_provenance(checkpoint.meta, opts)
         if device == "cuda":
             # evaluation is fp32-exact: TF32 (10-bit mantissa) moves probabilities by ~1e-3, the isolation gate's tolerance
             torch.backends.cuda.matmul.allow_tf32 = False; torch.backends.cudnn.allow_tf32 = False

@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from jevany.agent import action_request, run_episode
@@ -273,3 +275,40 @@ def test_pseudo_builder_is_reproducible_and_records_provenance(tmp_path, monkeyp
         assert manifest["pseudo_labeling"]["seed"] == 17
         outputs.append((generated, manifest["pseudo_labeling"]["selected_ids_sha256"]))
     assert outputs[0] == outputs[1]
+
+
+def test_pseudo_sampling_only_inherits_base_override(tmp_path, monkeypatch):
+    from scripts.build_pseudo_labels import sampling_load_options
+    from jevany.suite import digest
+
+    (tmp_path / "config.json").write_text("{}\n", encoding="utf-8")
+    monkeypatch.setenv("JEVANY_BASE_LOAD_PATH", str(tmp_path))
+    monkeypatch.setenv("JEVANY_DTYPE", "fp16")
+    monkeypatch.setenv("JEVANY_MERGE", "0")
+    monkeypatch.setenv("JEVANY_ATTN", "eager")
+    monkeypatch.setenv("JEVANY_LORA_SCALE", "0.25")
+    monkeypatch.setenv("JEVANY_TEMPERATURE", "3")
+    options, provenance = sampling_load_options()
+    assert options.base_load_path == str(tmp_path)
+    assert (options.dtype, options.merge, options.attn, options.lora_scale, options.temperature) == (
+        None, True, None, 1.0, 1.0)
+    assert provenance["base_override_config_sha256"] == digest(tmp_path / "config.json")
+
+
+def test_base_loading_provenance_redacts_local_path(tmp_path):
+    from jevany.checkpoint import LoadOptions
+    from jevany.predictors import base_loading_provenance
+    from jevany.suite import digest
+
+    mirror = tmp_path / "mirror"
+    mirror.mkdir()
+    (mirror / "config.json").write_text("{}\n", encoding="utf-8")
+    meta = SimpleNamespace(base="/private/models/Qwen3.8-27B", base_revision="revision")
+    result = base_loading_provenance(meta, LoadOptions(base_load_path=str(mirror)))
+    assert result == {
+        "canonical_base": "Qwen3.8-27B",
+        "canonical_base_is_local": True,
+        "canonical_revision": "revision",
+        "override_used": True,
+        "override_config_sha256": digest(mirror / "config.json"),
+    }

@@ -233,8 +233,55 @@ def test_checkpoint_meta_round_trip_and_defaults(tmp_path):
     write_meta(tmp_path, m); back = read_meta(tmp_path)
     assert back.temperature == 2.3 and back.extra["args"] == {"lr": 1} and back.extra["temperature_fit"] == {"n": 10} and back.lora == 16
     assert LoadOptions.from_env({}) == LoadOptions()
-    opts = LoadOptions.from_env({"JEVANY_DTYPE": "bf16", "JEVANY_MERGE": "0", "JEVANY_ATTN": "sdpa", "JEVANY_TEMPERATURE": "1.0", "JEVANY_LORA_SCALE": "0.5"})
-    assert opts == LoadOptions(dtype=torch.bfloat16, merge=False, attn="sdpa", lora_scale=0.5, temperature=1.0)
+    opts = LoadOptions.from_env({"JEVANY_DTYPE": "bf16", "JEVANY_MERGE": "0", "JEVANY_ATTN": "sdpa", "JEVANY_TEMPERATURE": "1.0", "JEVANY_LORA_SCALE": "0.5", "JEVANY_BASE_LOAD_PATH": "/models/qwen"})
+    assert opts == LoadOptions(dtype=torch.bfloat16, merge=False, attn="sdpa", lora_scale=0.5,
+                               temperature=1.0, base_load_path="/models/qwen")
+
+
+def test_checkpoint_base_override_only_changes_weight_source(tmp_path, monkeypatch):
+    import json
+    import peft
+    from jevany import checkpoint
+
+    run, mirror = tmp_path / "run", tmp_path / "mirror"
+    run.mkdir(); mirror.mkdir()
+    (run / "adapter_config.json").write_text(json.dumps({}), encoding="utf-8")
+    ck = checkpoint.Checkpoint.__new__(checkpoint.Checkpoint)
+    ck.requested, ck.path = "canonical/checkpoint", str(run)
+    ck.meta = checkpoint.Meta(base="canonical/base", base_revision="fixed-revision",
+                              head={}, weights_dtype="fp32")
+    calls = []
+
+    class LanguageModel:
+        def to(self, device):
+            return self
+
+    class Head:
+        temperature = 1.0
+        def load_state_dict(self, state):
+            assert state == {}
+
+    class Model:
+        def __init__(self, source, tok, device, **kwargs):
+            calls.append(("model", source, kwargs["revision"]))
+            self.lm, self.head = LanguageModel(), Head()
+        def set_language_model(self, model):
+            self.lm = model
+        def eval(self):
+            return self
+
+    def preprocessor(source, revision=None, multimodal=False):
+        calls.append(("preprocessor", source, revision))
+        return object()
+
+    monkeypatch.setattr(checkpoint, "DecisionModel", Model)
+    monkeypatch.setattr(checkpoint, "load_preprocessor", preprocessor)
+    monkeypatch.setattr(peft.PeftModel, "from_pretrained",
+                        lambda model, path, torch_device: model)
+    ck.load("cpu", checkpoint.LoadOptions(merge=False, base_load_path=str(mirror)))
+
+    assert calls == [("preprocessor", str(mirror), None), ("model", str(mirror), None)]
+    assert (ck.meta.base, ck.meta.base_revision) == ("canonical/base", "fixed-revision")
 
 
 def test_head_temperature_scales_logits_at_eval_only():

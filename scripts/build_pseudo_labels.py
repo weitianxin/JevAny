@@ -64,6 +64,23 @@ def checkpoint_digests(run):
     return {name: digest(path / name) for name in names if (path / name).exists()}
 
 
+def sampling_load_options():
+    """Use raw logits and only inherit the node-local I/O override from the environment."""
+    base_load_path = LoadOptions.from_env().base_load_path
+    options = LoadOptions(temperature=1.0, base_load_path=base_load_path)
+    config_path = Path(base_load_path) / "config.json" if base_load_path else None
+    provenance = {
+        "dtype": None,
+        "merge": True,
+        "attn": None,
+        "lora_scale": 1.0,
+        "temperature": 1.0,
+        "base_override_used": bool(base_load_path),
+        "base_override_config_sha256": digest(config_path) if config_path and config_path.is_file() else None,
+    }
+    return options, provenance
+
+
 def merge_parts(output, num_shards):
     if (output / "manifest.json").exists():
         raise FileExistsError(f"refusing to overwrite completed suite {output}")
@@ -172,6 +189,7 @@ def main():
     if not selected_ids:
         raise ValueError("selection produced no records")
     checkpoint = str(Path(args.run).resolve()) if Path(args.run).exists() else args.run
+    load_options, load_provenance = sampling_load_options()
     config = {
         "checkpoint": checkpoint,
         "checkpoint_files": checkpoint_digests(args.run),
@@ -186,6 +204,7 @@ def main():
         "seed": args.seed,
         "selected_ids_sha256": sequence_digest(selected_ids),
         "generation_shards": args.num_shards,
+        "sampling_load_options": load_provenance,
     }
     indexed_rows = shard_groups(rows, args.shard_index, args.num_shards)
     if args.resume and part_path.exists() and part_metadata_path.exists():
@@ -204,7 +223,7 @@ def main():
         raise FileExistsError(f"shard {args.shard_index} already exists; pass --resume to validate and keep it")
     rows = [(index, blind_record(row)) for index, row in indexed_rows]
 
-    predictor = LocalPredictor(args.run, args.device or default_device(), LoadOptions(temperature=1.0))
+    predictor = LocalPredictor(args.run, args.device or default_device(), load_options)
     pseudo, rejected, rejected_ids = [], 0, []
     for progress, (input_index, blinded) in enumerate(rows):
         rng = random.Random(f"{args.seed}:{blinded['_meta']['id']}")
