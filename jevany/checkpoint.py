@@ -130,19 +130,22 @@ class Checkpoint:
                 raise ValueError(f"base load path does not exist: {opts.base_load_path}")
             source, revision = opts.base_load_path, None
         tok = load_preprocessor(source, revision=revision, multimodal=meta.multimodal)
-        from peft import PeftModel
         merge = merge and not self.adapter_config().get("trainable_token_indices")   # token-trained adapters stay unmerged
-        m = DecisionModel(source, tok, device, lora=None, revision=revision, head_dim=meta.head_dim,
+        lora_targets = meta.extra.get("args", {}).get("lora_targets", "all")
+        m = DecisionModel(source, tok, device, lora=meta.lora, revision=revision, head_dim=meta.head_dim,
+                          lora_targets=lora_targets, special_embeddings=meta.special_embeddings,
                           option_isolation=meta.option_isolation, dtype=torch.float32 if merge else dtype,
                           attn=opts.attn, multimodal=meta.multimodal)
-        m.set_language_model(PeftModel.from_pretrained(m.lm, self.path, torch_device=str(device)).to(device))
+        self.warm_start(m, meta)
         if opts.lora_scale != 1:
             for module in m.lm.modules():
                 if isinstance(getattr(module, "scaling", None), dict):
                     for k in module.scaling: module.scaling[k] *= opts.lora_scale
             m.lora_scale = opts.lora_scale
-        if merge: m.set_language_model(m.lm.merge_and_unload())
-        if dtype != torch.float32: m.set_language_model(m.lm.to(dtype))
+        if merge:
+            m.set_language_model(m.lm.merge_and_unload())
+            if dtype != torch.float32:
+                m.set_language_model(m.lm.to(dtype))
         m.head.load_state_dict(meta.head); m.eval()
         m.head.temperature = meta.temperature if opts.temperature is None else opts.temperature
         return tok, m

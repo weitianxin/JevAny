@@ -240,7 +240,6 @@ def test_checkpoint_meta_round_trip_and_defaults(tmp_path):
 
 def test_checkpoint_base_override_only_changes_weight_source(tmp_path, monkeypatch):
     import json
-    import peft
     from jevany import checkpoint
 
     run, mirror = tmp_path / "run", tmp_path / "mirror"
@@ -276,11 +275,12 @@ def test_checkpoint_base_override_only_changes_weight_source(tmp_path, monkeypat
 
     monkeypatch.setattr(checkpoint, "DecisionModel", Model)
     monkeypatch.setattr(checkpoint, "load_preprocessor", preprocessor)
-    monkeypatch.setattr(peft.PeftModel, "from_pretrained",
-                        lambda model, path, torch_device: model)
+    monkeypatch.setattr(ck, "warm_start",
+                        lambda model, meta: calls.append(("warm_start", meta.base, meta.base_revision)))
     ck.load("cpu", checkpoint.LoadOptions(merge=False, base_load_path=str(mirror)))
 
-    assert calls == [("preprocessor", str(mirror), None), ("model", str(mirror), None)]
+    assert calls == [("preprocessor", str(mirror), None), ("model", str(mirror), None),
+                     ("warm_start", "canonical/base", "fixed-revision")]
     assert (ck.meta.base, ck.meta.base_revision) == ("canonical/base", "fixed-revision")
 
 
