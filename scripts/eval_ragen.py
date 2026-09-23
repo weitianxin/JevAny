@@ -3,6 +3,7 @@
 import argparse
 import json
 import statistics
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -57,6 +58,8 @@ def main():
         parser.error(f"RAGEN checkout not found under {repository}")
 
     env = environment(args.environment, repository)
+    revision = subprocess.run(["git", "-C", str(repository), "rev-parse", "HEAD"], check=True,
+                              capture_output=True, text=True).stdout.strip()
     decide = HTTPDecisionClient(args.jev_url)
     episodes = [run_episode(env, decide, GOALS[args.environment], seed=args.seed + index,
                             max_steps=args.max_steps).as_dict()
@@ -64,6 +67,7 @@ def main():
     output = {
         "environment": args.environment,
         "ragen_repo": str(repository),
+        "ragen_revision": revision,
         "episodes": args.episodes,
         "seed_start": args.seed,
         "success_rate": sum(item["success"] for item in episodes) / len(episodes),
