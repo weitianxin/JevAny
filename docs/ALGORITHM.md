@@ -47,6 +47,14 @@ JevAny adapts that idea to a pointer model:
 5. Apply a score-function gradient to the proposal distribution.
 6. Add `0.25 ×` supervised cross-entropy to preserve the task anchor.
 
+For proposal `z'`, the location score uses the isotropic Gaussian log density
+
+```text
+log q(z' | z) = constant - Σᵢ (z'ᵢ - zᵢ)² / (2σ²)
+```
+
+The sum is over option dimensions. Averaging over options would make the policy gradient weaker as the choice set grows, which is especially harmful for the many-choice tasks in the RL mixture. Gradients are clipped to norm 1 after distributed synchronization. Training logs the total objective, the policy term, cross-entropy, reward, Brier penalty, and the gradient norm before clipping.
+
 Exploration standard deviation decays linearly from `0.4` to `0.1` during the run.
 
 This implementation borrows the calibration reward and group-relative baseline, but it is not the paper's generated-reasoning setup and is not standard token-level GRPO. There are no reasoning rollouts, confidence tokens, critic, or reference-model KL term. The policy is the distribution over perturbed pointer logits.
