@@ -19,19 +19,28 @@ def font(size, bold=False):
     return ImageFont.truetype(f"/usr/share/fonts/truetype/dejavu/{name}", size)
 
 
+def observation_parts(value):
+    lines = str(value).splitlines()
+    marker = next((index for index, line in enumerate(lines) if line.strip() == "Grid Map:"), len(lines))
+    details = [line.strip() for line in lines[:marker]
+               if line.strip() and line.strip() != "Coordinates:"]
+    grid = [line.rstrip() for line in lines[marker + 1:] if line.strip()]
+    return details, grid
+
+
 def frame(environment, step, total):
     image = Image.new("RGB", (720, 500), BACKGROUND)
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle((24, 24, 696, 476), radius=24, fill=PANEL, outline="#35415d", width=2)
-    draw.text((52, 50), f"Jev Agent  ·  {environment.replace('_', ' ').title()}", font=font(24, True), fill=TEXT)
+    draw.text((52, 50), f"Jev-Agent  ·  {environment.replace('_', ' ').title()}", font=font(24, True), fill=TEXT)
     draw.text((52, 88), f"Step {step['index'] + 1} of {total}", font=font(15), fill=MUTED)
-    observation = str(step["observation"])
-    lines = observation.splitlines()
-    grid_font = font(30, True)
-    y = 140
-    for line in lines[:9]:
-        draw.text((70, y), line, font=grid_font, fill=TEXT, spacing=8)
-        y += 38
+    details, grid = observation_parts(step["observation"])
+    draw.text((52, 122), "STATE", font=font(13, True), fill=MUTED)
+    for index, line in enumerate(details[:5]):
+        draw.text((52, 150 + index * 22), line, font=font(14), fill=TEXT)
+    grid_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 27)
+    for index, line in enumerate(grid[:7]):
+        draw.text((70, 258 + index * 29), line, font=grid_font, fill=TEXT)
     action = step["action_name"]
     confidence = float(step["confidence"])
     draw.rounded_rectangle((420, 142, 660, 260), radius=16, fill="#0b2426", outline=ACCENT, width=2)

@@ -1,0 +1,73 @@
+{
+  "protocol": "transductive test-time adaptation without ground-truth labels",
+  "locked_before_post_adaptation_gold_scoring": true,
+  "parent": {
+    "checkpoint": "JevAny-27B-SFT step 13000",
+    "adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+    "head_sha256": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
+    "fixed_evaluation_temperature": 1.8660659830736146
+  },
+  "pseudo_labels": {
+    "samples_per_input": 16,
+    "sampling_temperature": 0.8,
+    "target": "strict majority hard label",
+    "ties": "reject",
+    "ground_truth_used": false,
+    "datasets": {
+      "mmlu_pro": {
+        "selected": 200,
+        "accepted": 153,
+        "rejected": 47,
+        "training_max_state": 1024,
+        "manifest_sha256": "836f5fb5e5b6586b728afcb72077ccc08976e2a3a3fa3e20a22287108a1702ed"
+      },
+      "musr": {
+        "selected": 756,
+        "accepted": 732,
+        "rejected": 24,
+        "training_max_state": 2048,
+        "manifest_sha256": "39d841c1509dcd71023669753a295dd7e005441904c171210c301b12062a1e8e"
+      }
+    }
+  },
+  "adaptation": {
+    "common": {
+      "epochs": 2,
+      "learning_rate": 1e-06,
+      "head_learning_rate": 1e-06,
+      "world_size": 4,
+      "local_batch": 1,
+      "gradient_accumulation": 1,
+      "max_branch": 2048,
+      "max_packed": 2048,
+      "gold_evaluation_during_training": false
+    },
+    "sft": {
+      "objective": "cross entropy on majority pseudo labels"
+    },
+    "rlcr": {
+      "group_size": 32,
+      "sigma_start": 0.2,
+      "sigma_end": 0.2,
+      "policy_weight": 0.25,
+      "cross_entropy_weight": 0.5
+    }
+  },
+  "evaluation": {
+    "when": "once after both adaptation runs for a dataset finish",
+    "metrics": [
+      "accuracy",
+      "raw_nll",
+      "fixed_parent_temperature_nll",
+      "brier",
+      "ece"
+    ],
+    "temperature_fitting_on_adaptation_inputs": false,
+    "selection_from_gold_results": false
+  },
+  "protocol_revision": {
+    "reason": "The first MuSR launch stopped at optimizer step 0 because a 1,195-token state exceeded the 1,024-token training default. The frozen suite already admitted every row under 2,048 tokens.",
+    "change": "Set MuSR max_state to 2,048. No optimizer setting or pseudo label changed, and no post-adaptation gold result had been computed.",
+    "invalid_run_status": "zero optimizer steps; excluded"
+  }
+}
