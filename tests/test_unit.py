@@ -163,7 +163,8 @@ def test_soft_targets_and_date_facts():
 
 
 def test_rlcr_reward_and_pointer_policy_loss():
-    from jevany.train import gaussian_location_log_probability, rlcr_question_loss, rlcr_reward
+    from collections import Counter
+    from jevany.train import accumulate_metrics, gaussian_location_log_probability, rlcr_question_loss, rlcr_reward
 
     correctness = torch.tensor([1.0, 0.0])
     confidence = torch.tensor([0.9, 0.9])
@@ -180,6 +181,10 @@ def test_rlcr_reward_and_pointer_policy_loss():
     proposals = torch.tensor([[1.0, 1.0, 1.0]])
     location = torch.zeros(3)
     assert gaussian_location_log_probability(proposals, location, 1.0).item() == -1.5
+
+    metrics = Counter({"objective": 0.1, "rlcr_policy": 0.02})
+    accumulate_metrics(metrics, {"objective": -0.2, "rlcr_policy": -0.04})
+    assert metrics == {"objective": -0.1, "rlcr_policy": -0.02}
 
 
 def test_training_evaluation_schedule_and_wandb_metrics():

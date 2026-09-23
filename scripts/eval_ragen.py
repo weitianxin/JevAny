@@ -4,6 +4,7 @@ import argparse
 import json
 import statistics
 import sys
+import types
 from pathlib import Path
 
 from jevany.agent import run_episode
@@ -18,7 +19,14 @@ GOALS = {
 
 
 def environment(name, repository):
-    sys.path.insert(0, str(repository))
+    # RAGEN's package initializers import its full VERL training stack. The
+    # benchmark only needs the selected environment modules, so expose those
+    # namespace paths without importing unrelated trainers and environments.
+    for package_name, path in (("ragen", repository / "ragen"),
+                               ("ragen.env", repository / "ragen" / "env")):
+        package = types.ModuleType(package_name)
+        package.__path__ = [str(path)]
+        sys.modules[package_name] = package
     if name == "frozen_lake":
         from ragen.env.frozen_lake.config import FrozenLakeEnvConfig
         from ragen.env.frozen_lake.env import FrozenLakeEnv

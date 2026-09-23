@@ -118,6 +118,12 @@ def reduce_counter(values, device):
     return Counter(dict(zip(keys, tensor.cpu().tolist())))
 
 
+def accumulate_metrics(target, values):
+    """Add signed metrics without Counter.__iadd__ dropping nonpositive values."""
+    for key, value in values.items():
+        target[key] += value
+
+
 def reduce_max(value, device):
     tensor = torch.tensor(value, dtype=torch.int64, device=device)
     if dist.is_initialized():
@@ -596,7 +602,8 @@ def main():
                 # Weight by source records in the local accumulation group. DDP averages these equal-sized rank means.
                 group_records = accumulation_records(len(epoch_reqs), a.batch, a.accum, mb) * (len(batch) / len(chunk))
                 (loss / group_records).backward()
-            step_run += terms; step_run["n"] += len(batch); step_run["tokens"] += sum(v.tokens for v in batch)
+            accumulate_metrics(step_run, terms)
+            step_run["n"] += len(batch); step_run["tokens"] += sum(v.tokens for v in batch)
             peak_mem = max(peak_mem, allocated_bytes(dev))
             if sync_now:
                 grad_norm = torch.nn.utils.clip_grad_norm_(model.trainable_parameters(), 1.0)
@@ -604,7 +611,8 @@ def main():
                 opt.step(); sched.step(); opt.zero_grad(); step += 1
                 if dev == "mps": empty_cache(dev)   # MPS only: per-step cache release keeps the unified-memory footprint down; on CUDA it would just slow the step
                 reduced = reduce_counter(step_run, dev)
-                run += reduced; seen += int(reduced["n"]); tokens_seen += int(reduced["tokens"])
+                accumulate_metrics(run, reduced)
+                seen += int(reduced["n"]); tokens_seen += int(reduced["tokens"])
                 if tracker:
                     tracker.log({"optimizer_step": step, "train/epoch": ep,
                                  "train/objective": reduced["objective"] / reduced["n"],
