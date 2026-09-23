@@ -314,6 +314,8 @@ def parse_args():
     if (a.rlcr_group_size < 2 or min(a.rlcr_sigma_start, a.rlcr_sigma_end) <= 0
             or min(a.rlcr_policy_w, a.rlcr_ce_w) < 0):
         ap.error("RLCR needs group_size >= 2, positive sigmas and nonnegative loss weights")
+    if a.rlcr and a.rlcr_policy_w == a.rlcr_ce_w == 0:
+        ap.error("RLCR policy and CE weights cannot both be zero")
     if Path(a.out).exists() and int(os.environ.get("RANK", "0")) == 0:
         ap.error("refusing to overwrite an existing run")
     return a
