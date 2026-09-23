@@ -15,6 +15,7 @@ ARGUMENTS = (
     "epochs", "lr", "head_lr", "weight_decay", "lora", "rlcr", "rlcr_group_size",
     "rlcr_sigma_start", "rlcr_sigma_end", "rlcr_policy_w", "rlcr_ce_w", "accum", "batch", "dtype",
     "weights_dtype", "checkpointing", "option_isolation", "special_embeddings", "multimodal", "head_dim",
+    "max_state", "max_branch", "max_packed",
     "lora_targets", "base_revision", "p_none", "p_none_distract", "p_distract", "p_none_pair",
     "seed", "max_steps", "eval_before_start", "eval_every_steps", "eval_records",
     "checkpoint_every_steps",

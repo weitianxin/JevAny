@@ -4,6 +4,8 @@
 Run: uv run --extra serve python -m pytest tests/test_unit.py -q
 """
 import math
+from types import SimpleNamespace
+
 import pytest
 import torch
 from jevany.api import SystemOneRequest, choice_confidence, render, score_confidence, to_answers, to_record, validate_response
@@ -218,6 +220,28 @@ def test_training_evaluation_schedule_and_wandb_metrics():
     assert metrics["eval/clean/acc"] == metrics["eval/calibrated_clean/acc"] == 0.8
     assert metrics["eval/calibrated_clean/nll"] == 0.3
     assert metrics["eval/transfer/calibrated_clean/nll"] == 0.5
+
+
+def test_training_batch_uses_configured_context_limits():
+    from jevany.train import encode_batch
+
+    calls = []
+    class Model:
+        def encode(self, tokenizer, record, **kwargs):
+            calls.append(kwargs)
+            return {"ids": [1], "labels": [0]}
+
+    args = SimpleNamespace(seed=0, p_none=0, p_none_distract=0, p_distract=0, p_none_pair=0,
+                           max_state=2048, max_branch=2048, max_packed=2048)
+    request = {
+        "state": "evidence",
+        "questions": {"q": {"type": "choice", "instructions": "Choose",
+                              "criteria": {"a": "A", "b": "B"}, "label": "a", "src": "test"}},
+        "_meta": {"id": "test/1"},
+    }
+    batch = encode_batch(Model(), object(), args, [request], epoch=0)
+    assert len(batch) == 1
+    assert calls == [{"max_state": 2048, "max_branch": 2048, "strict": True}]
 
 
 def test_checkpoint_meta_round_trip_and_defaults(tmp_path):

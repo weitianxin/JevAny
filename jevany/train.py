@@ -152,14 +152,15 @@ def training_requests(a, tok, manifest, model):
         kept = []
         for request in reqs:
             try:
-                encoding = model.encode(tok, materialize(request), strict=True)
-                if len(encoding["ids"]) <= MAX_PACKED:
+                encoding = model.encode(tok, materialize(request), max_state=a.max_state,
+                                        max_branch=a.max_branch, strict=True)
+                if len(encoding["ids"]) <= a.max_packed:
                     kept.append(request)
             except ValueError:
                 pass
         if len(kept) < len(reqs):
             print(f"dropped {len(reqs) - len(kept)} of {len(reqs)} records that exceed the training context "
-                  f"({MAX_STATE} state / {MAX_BRANCH} branch / {MAX_PACKED} packed tokens)", flush=True)
+                  f"({a.max_state} state / {a.max_branch} branch / {a.max_packed} packed tokens)", flush=True)
         reqs = kept
     if not reqs:
         raise ValueError("empty training set")
@@ -191,9 +192,9 @@ def encode_batch(model, tok, a, chunk, epoch):
             variants += none_pair(req, item_rng)
         for v in variants:
             rec = materialize(v)
-            enc = model.encode(tok, rec, strict=True)
-            if len(enc["ids"]) > MAX_PACKED:
-                raise ValueError(f"training request exceeds {MAX_PACKED} packed tokens")
+            enc = model.encode(tok, rec, max_state=a.max_state, max_branch=a.max_branch, strict=True)
+            if len(enc["ids"]) > a.max_packed:
+                raise ValueError(f"training request exceeds {a.max_packed} packed tokens")
             out.append(Variant(rec, enc))
     return out
 
@@ -272,6 +273,9 @@ def parse_args():
     ap.add_argument("--option_isolation", type=int, choices=[0, 1], default=0, help="option spans are isolated sub-branches with shared positions (exact permutation invariance)")
     ap.add_argument("--special_embeddings", type=int, choices=[0, 1], default=0, help="also train the embeddings of the 5 delimiter tokens")
     ap.add_argument("--multimodal", action="store_true", help="load the Qwen vision tower and accept image or video media entries")
+    ap.add_argument("--max_state", type=int, default=MAX_STATE, help="maximum state tokens admitted for training")
+    ap.add_argument("--max_branch", type=int, default=MAX_BRANCH, help="maximum tokens in one state-plus-question branch")
+    ap.add_argument("--max_packed", type=int, default=MAX_PACKED, help="maximum tokens in one packed training record")
     ap.add_argument("--head_dim", type=int, default=256, help="pointer head dimension")
     ap.add_argument("--lora_targets", choices=["all", "dense", "attn", "qv"], default="all", help="LoRA module set; fewer modules = less drift from the base; dense = all minus the DeltaNet projections on hybrid bases")
     ap.add_argument("--base_revision", default="", help="pin the base commit when the suite manifest does not pin this base")
@@ -318,6 +322,10 @@ def parse_args():
         ap.error("RLCR needs group_size >= 2, positive sigmas and nonnegative loss weights")
     if a.rlcr and a.rlcr_policy_w == a.rlcr_ce_w == 0:
         ap.error("RLCR policy and CE weights cannot both be zero")
+    if min(a.max_state, a.max_branch, a.max_packed) < 1:
+        ap.error("training context limits must be positive")
+    if max(a.max_state, a.max_branch) > a.max_packed:
+        ap.error("state and branch limits cannot exceed the packed limit")
     if Path(a.out).exists() and int(os.environ.get("RANK", "0")) == 0:
         ap.error("refusing to overwrite an existing run")
     return a
