@@ -10,11 +10,12 @@ from jevany.suite import digest, load_split, write_json, write_jsonl
 
 
 QUOTAS = {
-    "preference": 7000,
-    "agent": 7000,
-    "hard_reasoning": 6000,
-    "image": 5000,
-    "video": 3000,
+    "preference": 6000,
+    "agent": 6000,
+    "many_choice": 8000,
+    "hard_reasoning": 10000,
+    "image": 4000,
+    "video": 2000,
     "core": 4000,
 }
 
@@ -25,7 +26,9 @@ def bucket(record):
         return "preference"
     if source == "agent_tool":
         return "agent"
-    if source in ("arc", "qasc", "commonsense"):
+    if source == "qasc":
+        return "many_choice"
+    if source in ("arc", "commonsense"):
         return "hard_reasoning"
     if source in ("scienceqa", "aokvqa"):
         return "image"
@@ -79,6 +82,12 @@ def main():
         "counts": {
             "bucket": dict(Counter(bucket(row) for row in selected)),
             "source": dict(Counter(row["_meta"]["source"] for row in selected)),
+            "choice_options": dict(Counter(
+                len(question["criteria"])
+                for row in selected
+                for question in row["questions"].values()
+                if question["type"] == "choice"
+            )),
         },
     })
     print(json.dumps({"records": len(selected), "buckets": Counter(bucket(row) for row in selected)}, indent=2))

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${RL_SUITE:?Set RL_SUITE to the 32,000-record JevAny v2 RLCR suite directory}"
+: "${RL_SUITE:?Set RL_SUITE to the 40,000-record hard-choice JevAny v2 RLCR suite directory}"
 : "${SFT:?Set SFT to the selected JevAny SFT checkpoint}"
 : "${EVAL_SUITE:?Set EVAL_SUITE to the JevAny v2 SFT suite directory}"
 : "${TRANSFER_SUITE:?Set TRANSFER_SUITE to transfer-v9}"
