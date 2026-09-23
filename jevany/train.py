@@ -44,7 +44,7 @@ def gaussian_location_log_probability(proposals, location, sigma):
     return -((proposals - location.unsqueeze(0)).square().sum(-1) / (2 * sigma ** 2))
 
 
-def rlcr_question_loss(z, q, dev, group_size, sigma, ce_weight):
+def rlcr_question_loss(z, q, dev, group_size, sigma, policy_weight, ce_weight):
     """Group-relative policy gradient over noisy pointer logits, with the selected option probability as confidence."""
     if q.get("target") is not None:
         target = torch.tensor(q["target"], device=dev, dtype=z.dtype)
@@ -64,7 +64,7 @@ def rlcr_question_loss(z, q, dev, group_size, sigma, ce_weight):
     log_probability = gaussian_location_log_probability(proposals, z, sigma)
     policy_loss = -(advantage.detach() * log_probability).mean()
     ce = question_loss(z, q, dev)
-    return (policy_loss + ce_weight * ce, ce, policy_loss, reward.mean(),
+    return (policy_weight * policy_loss + ce_weight * ce, ce, policy_loss, reward.mean(),
             (confidence - correctness).square().mean(), correctness.mean())
 
 
@@ -221,7 +221,8 @@ def batch_loss(model, a, batch, dev, autocast, distributed_forward=None, rlcr_si
     loss = 0.0
     for v, logits in zip(batch, logits_b):
         if a.rlcr:
-            scored = [rlcr_question_loss(z.float(), q, dev, a.rlcr_group_size, rlcr_sigma, a.rlcr_ce_w)
+            scored = [rlcr_question_loss(z.float(), q, dev, a.rlcr_group_size, rlcr_sigma,
+                                         a.rlcr_policy_w, a.rlcr_ce_w)
                       for z, q in zip(logits, v.rec["questions"])]
             objective = sum(item[0] for item in scored) / len(scored)
             ce = sum(item[1] for item in scored) / len(scored)
@@ -256,6 +257,7 @@ def parse_args():
     ap.add_argument("--rlcr_group_size", type=int, default=32, help="noisy answer-confidence candidates per question")
     ap.add_argument("--rlcr_sigma_start", type=float, default=0.4, help="initial standard deviation of pointer-logit exploration")
     ap.add_argument("--rlcr_sigma_end", type=float, default=0.1, help="final standard deviation of pointer-logit exploration")
+    ap.add_argument("--rlcr_policy_w", type=float, default=1.0, help="weight on the Gaussian score-function policy loss")
     ap.add_argument("--rlcr_ce_w", type=float, default=0.25, help="supervised CE retained beside the RLCR policy loss")
     ap.add_argument("--accum", type=int, default=8)
     ap.add_argument("--suite", help="frozen suite directory; train only on its training partition")
@@ -309,8 +311,9 @@ def parse_args():
         ap.error("training-time evaluation needs --eval_suite or --suite")
     if a.checkpoint_every_steps and not a.eval_every_steps:
         ap.error("--checkpoint_every_steps requires --eval_every_steps")
-    if a.rlcr_group_size < 2 or min(a.rlcr_sigma_start, a.rlcr_sigma_end) <= 0 or a.rlcr_ce_w < 0:
-        ap.error("RLCR needs group_size >= 2, positive sigmas and nonnegative CE weight")
+    if (a.rlcr_group_size < 2 or min(a.rlcr_sigma_start, a.rlcr_sigma_end) <= 0
+            or min(a.rlcr_policy_w, a.rlcr_ce_w) < 0):
+        ap.error("RLCR needs group_size >= 2, positive sigmas and nonnegative loss weights")
     if Path(a.out).exists() and int(os.environ.get("RANK", "0")) == 0:
         ap.error("refusing to overwrite an existing run")
     return a
@@ -618,6 +621,8 @@ def main():
                                  "train/objective": reduced["objective"] / reduced["n"],
                                  "train/ce": reduced["ce"] / reduced["n"],
                                  "train/rlcr_policy": reduced["rlcr_policy"] / max(reduced["rlcr_n"], 1),
+                                 "train/rlcr_policy_weighted": (a.rlcr_policy_w * reduced["rlcr_policy"]
+                                                               / max(reduced["rlcr_n"], 1)),
                                  "train/rlcr_reward": reduced["rlcr_reward"] / max(reduced["rlcr_n"], 1),
                                  "train/rlcr_brier": reduced["rlcr_brier"] / max(reduced["rlcr_n"], 1),
                                  "train/rlcr_correct": reduced["rlcr_correct"] / max(reduced["rlcr_n"], 1),
@@ -628,7 +633,7 @@ def main():
                 step_run = Counter()
                 if step % 10 == 0 and main_process:
                     print(f"ep{ep} step {step}/{steps} objective {run['objective']/run['n']:.3f} "
-                          f"ce {run['ce']/run['n']:.3f} policy {run['rlcr_policy']/max(run['rlcr_n'],1):.3f} "
+                          f"ce {run['ce']/run['n']:.3f} policy_raw {run['rlcr_policy']/max(run['rlcr_n'],1):.3f} "
                           f"reward {run['rlcr_reward']/max(run['rlcr_n'],1):.3f} "
                           f"grad_norm {reduced['grad_norm']/world_size:.3f} {(time.time()-t0)/seen:.3f}s/rec", flush=True)
                     run = Counter()

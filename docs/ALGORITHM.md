@@ -45,7 +45,7 @@ JevAny adapts that idea to a pointer model:
 3. For each proposal, take its highest-probability option and that option's probability as confidence.
 4. Compute the RLCR reward and subtract the group mean to form advantages.
 5. Apply a score-function gradient to the proposal distribution.
-6. Add `0.25 ×` supervised cross-entropy to preserve the task anchor.
+6. Weight the policy and supervised cross-entropy terms explicitly to control decision drift.
 
 For proposal `z'`, the location score uses the isotropic Gaussian log density
 
