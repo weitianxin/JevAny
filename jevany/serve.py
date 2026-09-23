@@ -15,7 +15,8 @@ from .api import SystemOneRequest, to_record, to_answers, output_tokens, with_da
 from .checkpoint import Checkpoint, LoadOptions, is_hub_id
 from .device import default_device, sync
 
-# inference limits (training used 384/1024); per-branch cap mirrors Jev's ~32k, bounded by the base model window
+# Interactive limits are larger than the frozen 2048-token benchmark window.
+# Training admission uses the tighter constants in jevany.model.
 INFER_MAX_STATE, INFER_MAX_BRANCH = 8192, 8192
 PREFIX_CACHE_SIZE = int(os.environ.get("JEVANY_PREFIX_CACHE", "4"))          # states kept (KV + hidden); 0 disables
 PREFIX_MIN_TOKENS = int(os.environ.get("JEVANY_PREFIX_MIN_TOKENS", "384"))   # below this the branch-only pass is not faster on MPS (per-op overhead dominates)

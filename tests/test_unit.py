@@ -6,7 +6,7 @@ Run: uv run --extra serve python -m pytest tests/test_unit.py -q
 import math
 import pytest
 import torch
-from jevany.api import SystemOneRequest, choice_confidence, render, score_confidence, to_answers, to_record
+from jevany.api import SystemOneRequest, choice_confidence, render, score_confidence, to_answers, to_record, validate_response
 from jevany.model import SPECIAL, branch_mask, encode, user_tokens
 
 
@@ -55,6 +55,19 @@ def test_to_answers_shapes_and_formulas():
     assert ans["c"]["confidence"] == round((0.8 - 1 / 3) / (1 - 1 / 3), 2)
     assert ans["s"]["score"] == 1.5 and ans["s"]["probabilities"] == {"0": 0.1, "1": 0.3, "2": 0.6}
     assert ans["s"]["legend"] == {"0": "lo", "1": "mid", "2": "hi"}
+
+
+@pytest.mark.parametrize("options", [77, 255])
+def test_large_choice_response_keeps_a_valid_distribution(options):
+    criteria = {f"option_{index}": None for index in range(options)}
+    request = SystemOneRequest.model_validate({
+        "state": "state", "questions": {"q": {"type": "choice", "instructions": "choose",
+                                                "criteria": criteria}}})
+    _, metadata = to_record(request)
+    probabilities = [1 / options] * options
+    response = {"answers": to_answers([probabilities], metadata)}
+    assert sum(response["answers"]["q"]["probabilities"].values()) == pytest.approx(1.0)
+    validate_response(request, response)
 
 
 def test_confidence_edge_cases():

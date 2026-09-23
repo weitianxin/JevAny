@@ -27,7 +27,11 @@ class ModelPredictor:
 
     @torch.no_grad()
     def __call__(self, record):
-        enc = self.model.encode(self.tok, materialize(record), strict=True)
+        # Frozen benchmarks may devote the full 2048-token packed window to
+        # state or one branch. Training admission remains deliberately tighter;
+        # the interactive server has a separately documented larger limit.
+        enc = self.model.encode(self.tok, materialize(record), max_state=MAX_PACKED,
+                                max_branch=MAX_PACKED, strict=True)
         if len(enc["ids"]) > MAX_PACKED:
             raise ValueError(f"packed request exceeds frozen {MAX_PACKED}-token limit")
         sync(self.device)

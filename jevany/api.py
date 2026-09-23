@@ -7,6 +7,7 @@ Choice -> options 'name' or 'name: desc';      answer = argmax, probabilities by
 Score  -> options = ordered level descriptions; answer = expected level, legend, probabilities by index
 """
 import json
+import math
 import re
 from datetime import datetime
 from typing import Any, Literal, Union
@@ -52,6 +53,68 @@ class SystemOneRequest(BaseModel):
     model: str = "jevany-27b"
     media: list[Media] = Field(default_factory=list, max_length=32)
     questions: dict[str, Question] = Field(min_length=1)
+
+
+def validate_distribution(raw, keys):
+    """Return a normalized probability list and the reported sum."""
+    if not isinstance(raw, dict) or set(raw) != set(keys):
+        raise ValueError("probability keys do not match requested options")
+    try:
+        values = [float(raw[key]) for key in keys]
+    except (TypeError, ValueError) as error:
+        raise ValueError("probabilities must be numeric") from error
+    if any(not math.isfinite(value) or not 0 <= value <= 1 for value in values):
+        raise ValueError("probabilities must be finite and in [0, 1]")
+    total = sum(values)
+    tolerance = max(1e-5, len(keys) * 0.005 + 1e-8)
+    if total <= 0 or abs(total - 1) > tolerance:
+        raise ValueError(f"invalid probability sum: {total}")
+    return [value / total for value in values], total
+
+
+def validate_response(request: SystemOneRequest | dict, response: dict) -> dict:
+    """Validate the answer ids, types, choices, and finite probability fields."""
+    request = request if isinstance(request, SystemOneRequest) else SystemOneRequest.model_validate(request)
+    if not isinstance(response, dict) or not isinstance(response.get("answers"), dict):
+        raise ValueError("decision response must contain an answers object")
+    if set(response["answers"]) != set(request.questions):
+        raise ValueError("decision response question ids do not match the request")
+
+    def probability(value, name):
+        try:
+            number = float(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"{name} must be numeric") from error
+        if not math.isfinite(number) or not 0 <= number <= 1:
+            raise ValueError(f"{name} must be finite and in [0, 1]")
+        return number
+
+    for question_id, question in request.questions.items():
+        answer = response["answers"][question_id]
+        if not isinstance(answer, dict) or answer.get("type") != question.type:
+            raise ValueError(f"invalid answer type for {question_id!r}")
+        if question.type == "noul":
+            probability(answer.get("noul"), f"noul probability for {question_id!r}")
+            continue
+        keys = list(question.criteria) if question.type == "choice" else [
+            str(index) for index in range(len(question.criteria))]
+        probabilities = answer.get("probabilities")
+        values, _ = validate_distribution(probabilities, keys)
+        probability(answer.get("confidence"), f"confidence for {question_id!r}")
+        if question.type == "choice":
+            choice = answer.get("choice")
+            if choice not in question.criteria:
+                raise ValueError(f"unknown choice for {question_id!r}")
+            if values[keys.index(choice)] < max(values):
+                raise ValueError(f"choice for {question_id!r} is not an argmax")
+        if question.type == "score":
+            try:
+                score = float(answer.get("score"))
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"score for {question_id!r} must be numeric") from error
+            if not math.isfinite(score) or not 0 <= score <= len(question.criteria) - 1:
+                raise ValueError(f"invalid score for {question_id!r}")
+    return response
 
 
 def render(v: JSONContent, indent: int = 0) -> str:
@@ -150,11 +213,11 @@ def to_answers(probs: list[list[float]], meta: list[dict]) -> dict[str, Any]:
         if m["type"] == "noul":
             out[m["id"]] = {"type": "noul", "noul": r2(p[1])}
         elif m["type"] == "choice":
-            dist = {k: r2(v) for k, v in zip(m["keys"], p)}
+            dist = {k: float(v) for k, v in zip(m["keys"], p)}
             out[m["id"]] = {"type": "choice", "choice": m["keys"][max(range(len(p)), key=lambda i: p[i])], "confidence": r2(choice_confidence(p)), "probabilities": dist}
         else:
             score = sum(i * pi for i, pi in enumerate(p))
-            out[m["id"]] = {"type": "score", "score": r2(score), "legend": m["legend"], "probabilities": {str(i): r2(v) for i, v in enumerate(p)}, "confidence": r2(score_confidence(p))}
+            out[m["id"]] = {"type": "score", "score": r2(score), "legend": m["legend"], "probabilities": {str(i): float(v) for i, v in enumerate(p)}, "confidence": r2(score_confidence(p))}
     return out
 
 

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-from jevany.api import question_keys, with_date_facts
+from jevany.api import question_keys, validate_distribution, with_date_facts
 from jevany.checkpoint import LoadOptions
 from jevany.data import api_request, load_records
 from jevany.device import default_device
@@ -61,18 +61,6 @@ def labels(q):
     return keys, keys.index(q["label"]) if q["type"] == "choice" else int(q["label"])
 
 
-def validate_distribution(raw, keys):
-    if set(raw) != set(keys):
-        raise ValueError("probability keys do not match requested options")
-    p = np.array([raw[k] for k in keys], dtype=float)
-    if not np.isfinite(p).all() or (p < 0).any() or (p > 1).any():
-        raise ValueError("non-finite or out-of-range probabilities")
-    total = float(p.sum())
-    if total <= 0 or abs(total - 1) > max(1e-5, len(keys) * 0.005 + 1e-8):
-        raise ValueError(f"invalid probability sum: {total}")
-    return p / total, total
-
-
 def prediction_rows(record, prediction):
     if set(prediction["probabilities"]) != set(record["questions"]):
         raise ValueError("answer IDs differ from request IDs")
@@ -80,7 +68,8 @@ def prediction_rows(record, prediction):
     rows = []
     for qid, q in record["questions"].items():
         keys, y = labels(q)
-        p, total = validate_distribution(prediction["probabilities"][qid], keys)
+        values, total = validate_distribution(prediction["probabilities"][qid], keys)
+        p = np.array(values)
         row = {"id": meta["id"], "group": meta["group_id"], "question": qid,
                "source": meta["source"], "task": q["src"], "type": q["type"],
                "variant": meta["variant"], "keys": keys, "label": y, "control_id": meta.get("control_id"),
