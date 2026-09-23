@@ -14,6 +14,17 @@ MASTER_PORT=${MASTER_PORT:-29500}
 OUT=${OUT:-runs/jevany-27b-rlcr}
 BASE=${BASE:-Qwen/Qwen3.8-27B}
 PYTHON_BIN=${PYTHON_BIN:-python}
+EPOCHS=${EPOCHS:-1}
+LR=${LR:-2e-6}
+HEAD_LR=${HEAD_LR:-$LR}
+RLCR_GROUP_SIZE=${RLCR_GROUP_SIZE:-32}
+RLCR_SIGMA_START=${RLCR_SIGMA_START:-0.4}
+RLCR_SIGMA_END=${RLCR_SIGMA_END:-0.2}
+RLCR_POLICY_W=${RLCR_POLICY_W:-0.25}
+RLCR_CE_W=${RLCR_CE_W:-0.5}
+EVAL_EVERY_STEPS=${EVAL_EVERY_STEPS:-200}
+CHECKPOINT_EVERY_STEPS=${CHECKPOINT_EVERY_STEPS:-$EVAL_EVERY_STEPS}
+EARLY_STOP_PATIENCE=${EARLY_STOP_PATIENCE:-5}
 BASE_LOAD_ARGS=()
 if [[ -n "${BASE_LOAD_PATH:-}" ]]; then
   BASE_LOAD_ARGS+=(--base_load_path "$BASE_LOAD_PATH")
@@ -40,12 +51,14 @@ fi
   --eval_suite "$EVAL_SUITE" --eval_transfer_suite "$TRANSFER_SUITE" \
   --multimodal \
   --device cuda \
-  --epochs 1 --lr 2e-6 --head_lr 2e-6 --weight_decay 0.01 \
+  --epochs "$EPOCHS" --lr "$LR" --head_lr "$HEAD_LR" --weight_decay 0.01 \
   --lora 16 --lora_targets all --head_dim 256 \
-  --rlcr --rlcr_group_size 32 --rlcr_sigma_start 0.4 --rlcr_sigma_end 0.2 \
-  --rlcr_policy_w 0.25 --rlcr_ce_w 0.5 \
+  --rlcr --rlcr_group_size "$RLCR_GROUP_SIZE" \
+  --rlcr_sigma_start "$RLCR_SIGMA_START" --rlcr_sigma_end "$RLCR_SIGMA_END" \
+  --rlcr_policy_w "$RLCR_POLICY_W" --rlcr_ce_w "$RLCR_CE_W" \
   --batch 1 --accum 1 --dtype bf16 --weights_dtype bf16 --checkpointing 1 \
   --p_none 0 --p_none_distract 0 --p_distract 0 --p_none_pair 0 \
-  --eval_before_start --eval_every_steps 200 --checkpoint_every_steps 200 \
-  --early_stop_patience 5 --early_stop_metric transfer_acc \
+  --eval_before_start --eval_every_steps "$EVAL_EVERY_STEPS" \
+  --checkpoint_every_steps "$CHECKPOINT_EVERY_STEPS" \
+  --early_stop_patience "$EARLY_STOP_PATIENCE" --early_stop_metric transfer_acc \
   --out "$OUT" "${WANDB_ARGS[@]}"
