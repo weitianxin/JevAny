@@ -172,9 +172,9 @@ def test_rlcr_reward_and_pointer_policy_loss():
     torch.manual_seed(0)
     logits = torch.tensor([0.2, -0.1, 0.0], requires_grad=True)
     question = {"qtype": "choice", "label": 0}
-    loss, ce, reward, brier, correct = rlcr_question_loss(logits, question, "cpu", 32, 0.3, 0.25)
+    loss, ce, policy, reward, brier, correct = rlcr_question_loss(logits, question, "cpu", 32, 0.3, 0.25)
     loss.backward()
-    assert all(torch.isfinite(value) for value in (loss, ce, reward, brier, correct))
+    assert all(torch.isfinite(value) for value in (loss, ce, policy, reward, brier, correct))
     assert logits.grad is not None and torch.isfinite(logits.grad).all()
 
     proposals = torch.tensor([[1.0, 1.0, 1.0]])

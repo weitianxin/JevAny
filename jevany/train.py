@@ -64,7 +64,8 @@ def rlcr_question_loss(z, q, dev, group_size, sigma, ce_weight):
     log_probability = gaussian_location_log_probability(proposals, z, sigma)
     policy_loss = -(advantage.detach() * log_probability).mean()
     ce = question_loss(z, q, dev)
-    return policy_loss + ce_weight * ce, ce, reward.mean(), (confidence - correctness).square().mean(), correctness.mean()
+    return (policy_loss + ce_weight * ce, ce, policy_loss, reward.mean(),
+            (confidence - correctness).square().mean(), correctness.mean())
 
 
 def accumulation_records(n, batch, accum, microbatch):
@@ -109,7 +110,8 @@ def distributed_group_slice(records, rank, world_size):
 
 def reduce_counter(values, device):
     """Sum the per-rank training counters; a no-op outside a process group."""
-    keys = ("ce", "rlcr_reward", "rlcr_brier", "rlcr_correct", "rlcr_n", "n", "tokens")
+    keys = ("objective", "ce", "rlcr_policy", "rlcr_reward", "rlcr_brier", "rlcr_correct",
+            "rlcr_n", "grad_norm", "n", "tokens")
     tensor = torch.tensor([values[key] for key in keys], dtype=torch.float64, device=device)
     if dist.is_initialized():
         dist.all_reduce(tensor)
@@ -217,15 +219,18 @@ def batch_loss(model, a, batch, dev, autocast, distributed_forward=None, rlcr_si
                       for z, q in zip(logits, v.rec["questions"])]
             objective = sum(item[0] for item in scored) / len(scored)
             ce = sum(item[1] for item in scored) / len(scored)
-            terms["rlcr_reward"] += sum(item[2].item() for item in scored) / len(scored)
-            terms["rlcr_brier"] += sum(item[3].item() for item in scored) / len(scored)
-            terms["rlcr_correct"] += sum(item[4].item() for item in scored) / len(scored)
+            policy = sum(item[2] for item in scored) / len(scored)
+            terms["objective"] += objective.item()
+            terms["rlcr_policy"] += policy.item()
+            terms["rlcr_reward"] += sum(item[3].item() for item in scored) / len(scored)
+            terms["rlcr_brier"] += sum(item[4].item() for item in scored) / len(scored)
+            terms["rlcr_correct"] += sum(item[5].item() for item in scored) / len(scored)
             terms["rlcr_n"] += 1
             terms["ce"] += ce.item(); loss = loss + objective
         else:
             ce = sum(question_loss(z.float(), q, dev)
                      for z, q in zip(logits, v.rec["questions"])) / len(logits)
-            terms["ce"] += ce.item(); loss = loss + ce
+            terms["objective"] += ce.item(); terms["ce"] += ce.item(); loss = loss + ce
     if not torch.isfinite(loss):
         raise ValueError("non-finite training loss")
     return loss, terms
@@ -594,23 +599,30 @@ def main():
             step_run += terms; step_run["n"] += len(batch); step_run["tokens"] += sum(v.tokens for v in batch)
             peak_mem = max(peak_mem, allocated_bytes(dev))
             if sync_now:
-                torch.nn.utils.clip_grad_norm_(model.trainable_parameters(), 1.0)
+                grad_norm = torch.nn.utils.clip_grad_norm_(model.trainable_parameters(), 1.0)
+                step_run["grad_norm"] = float(grad_norm)
                 opt.step(); sched.step(); opt.zero_grad(); step += 1
                 if dev == "mps": empty_cache(dev)   # MPS only: per-step cache release keeps the unified-memory footprint down; on CUDA it would just slow the step
                 reduced = reduce_counter(step_run, dev)
                 run += reduced; seen += int(reduced["n"]); tokens_seen += int(reduced["tokens"])
                 if tracker:
-                    tracker.log({"optimizer_step": step, "train/epoch": ep, "train/ce": reduced["ce"] / reduced["n"],
+                    tracker.log({"optimizer_step": step, "train/epoch": ep,
+                                 "train/objective": reduced["objective"] / reduced["n"],
+                                 "train/ce": reduced["ce"] / reduced["n"],
+                                 "train/rlcr_policy": reduced["rlcr_policy"] / max(reduced["rlcr_n"], 1),
                                  "train/rlcr_reward": reduced["rlcr_reward"] / max(reduced["rlcr_n"], 1),
                                  "train/rlcr_brier": reduced["rlcr_brier"] / max(reduced["rlcr_n"], 1),
                                  "train/rlcr_correct": reduced["rlcr_correct"] / max(reduced["rlcr_n"], 1),
                                  "train/rlcr_sigma": rlcr_sigma,
+                                 "train/grad_norm_pre_clip": reduced["grad_norm"] / world_size,
                                  "train/lr": sched.get_last_lr()[0], "train/records_seen": seen,
                                  "train/forward_tokens": tokens_seen, "train/seconds_per_record": (time.time() - t0) / seen})
                 step_run = Counter()
                 if step % 10 == 0 and main_process:
-                    print(f"ep{ep} step {step}/{steps} loss {run['ce']/run['n']:.3f} rlcr_reward "
-                          f"{run['rlcr_reward']/max(run['rlcr_n'],1):.3f} {(time.time()-t0)/seen:.3f}s/rec", flush=True)
+                    print(f"ep{ep} step {step}/{steps} objective {run['objective']/run['n']:.3f} "
+                          f"ce {run['ce']/run['n']:.3f} policy {run['rlcr_policy']/max(run['rlcr_n'],1):.3f} "
+                          f"reward {run['rlcr_reward']/max(run['rlcr_n'],1):.3f} "
+                          f"grad_norm {reduced['grad_norm']/world_size:.3f} {(time.time()-t0)/seen:.3f}s/rec", flush=True)
                     run = Counter()
                 if evaluation_due(step, steps, a.eval_every_steps):
                     run_evaluation()
