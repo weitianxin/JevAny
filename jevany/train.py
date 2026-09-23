@@ -54,7 +54,9 @@ def rlcr_question_loss(z, q, dev, group_size, sigma, ce_weight):
     correctness = target[actions]
     reward = rlcr_reward(correctness, confidence)
     advantage = reward - reward.mean()
-    log_probability = -((proposals - z.unsqueeze(0)).square().mean(-1) / (2 * sigma ** 2))
+    # Isotropic Gaussian location log probability. Sum over option dimensions;
+    # averaging here would suppress the policy gradient as the choice count grows.
+    log_probability = -((proposals - z.unsqueeze(0)).square().sum(-1) / (2 * sigma ** 2))
     policy_loss = -(advantage.detach() * log_probability).mean()
     ce = question_loss(z, q, dev)
     return policy_loss + ce_weight * ce, ce, reward.mean(), (confidence - correctness).square().mean(), correctness.mean()

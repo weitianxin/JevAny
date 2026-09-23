@@ -17,7 +17,7 @@ from .device import default_device, sync
 
 # Interactive limits are larger than the frozen 2048-token benchmark window.
 # Training admission uses the tighter constants in jevany.model.
-INFER_MAX_STATE, INFER_MAX_BRANCH = 8192, 8192
+INFER_MAX_STATE, INFER_MAX_BRANCH, INFER_MAX_PACKED = 8192, 8192, 8192
 PREFIX_CACHE_SIZE = int(os.environ.get("JEVANY_PREFIX_CACHE", "4"))          # states kept (KV + hidden); 0 disables
 PREFIX_MIN_TOKENS = int(os.environ.get("JEVANY_PREFIX_MIN_TOKENS", "384"))   # below this the branch-only pass is not faster on MPS (per-op overhead dominates)
 DATE_FACTS = os.environ.get("JEVANY_DATE_FACTS", "0") == "1"
@@ -38,7 +38,11 @@ class Server:
     def probs(self, rec):
         """One forward pass. The state prefix (tokens up to the first question) is cached across requests, so a repeated
         state only pays for its question branches. Exact: the state's activations do not depend on the branches."""
-        try: enc = self.model.encode(self.tok, rec, max_state=INFER_MAX_STATE, max_branch=INFER_MAX_BRANCH)
+        try:
+            enc = self.model.encode(self.tok, rec, max_state=INFER_MAX_STATE,
+                                    max_branch=INFER_MAX_BRANCH, strict=True)
+            if len(enc["ids"]) > INFER_MAX_PACKED:
+                raise ValueError(f"request exceeds {INFER_MAX_PACKED} packed tokens: {len(enc['ids'])}")
         except ValueError as e: raise HTTPException(422, str(e))
         Ls = enc["seg"].count(0); key = (tuple(enc["ids"][:Ls]), bool(enc.get("option_isolation")))
         cache, hit = self.prefix_cache, False
@@ -91,6 +95,8 @@ def models():
     s = server()
     return {"models": [{"id": "jevany-27b", "aliases": ["jevany-latest"], "run": s.checkpoint.requested, "base": s.checkpoint.meta.base,
                         "lora": s.checkpoint.meta.lora, "device": s.device, "temperature": s.model.head.temperature,
+                        "limits": {"state_tokens": INFER_MAX_STATE, "branch_tokens": INFER_MAX_BRANCH,
+                                   "packed_tokens": INFER_MAX_PACKED},
                         "prefix_cache": {"size": PREFIX_CACHE_SIZE, "min_state_tokens": PREFIX_MIN_TOKENS, "hits": s.prefix_hits,
                                          "misses": s.prefix_misses, "cached_states": len(s.prefix_cache)}}]}
 

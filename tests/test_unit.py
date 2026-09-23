@@ -82,6 +82,7 @@ def test_confidence_edge_cases():
     {"q": {"type": "score", "instructions": "i", "criteria": ["only one"]}},
     {"q": {"type": "bogus", "instructions": "i"}},
     {"q": {"type": "choice", "instructions": "i", "criteria": {f"o{i}": None for i in range(256)}}},
+    {f"q{i}": {"type": "noul", "instructions": "i"} for i in range(65)},
     {},
 ])
 def test_validation_rejects(bad):

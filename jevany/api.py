@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, model_validator
 
 JSONContent = Union[str, dict, list, int, float, bool, None]
 MAX_OPTIONS = 255
+MAX_QUESTIONS = 64
 
 
 class Noul(BaseModel):
@@ -52,7 +53,7 @@ class SystemOneRequest(BaseModel):
     state: JSONContent
     model: str = "jevany-27b"
     media: list[Media] = Field(default_factory=list, max_length=32)
-    questions: dict[str, Question] = Field(min_length=1)
+    questions: dict[str, Question] = Field(min_length=1, max_length=MAX_QUESTIONS)
 
 
 def validate_distribution(raw, keys):
