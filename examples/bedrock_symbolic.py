@@ -2,6 +2,7 @@
 """Generate an auditable decision tree with Bedrock and execute it with JevAny."""
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -11,7 +12,8 @@ from jevany.symbolic import JevTree, tree_prompt
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bedrock-repo", default="/lustre-storage/fsx/tianxinwei/bedrock_model_query-main")
+    parser.add_argument("--bedrock-repo", default=os.environ.get("BEDROCK_MODEL_QUERY_REPO"),
+                        help="path to bedrock_model_query-main (or set BEDROCK_MODEL_QUERY_REPO)")
     parser.add_argument("--bedrock-model", default="us.anthropic.claude-opus-4-7")
     parser.add_argument("--profile", default="bedrock")
     parser.add_argument("--jev-url", default="http://127.0.0.1:8008")
@@ -19,6 +21,8 @@ def main():
     parser.add_argument("--constraints", default="Use at most six binary or categorical decision nodes.")
     parser.add_argument("--evidence", required=True, help="JSON state evaluated by the generated tree")
     args = parser.parse_args()
+    if not args.bedrock_repo:
+        parser.error("give --bedrock-repo or set BEDROCK_MODEL_QUERY_REPO")
 
     repository = Path(args.bedrock_repo).resolve()
     if not (repository / "orchestrator" / "llm_utils.py").exists():
@@ -28,10 +32,13 @@ def main():
 
     generator = BedrockClient({"name": args.bedrock_model, "profile": args.profile, "enable_reasoning": False})
     generated = generator.generate(tree_prompt(args.task, args.constraints),
-                                   {"max_output_tokens": 4096, "temperature": 0.0})
+                                   {"max_output_tokens": 4096})
     definition = json_object(generated["text"])
     result = JevTree.from_dict(definition).run(json.loads(args.evidence), HTTPDecisionClient(args.jev_url))
-    print(json.dumps({"tree": definition, "result": result}, indent=2, ensure_ascii=False))
+    planner = {"model": args.bedrock_model, "reasoning_enabled": False, "max_output_tokens": 4096}
+    planner.update({key: generated[key] for key in ("usage", "stop_reason") if generated.get(key) is not None})
+    print(json.dumps({"planner": planner, "tree": definition, "result": result},
+                     indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

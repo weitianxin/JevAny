@@ -4,7 +4,7 @@ import pytest
 
 from jevany.agent import action_request, run_episode
 from jevany.api import validate_response
-from jevany.harness import HTTPDecisionClient, JevHarness, json_object
+from jevany.harness import HTTPDecisionClient, JevHarness, json_object, normalize_questions
 from jevany.self_train import blind_record, permute_choices, pseudo_label, sample_answer
 from jevany.symbolic import JevTree
 
@@ -53,12 +53,14 @@ def test_harness_compiles_then_decides():
     class Generator:
         def generate(self, prompt, params=None):
             assert "Do not answer" in prompt
+            assert params == {"max_output_tokens": 2048}
             return {"text": '```json\n{"questions":{"route":{"type":"choice",'
                             '"instructions":"Choose a route","criteria":{"review":"Human",'
                             '"approve":"Automatic"}}}}\n```'}
 
     harness = JevHarness(Generator(), lambda request: response("route", "review", ["review", "approve"]))
     result = harness.run("route this case", {"case": "ambiguous"})
+    assert result["planner"] == {}
     assert result["request"]["state"] == {"task": "route this case", "evidence": {"case": "ambiguous"}}
     assert result["decision"]["answers"]["route"]["choice"] == "review"
 
@@ -66,6 +68,18 @@ def test_harness_compiles_then_decides():
 def test_json_object_rejects_non_object():
     with pytest.raises(ValueError):
         json_object("[1, 2]")
+
+
+def test_planner_question_list_is_normalized():
+    assert normalize_questions([
+        {"id": "mode", "type": "choice", "instructions": "Mode?", "criteria": {"allow": "Allow"}},
+        {"type": "noul", "instructions": "Rollback?"},
+    ]) == {
+        "mode": {"type": "choice", "instructions": "Mode?", "criteria": {"allow": "Allow"}},
+        "question_2": {"type": "noul", "instructions": "Rollback?"},
+    }
+    with pytest.raises(ValueError, match="unique"):
+        normalize_questions([{"id": "same"}, {"id": "same"}])
 
 
 def test_symbolic_tree_records_branch_path():
@@ -89,6 +103,7 @@ def test_symbolic_tree_records_branch_path():
         return response("branch", choice, list(request["questions"]["branch"]["criteria"]))
 
     result = tree.run({"case": 1}, decide)
+    assert result["outcome_id"] == "abstain"
     assert result["outcome"] == "request evidence"
     assert [step["node"] for step in result["trace"]] == ["risk", "evidence"]
 
@@ -121,6 +136,13 @@ def test_symbolic_tree_rejects_collision_and_unreachable_nodes():
                            "branches": {"yes": "done"}},
             },
             "outcomes": {"done": "done"},
+        })
+    with pytest.raises(ValueError, match="unreachable outcomes"):
+        JevTree.from_dict({
+            "root": "start",
+            "nodes": {"start": {"question": {"instructions": "Start?", "criteria": {"yes": "Yes"}},
+                                  "branches": {"yes": "done"}}},
+            "outcomes": {"done": "done", "unused": "unused"},
         })
 
 

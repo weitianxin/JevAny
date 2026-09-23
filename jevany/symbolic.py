@@ -45,10 +45,13 @@ class JevTree:
             unknown = set(node.branches.values()) - destinations
             if unknown:
                 raise ValueError(f"node {name!r} has unknown destinations: {sorted(unknown)}")
-        visiting, visited = set(), set()
+        visiting, visited, reached_outcomes = set(), set(), set()
 
         def walk(name):
-            if name in self.outcomes or name in visited:
+            if name in self.outcomes:
+                reached_outcomes.add(name)
+                return
+            if name in visited:
                 return
             if name in visiting:
                 raise ValueError("decision tree contains a cycle")
@@ -62,6 +65,9 @@ class JevTree:
         unreachable = set(self.nodes) - visited
         if unreachable:
             raise ValueError(f"decision tree has unreachable nodes: {sorted(unreachable)}")
+        unreachable_outcomes = set(self.outcomes) - reached_outcomes
+        if unreachable_outcomes:
+            raise ValueError(f"decision tree has unreachable outcomes: {sorted(unreachable_outcomes)}")
 
     def run(self, state, decide: Callable[[dict], dict], *, model="jevany-27b", max_depth=None):
         node_name, trace = self.root, []
@@ -78,7 +84,8 @@ class JevTree:
             target = node.branches[choice]
             trace.append(DecisionTrace(node_name, choice, float(answer["confidence"]), target))
             node_name = target
-        return {"outcome": self.outcomes[node_name], "trace": [item.__dict__ for item in trace]}
+        return {"outcome_id": node_name, "outcome": self.outcomes[node_name],
+                "trace": [item.__dict__ for item in trace]}
 
 
 def tree_prompt(task: str, constraints) -> str:
@@ -89,5 +96,6 @@ Constraints:
 {constraints}
 
 Return JSON only:
-{{"root":"node_id","nodes":{{"node_id":{{"question":{{"instructions":"...","criteria":{{"choice":"description"}}}},"branches":{{"choice":"next_node_or_outcome"}}}}}},"outcomes":{{"outcome_id":{{}}}}}}
-Every branch must lead to another node or a declared outcome. Do not decide the case itself."""
+{{"root":"node_id","nodes":{{"node_id":{{"question":{{"instructions":"...","criteria":{{"choice":"description"}}}},"branches":{{"choice":"next_node_or_outcome"}}}}}},"outcomes":{{"outcome_id":"short outcome description"}}}}
+Every branch must lead to another node or a declared outcome. Every declared node and outcome must be reachable from the root.
+Do not decide the case itself."""

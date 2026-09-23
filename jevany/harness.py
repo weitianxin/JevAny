@@ -22,6 +22,23 @@ def json_object(text: str) -> dict:
     return value
 
 
+def normalize_questions(value):
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, list):
+        raise ValueError("planner questions must be an object or a list")
+    questions = {}
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            raise ValueError("each planner question must be an object")
+        question = dict(item)
+        question_id = question.pop("id", f"question_{index}")
+        if not isinstance(question_id, str) or not question_id or question_id in questions:
+            raise ValueError("planner question ids must be unique non-empty strings")
+        questions[question_id] = question
+    return questions
+
+
 class HTTPDecisionClient:
     def __init__(self, base_url="http://127.0.0.1:8008", api_key="local", timeout=120):
         parsed = urlparse(base_url)
@@ -62,24 +79,34 @@ class JevHarness:
             return [JevHarness.evidence_schema(value[0])] if value else []
         return type(value).__name__
 
-    def compile(self, task: str, evidence) -> dict:
+    def _compile(self, task: str, evidence) -> tuple[dict, dict]:
         evidence_context = evidence if self.include_evidence_in_planner else self.evidence_schema(evidence)
         evidence_label = "Evidence" if self.include_evidence_in_planner else "Evidence schema"
         prompt = f"""Convert the task below into JevAny questions.
-Return JSON only with the key questions. Each question must be one of:
-choice with a criteria object, noul, or score with an ordered criteria array.
-Do not answer the question or include labels. The evidence is attached as state by the caller and cannot be changed by you.
+Return one JSON object in this exact shape:
+{{"questions":{{"execution_mode":{{"type":"choice","instructions":"Choose the execution mode.","criteria":{{"allow":"Allow it","deny":"Deny it"}}}},"rollback":{{"type":"noul","instructions":"Is a rollback checkpoint required?"}}}}}}
+questions must map stable snake_case ids directly to question objects. Use type choice with a criteria object, type noul,
+or type score with an ordered criteria array. Do not wrap a question under a choice, noul, or score key.
+Do not answer any question or include labels. The evidence is attached as state by the caller and cannot be changed by you.
 
 Task: {task}
 {evidence_label}: {json.dumps(evidence_context, ensure_ascii=False)}"""
-        generated = self.generator.generate(prompt, {"max_output_tokens": 2048, "temperature": 0.0})
+        generated = self.generator.generate(prompt, {"max_output_tokens": 2048})
         compiled = json_object(generated["text"])
         if set(compiled) != {"questions"}:
             raise ValueError("planner output must contain only questions")
-        request = {"state": {"task": task, "evidence": evidence}, "questions": compiled["questions"],
+        request = {"state": {"task": task, "evidence": evidence},
+                   "questions": normalize_questions(compiled["questions"]),
                    "model": self.model}
-        return SystemOneRequest.model_validate(request).model_dump(mode="json")
+        request = SystemOneRequest.model_validate(request).model_dump(mode="json")
+        planner = {key: generated.get(key) for key in ("usage", "stop_reason") if generated.get(key) is not None}
+        return request, planner
+
+    def compile(self, task: str, evidence) -> dict:
+        request, _ = self._compile(task, evidence)
+        return request
 
     def run(self, task: str, evidence) -> dict:
-        request = self.compile(task, evidence)
-        return {"request": request, "decision": validate_response(request, self.decide(request))}
+        request, planner = self._compile(task, evidence)
+        return {"planner": planner, "request": request,
+                "decision": validate_response(request, self.decide(request))}
