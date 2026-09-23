@@ -1,49 +1,37 @@
 <p align="center">
-  <img src="docs/hero.svg" alt="JevAny: calibration-aware reinforcement learning for adaptive decision systems" width="100%">
+  <img src="docs/hero.svg" alt="JevAny: reinforcement learning for adaptive decision systems" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/weitianxin/JevAny/releases/tag/v0.1.0"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-7c5cff"></a>
+  <a href="https://github.com/weitianxin/JevAny"><img alt="Release" src="https://img.shields.io/badge/release-v0.2-7c5cff"></a>
   <a href="https://huggingface.co/collections/tianxinwei/jevany-6ab2c941bcecb4d2c61d1326"><img alt="Models" src="https://img.shields.io/badge/%F0%9F%A4%97-models-ffb000"></a>
   <a href="https://github.com/weitianxin/JevAny/actions"><img alt="Tests" src="https://github.com/weitianxin/JevAny/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-32d6c5"></a>
-  <img alt="Model" src="https://img.shields.io/badge/base-Qwen3.8--27B-111827">
 </p>
 
-JevAny turns context into typed decisions and calibrated probabilities. It is a Qwen3.8-27B decision model, not a chat model: one prefill scores every option, returns no generated reasoning, and can answer several independent questions about the same state.
+JevAny is a calibrated decision layer for reinforcement learning, agents, multimodal evidence, and model harnesses. It turns shared context into typed answers and option probabilities in one prefill pass. It does not generate an answer or a reasoning trace.
 
-The first release contains two LoRA checkpoints:
+The current 27B release uses a Qwen3.8 backbone and contains two rank 16 LoRA checkpoints:
 
-- [**JevAny-27B-SFT**](https://huggingface.co/tianxinwei/JevAny-27B-SFT): supervised fine-tuning for typed decisions.
-- [**JevAny-27B-RLCR**](https://huggingface.co/tianxinwei/JevAny-27B-RLCR): calibration-aware reinforcement learning built on the SFT model.
+- [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) is the recommended general checkpoint.
+- [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) is an experimental calibration-reward checkpoint.
 
-Both checkpoints are grouped in the [JevAny collection](https://huggingface.co/collections/tianxinwei/jevany-6ab2c941bcecb4d2c61d1326). They require the separately distributed `Qwen/Qwen3.8-27B` base model.
+Both require separately distributed base weights and the JevAny runtime.
 
-## Why JevAny
+## One Core, Several Systems
 
-Many applications need a decision, not another paragraph: route a case, choose an action, score severity, or decide whether evidence is sufficient. JevAny keeps the output space explicit.
+| System | What it does | Status |
+|---|---|---|
+| **Jev-Judge** | Typed choice, binary, and ordinal decisions with confidence | Released |
+| **Jev-Agent** | Chooses actions in multi-step environments | Prototype evaluated |
+| **Jev-Harness** | Lets an LLM compile open-ended tasks into bounded decisions | Prototype |
+| **Jev-Tool** | Selects tools, execution modes, and escalation paths | Prototype |
+| **Jev-Symbolic** | Runs LLM-authored, validated decision trees with JevAny at each node | Prototype |
+| **Jev-Test** | Adapts from repeated samples without ground-truth labels | Research result |
+| **Jev-Image** | Makes decisions from native image evidence | Trained and evaluated |
+| **Jev-Video** | Scores native video evidence | Pipeline exercised; meaningful benchmark planned |
 
-- **Typed outputs.** Binary (`noul`), categorical (`choice`), and ordinal (`score`) questions use one API.
-- **Confidence is part of the model.** Each option receives a probability from the pointer head.
-- **No answer decoding.** Inference ends after the prefill pass.
-- **Shared context.** Several questions reuse one state while remaining isolated from one another.
-- **Trainable on your schema.** Fine-tuning data uses the same JSON shape as inference, plus labels.
-
-This release is the text decision core. The roadmap extends that core to complex tasks, agent trajectories, vision and video, long context, test-time training, evaluation harnesses, and symbolic task-specific decision trees.
-
-## Roadmap
-
-JevAny is growing from a typed decision model into a general decision system.
-
-- [x] Calibration-aware RL for text decisions
-- [ ] Complex tasks and agent trajectory data
-- [ ] Image and video evidence
-- [ ] Long-context state and persistent memory
-- [ ] Test-time training with safe rollback
-- [ ] A unified evaluation and agent harness
-- [ ] LLM-generated symbolic decision trees with JevAny at the leaves
-
-See [ROADMAP.md](ROADMAP.md) for milestones and acceptance criteria.
+Next priorities are broader image and video evaluations, harder agent tasks, long context, computer use, coding, robotics, and guarded test-time updates. See [ROADMAP.md](ROADMAP.md) for acceptance criteria.
 
 ## Quick Start
 
@@ -53,20 +41,15 @@ cd JevAny
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[serve]'
-```
 
-Download a checkpoint, then start the API:
-
-```bash
-hf download tianxinwei/JevAny-27B-RLCR \
-  --local-dir models/JevAny-27B-RLCR
+hf download tianxinwei/JevAny-27B-SFT \
+  --local-dir models/JevAny-27B-SFT
 
 JEVANY_DTYPE=bf16 python -m jevany.serve \
-  --run models/JevAny-27B-RLCR \
-  --device cuda --port 8008
+  --run models/JevAny-27B-SFT --device cuda --port 8008
 ```
 
-Send one state and any number of questions:
+Send one state and up to 64 questions:
 
 ```bash
 curl http://127.0.0.1:8008/v1/systemone \
@@ -95,23 +78,72 @@ curl http://127.0.0.1:8008/v1/systemone \
   }'
 ```
 
-The response contains the selected answer, its normalized confidence, and the option distribution. See [docs/DATA.md](docs/DATA.md) for all three question types and the training format.
+The response includes the selected answer, normalized confidence, and the full option distribution. [docs/DATA.md](docs/DATA.md) defines the request and training formats.
 
 ## Results
 
-All rows below were evaluated on the same held-out `transfer-v9` development panel. Accuracy excludes explicitly unknowable questions; Brier and coverage use calibrated probabilities. Higher is better except Brier.
+The v2 checkpoints were selected on separate development and transfer panels. Higher is better except NLL.
 
-| Model | Knowable accuracy | MMLU-Pro | Buried evidence | Brier ↓ | Coverage @ 5% error | Unknowable mean confidence ↓ |
+| Model | Development accuracy | Development NLL ↓ | Transfer accuracy | MMLU-Pro | AI2D | MMMU |
 |---|---:|---:|---:|---:|---:|---:|
-| JevAny-27B-SFT | 81.36% | 64.00% | 73.75% | 0.273 | 51.63% | 0.499 |
-| **JevAny-27B-RLCR** | **81.84%** | **66.00%** | **73.75%** | **0.269** | **54.11%** | **0.428** |
-| Jev | 85.37% | 84.00% | 70.00% | 0.212 | 69.50% | 0.610 |
+| **JevAny-27B-SFT v2** | **90.34%** | 0.265 | **82.41%** | 73.0% | 86.0% | **68.0%** |
+| JevAny-27B-RLCR v2 | 89.74% | **0.260** | 82.31% | **73.5%** | **87.0%** | 63.0% |
+| Jev | n/a | n/a | 85.37% | 84.0% | n/a | n/a |
 
-RLCR changes accuracy by +0.48 percentage points over SFT on this panel (11 fixes, 6 regressions; exact McNemar `p=0.332`). The clearer result is better uncertainty behavior: lower Brier score, higher selective coverage, and lower confidence on unknowable inputs. Treat the accuracy difference as directional, not conclusive.
+RLCR changed transfer accuracy by `-0.10` percentage points against SFT, with 3 fixes and 4 regressions. The paired 95% bootstrap interval is `[-0.58, 0.39]` points. Its small development NLL gain did not transfer after independent calibration, so SFT remains the default. Jev is a different hosted system evaluated through the same decision suite, not a weight-matched ablation.
 
-On one H200, a single one-question query measured 156.8 ms median for SFT and 153.8 ms for RLCR (`p95` 162.7/160.1 ms). This is model compute per request; network and queueing are excluded.
+Development accuracy and NLL exclude 100 VideoFeedback questions whose labels are all the same highest score. The video path was exercised, but that slice is not evidence of temporal understanding and is not reported as a capability score. AI2D and MMMU use native images through the backbone's vision path. The training set also contains native A-OKVQA and ScienceQA images.
 
-The saved measurements and evaluation policy live in [results/release-v0.1.json](results/release-v0.1.json) and the two model cards.
+<p align="center">
+  <img src="docs/results-v2.svg" alt="JevAny v2 evaluation overview" width="100%">
+</p>
+
+### Jev-Agent
+
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/demos/jev-agent-frozen-lake.gif" alt="JevAny solving FrozenLake" width="100%"><br><b>FrozenLake</b><br>98% success, 50 episodes</td>
+    <td width="50%" align="center"><img src="docs/demos/jev-agent-sokoban.gif" alt="JevAny acting in Sokoban" width="100%"><br><b>Sokoban</b><br>48% success, 50 episodes</td>
+  </tr>
+</table>
+
+Each step exposes only legal actions as options. JevAny selects an action without generating text. FrozenLake is nearly solved; Sokoban remains the useful hard case.
+
+### Jev-Test
+
+We tested transductive adaptation without ground-truth labels. For every input, the parent produced 16 stochastic decisions. A strict majority became the pseudo label; ties were rejected. The protocol was locked before post-adaptation gold scoring.
+
+| Dataset | Parent accuracy | Pseudo-label SFT | Pseudo-label RLCR | Parent NLL | SFT NLL | RLCR NLL |
+|---|---:|---:|---:|---:|---:|---:|
+| MMLU-Pro | **73.00%** | 72.00% | 72.00% | 0.942 | **0.930** | 0.933 |
+| MuSR | 60.71% | **61.11%** | 60.98% | **1.122** | 1.552 | 1.483 |
+
+MMLU-Pro calibration improved slightly while accuracy fell. MuSR accuracy moved by at most 0.40 points while calibration became much worse. This simple self-training recipe is therefore a negative result, not a release feature. Exact protocol and metrics are in [results/ttt-protocol-v1.json](results/ttt-protocol-v1.json) and [results/release-v0.2.json](results/release-v0.2.json).
+
+## Harness And Symbolic Control
+
+Jev-Harness uses an external LLM only as a task compiler. The planner sees an evidence schema by default, produces typed questions, and cannot replace the caller-owned state. JevAny then makes the bounded decision.
+
+```python
+from jevany.harness import HTTPDecisionClient, JevHarness
+
+harness = JevHarness(bedrock_generator, HTTPDecisionClient("http://127.0.0.1:8008"))
+result = harness.run(
+    "Choose an execution mode and decide whether rollback is required.",
+    {"environment": "staging", "tests": "passed", "snapshot": "available"},
+)
+```
+
+Jev-Symbolic asks an LLM to author a compact decision tree, validates branch coverage and acyclicity, then sends each internal node to JevAny. Every result records the outcome ID and complete branch trace.
+
+Install the optional Bedrock adapter and use standard AWS credentials:
+
+```bash
+pip install -e '.[bedrock]'
+python examples/bedrock_harness.py --task 'Route this action' --evidence '{"risk":"low"}'
+```
+
+See [examples/bedrock_harness.py](examples/bedrock_harness.py), [examples/bedrock_symbolic.py](examples/bedrock_symbolic.py), and the saved [harness](docs/demos/jev-harness.json) and [symbolic](docs/demos/jev-symbolic.json) outputs.
 
 ## How It Works
 
@@ -121,19 +153,13 @@ state ───────────────┬─ question A ─ options
                      └─ question C ─ options ─ <decide> ─ probabilities C
 ```
 
-The Qwen backbone reads the shared state and one causal row per question. A learned pointer head compares the hidden state at `<decide>` with each option boundary. Softmax over those scores gives the answer distribution. Because Qwen3.8 uses hybrid recurrent layers, JevAny runs each question as a separate causal row rather than pretending a custom block mask applies inside recurrent state.
+The backbone reads the shared state and one causal row per question. A learned pointer head compares the hidden state at `<decide>` with every option boundary. Softmax over those scores gives the answer distribution.
 
-SFT minimizes cross-entropy on hard or soft targets. RLCR samples groups of noisy pointer-logit proposals and optimizes
+SFT trains the adapter and pointer head with hard or soft targets. RLCR perturbs pointer logits, scores correctness and confidence, centers rewards within each proposal group, and anchors the update with supervised loss. It borrows the calibration reward from [Beyond Binary Rewards](https://arxiv.org/abs/2507.16806), but it is not token-level GRPO and does not generate reasoning or confidence tokens. [docs/ALGORITHM.md](docs/ALGORITHM.md) gives the full objective.
 
-```text
-reward = correctness - (confidence - correctness)²
-```
+## Train Your Own
 
-with a group-centered advantage and a small supervised loss. This is a decision-only adaptation of [RLCR](https://arxiv.org/abs/2507.16806): it does not generate confidence tokens or reasoning traces, and it is not standard token-level GRPO. [docs/ALGORITHM.md](docs/ALGORITHM.md) gives the objective and implementation details.
-
-## Fine-Tuning
-
-One JSON object per line is enough. The inference request gains a `label` on every question; an optional `target` provides a soft distribution for uncertain examples.
+Training uses the inference JSON shape plus a `label` on each question:
 
 ```bash
 torchrun --nproc_per_node=8 -m jevany.train \
@@ -143,27 +169,18 @@ torchrun --nproc_per_node=8 -m jevany.train \
   --out runs/my-sft
 ```
 
-Continue from SFT with calibration-aware RL:
-
-```bash
-torchrun --nproc_per_node=8 -m jevany.train \
-  --base Qwen/Qwen3.8-27B \
-  --data data/rlcr.jsonl --init_from runs/my-sft \
-  --rlcr --rlcr_group_size 32 \
-  --rlcr_sigma_start 0.4 --rlcr_sigma_end 0.1 --rlcr_ce_w 0.25 \
-  --weights_dtype bf16 --dtype bf16 --out runs/my-rlcr
-```
-
-Training supports multi-node DDP, distributed evaluation before training and at fixed step intervals, checkpointing, and W&B. The exact v0.1 commands are in [`scripts/train_sft.sh`](scripts/train_sft.sh) and [`scripts/train_rlcr.sh`](scripts/train_rlcr.sh).
+The runtime supports multi-node DDP, distributed evaluation, regular checkpoints, and W&B. The reproducible launch templates are [scripts/train_sft.sh](scripts/train_sft.sh) and [scripts/train_rlcr.sh](scripts/train_rlcr.sh).
 
 ## Scope
 
-The v0.1 checkpoints accept text or JSON-renderable state. Although the Qwen3.8 base includes a vision tower, this release does not connect images or video to the decision path. The training envelope is 2,048 packed tokens; serving allows up to 8,192 state tokens and 8,192 tokens per question branch, but that longer range was not trained as a first-class capability. Probabilities are calibrated measurements on the published evaluation distribution, not guarantees for a new deployment.
+The released path accepts text, JSON-renderable state, native images, and native video. Multimodal requests currently support one isolated question and a bounded visual token budget. For safety, the HTTP server disables media by default. An operator can set `JEVANY_MEDIA_ROOT` to a controlled local directory; requests may then use only files inside that directory. Network media URLs are rejected, and file size, total bytes, pixels, and declared video frames are capped. Videos without a declared frame count are rejected. See [docs/DATA.md](docs/DATA.md) for an example.
+
+The text training envelope is 2,048 packed tokens, and longer contexts have not been validated as a first-class capability. Confidence is an empirical measurement on the published distributions, not a deployment guarantee.
 
 ## Attribution
 
-Some infrastructure code is adapted from Apache-2.0 licensed [Kev](https://github.com/jaredpalmer/kev). Required notices are in [NOTICE](NOTICE) and [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). JevAny develops its own RL training, models, evaluation, and roadmap. It contains no Jev weights or private implementation.
+JevAny includes Apache-2.0 infrastructure adapted from [Kev](https://github.com/jaredpalmer/kev). License notices are in [NOTICE](NOTICE) and [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). JevAny adds its own data, RL implementation, evaluation, agent, harness, and symbolic layers. It contains no Jev weights or private implementation.
 
 ## License
 
-Apache-2.0. Base-model terms apply separately to Qwen3.8-27B.
+Apache-2.0. Base-model terms apply separately.

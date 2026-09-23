@@ -2,7 +2,6 @@
 library_name: peft
 base_model: Qwen/Qwen3.8-27B
 license: apache-2.0
-pipeline_tag: text-classification
 tags:
   - decision-model
   - lora
@@ -10,25 +9,31 @@ tags:
   - reinforcement-learning
 ---
 
-# JevAny-27B-RLCR v0.1.0
+# JevAny-27B-RLCR v0.2
 
-JevAny-27B-RLCR continues the released SFT checkpoint with decision-only reinforcement learning with calibration rewards. It is the recommended v0.1 checkpoint.
+JevAny-27B-RLCR is an experimental continuation of JevAny-27B-SFT using reinforcement learning with calibration rewards. It retains the same rank 16 LoRA and pointer-head architecture.
+
+## Intended Use
+
+Use this checkpoint to study calibration-reward training for bounded decisions. JevAny-27B-SFT remains the recommended general checkpoint because RLCR did not improve overall development or transfer accuracy.
 
 ## Training
 
-- Parent: JevAny-27B-SFT v0.1.0
-- Data: hard examples, broad replay, compositional decisions, policy decisions, and knowable/unknowable pairs
-- Objective: group-relative RLCR with a supervised cross-entropy anchor
-- Calibration: temperature fitted on a separate development partition
-
-The detailed data design is documented in the repository's [data guide](https://github.com/weitianxin/JevAny/blob/main/docs/DATA.md).
+The 40,000-record RL mixture emphasizes hard reasoning, many-choice questions, agent actions, preferences, mathematical and medical decisions, and image-derived and video-derived cases. The objective combines group-relative calibration reward with a supervised anchor. It is decision-only RL, not token-level GRPO, and it generates neither reasoning traces nor confidence tokens.
 
 ## Evaluation
 
-On the held-out `transfer-v9` development panel: 81.84% knowable accuracy, 66.00% MMLU-Pro accuracy, 0.269 calibrated Brier score, and 54.11% coverage at no more than 5% empirical error. Mean confidence on explicitly unknowable questions was 0.428, with none at or above 0.9. Median one-question H200 latency was 153.75 ms.
+| Evaluation | Result |
+|---|---:|
+| v2 development accuracy | 89.74% |
+| v2 development NLL | 0.260 |
+| transfer-v9 accuracy | 82.31% |
+| MMLU-Pro accuracy | 73.5% |
+| AI2D accuracy | 87.0% |
+| MMMU accuracy | 63.0% |
 
-Against SFT, accuracy changed by +0.48 percentage points (exact McNemar `p=0.332`). The supported conclusion is improved calibration and selective prediction, not a statistically established accuracy gain.
+Development metrics exclude a 100-question single-class VideoFeedback slice. Against SFT, transfer accuracy changed by -0.10 percentage points, with 3 fixes and 4 regressions. The paired 95% bootstrap interval is [-0.58, 0.39] points. Full measurements are in the repository [release results](https://github.com/weitianxin/JevAny/blob/main/results/release-v0.2.json).
 
 ## Limits
 
-This is not a generated-reasoning model and does not reproduce the RLCR paper's reasoning rollouts. The release path is text-only. Its training envelope is 2,048 packed tokens; longer serving inputs were not trained as a first-class capability. Confidence requires deployment-specific validation.
+The small development NLL gain did not transfer consistently after independent calibration. Native multimodal requests currently contain one isolated question and use a bounded visual token budget. HTTP media is operator opt-in through a controlled local root; network media URLs are rejected. Confidence requires deployment-specific validation. The adapter requires the separately distributed Qwen base weights and JevAny runtime.

@@ -246,7 +246,7 @@ class DecisionModel(nn.Module):
         self.pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
         # hybrid backbones (Qwen3.5: Gated DeltaNet layers, recurrent) cannot honour the block-causal mask, so every
         # question runs as its own causal row continuing from the state (rows_of). Attention-only backbones keep the
-        # packed form; parity was verified before the v0.1 release.
+        # packed form; parity is covered by the weight-backed tests.
         cfg = self.lm.config
         self.hybrid = "linear_attention" in set(getattr(cfg, "layer_types", None) or [])
         if self.hybrid and option_isolation: raise ValueError("option_isolation needs the packed mask; not available on hybrid backbones")

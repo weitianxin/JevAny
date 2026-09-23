@@ -55,17 +55,18 @@ log q(z' | z) = constant - Σᵢ (z'ᵢ - zᵢ)² / (2σ²)
 
 The sum is over option dimensions. Averaging over options would make the policy gradient weaker as the choice set grows, which is especially harmful for the many-choice tasks in the RL mixture. Gradients are clipped to norm 1 after distributed synchronization. Training logs the total objective, the policy term, cross-entropy, reward, Brier penalty, and the gradient norm before clipping.
 
-Exploration standard deviation decays linearly from `0.4` to `0.1` during the run.
+The selected experimental run decays exploration standard deviation from `0.4` to `0.2`, weights the policy term by `0.25`, and weights the supervised anchor by `0.5`.
 
 This implementation borrows the calibration reward and group-relative baseline, but it is not the paper's generated-reasoning setup and is not standard token-level GRPO. There are no reasoning rollouts, confidence tokens, critic, or reference-model KL term. The policy is the distribution over perturbed pointer logits.
 
 ## Training Data Strategy
 
-SFT is broad and approximately uniform across public task sources, plus compositional and policy cases. RLCR is shorter and deliberately nonuniform:
+SFT is broad and deliberately diverse across preference, agent, visual, video, reasoning, classification, compositional, and policy tasks. RLCR is shorter and deliberately nonuniform:
 
-- more examples from the weakest SFT sources;
-- broad replay to limit forgetting;
-- compositional and policy cases;
-- explicit knowable/unknowable pairs with soft targets.
+- hard and many-choice reasoning;
+- mathematical and medical decisions;
+- agent and tool choices;
+- preference, image-derived, and video-derived cases;
+- broad replay to limit forgetting.
 
-This makes RLCR a calibration and hard-case refinement stage, not a second full SFT pass. See [DATA.md](DATA.md) for exact counts.
+This makes RLCR a calibration and hard-case refinement stage, not a second full SFT pass. The current result improves development NLL slightly but does not improve overall transfer accuracy, so it remains experimental. See [DATA.md](DATA.md) for exact counts.

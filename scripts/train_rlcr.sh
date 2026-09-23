@@ -33,9 +33,10 @@ torchrun \
   --suite "$RL_SUITE" --init_from "$SFT" \
   --eval_suite "$EVAL_SUITE" --eval_transfer_suite "$TRANSFER_SUITE" \
   --multimodal \
-  --epochs 1 --lr 5e-6 --head_lr 1e-5 --weight_decay 0.01 \
+  --epochs 1 --lr 2e-6 --head_lr 2e-6 --weight_decay 0.01 \
   --lora 16 --lora_targets all --head_dim 256 \
-  --rlcr --rlcr_group_size 32 --rlcr_sigma_start 0.4 --rlcr_sigma_end 0.1 --rlcr_ce_w 0.25 \
+  --rlcr --rlcr_group_size 32 --rlcr_sigma_start 0.4 --rlcr_sigma_end 0.2 \
+  --rlcr_policy_w 0.25 --rlcr_ce_w 0.5 \
   --batch 1 --accum 1 --dtype bf16 --weights_dtype bf16 --checkpointing 1 \
   --p_none 0 --p_none_distract 0 --p_distract 0 --p_none_pair 0 \
   --eval_before_start --eval_every_steps 200 --checkpoint_every_steps 200 \

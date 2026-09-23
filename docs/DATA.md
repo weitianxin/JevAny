@@ -60,6 +60,27 @@ Use a soft target when the evidence does not support one certain answer:
 
 The `label` remains required for evaluation compatibility. Training uses `target` when present. Values are normalized after loading.
 
+## Native Media
+
+Attach native image or video evidence at the request level. A multimodal request currently contains exactly one isolated question.
+
+```json
+{
+  "state": {"study": "Inspect the diagram before answering."},
+  "media": [{"type": "image", "uri": "cases/diagram.png"}],
+  "questions": {
+    "answer": {
+      "type": "choice",
+      "instructions": "Which component is connected to the battery?",
+      "criteria": {"a": "Motor", "b": "Lamp"},
+      "label": "b"
+    }
+  }
+}
+```
+
+Training and frozen suites resolve relative paths against the JSONL directory. The HTTP server is stricter: media is disabled unless the operator sets `JEVANY_MEDIA_ROOT`, only local files contained by that root are accepted, and network URLs are rejected. File bytes, total request bytes, pixels, and declared video frames have configurable caps; videos without a declared frame count are rejected. Treat the media root as an upload quarantine, not a general filesystem directory.
+
 ## Full Record
 
 See [`examples/train.jsonl`](../examples/train.jsonl). `state` and `instructions` may be strings, objects, arrays, numbers, booleans, or null. Object field names are preserved as text labels. Every question should be answerable from the state and instructions alone.
@@ -73,28 +94,45 @@ When creating data:
 - preserve source, generator, prompt, verifier, and license metadata outside the model-facing fields;
 - audit generated labels and counterfactual pairs before training.
 
-## v0.1 Mixtures
+## v0.2 Mixtures
 
-The SFT mixture contains 12,576 source records:
+The SFT mixture contains 107,278 records and 127,012 questions:
 
 | Group | Records |
 |---|---:|
-| 10 public classification sources | 10,000 |
-| Compositional decisions | 1,680 |
-| Policy decisions | 896 |
+| HelpSteer3 preferences | 17,613 |
+| Agent and tool decisions | 16,734 |
+| A-OKVQA | 17,047 |
+| VideoFeedback | 19,570 |
+| QASC | 8,134 |
+| CommonsenseQA | 9,741 |
+| ScienceQA | 5,165 |
+| Classification, policy, compositional, and ARC | 13,274 |
 
-Online augmentation permuted choices and inserted none and distractor cases. Eligible rows could also emit a matched pair with the correct option present or absent.
+The 1,000-record calibration partition and 1,002-record development partition are separate. AI2D and MMMU appear only in those held-out partitions. Multimodal rows carry image or video URIs that are resolved and passed through the backbone's native processor. The training split contains 22,212 image records and 19,570 video records; each evaluation partition contains 500 media records.
 
-The RLCR stage used exactly 8,192 records:
+The selected RLCR mixture contains exactly 40,000 records and 46,044 questions:
 
-| Group | Records | Share |
-|---|---:|---:|
-| Hard public sources: Amazon, SST-5, Yelp, MNLI | 2,880 | 35.2% |
-| Broad public replay | 2,040 | 24.9% |
-| Compositional decisions | 1,024 | 12.5% |
-| Policy decisions | 673 | 8.2% |
-| Knowable/unknowable pairs | 1,575 | 19.2% |
+| Group | Records |
+|---|---:|
+| Hard reasoning | 6,000 |
+| Many-choice reasoning | 6,000 |
+| Agent and tool decisions | 5,000 |
+| HelpSteer3 preferences | 5,000 |
+| Mathematical reasoning | 4,000 |
+| Medical reasoning | 4,000 |
+| Image-derived decisions | 4,000 |
+| Video-derived decisions | 2,000 |
+| Core replay | 4,000 |
 
-The uncertainty block contains 525 unique rows repeated three times. The final mixture has zero normalized-text-hash overlap with the `transfer-v9` evaluation panel.
+The mixture includes 5,000 HelpSteer3 rows, 6,000 eight-option QASC rows, 4,000 AQuA-RAT rows, 4,000 MedMCQA rows, and broad replay to limit drift. It has zero normalized-text-hash overlap with the `transfer-v9` evaluation panel.
 
-The repository publishes the mixture builder, not redistributed third-party datasets. Supply your licensed suite and uncertainty files to [`scripts/build_rlcr_mix.py`](../scripts/build_rlcr_mix.py).
+The selected VideoFeedback `real` configuration is single-class in this conversion: every one of its five score dimensions maps to level 3. Those rows exercise the native video data and model path but do not form a meaningful accuracy benchmark. Release headline development metrics exclude the 100-question VideoFeedback slice. A label-balanced temporal benchmark is required before claiming video understanding.
+
+The repository publishes mixture builders, not redistributed third-party datasets. Review each upstream license before downloading, training, or redistributing converted records. Build SFT data with [`scripts/build_v2_data.py`](../scripts/build_v2_data.py) and RL data with [`scripts/build_v2_rlcr_mix.py`](../scripts/build_v2_rlcr_mix.py).
+
+## Test-Time Data
+
+Jev-Test removes every `label` and `target` before inference. It samples the parent decision 16 times at temperature 0.8, accepts only a strict majority, and rejects ties. The adapted checkpoint never sees ground truth. Gold labels remain in the immutable source suite and are opened once after both SFT and RL adaptations finish.
+
+This protocol accepted 153 of 200 MMLU-Pro inputs and 732 of 756 MuSR inputs. The exact hashes and settings are recorded in [`results/ttt-protocol-v1.json`](../results/ttt-protocol-v1.json).

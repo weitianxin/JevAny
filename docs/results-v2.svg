@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-label="JevAny v2 evaluation overview">
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11182a"/>
+      <stop offset="1" stop-color="#0b1020"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="#070911"/>
+  <g font-family="Inter,Arial,sans-serif">
+    <text x="54" y="62" fill="#f7f8ff" font-size="30" font-weight="750">JevAny v2 evaluation map</text>
+    <text x="54" y="91" fill="#8d99b3" font-size="15">Measured prototypes, not projected capabilities</text>
+
+    <g transform="translate(42 126)">
+      <rect width="350" height="330" rx="20" fill="url(#panel)" stroke="#313b56"/>
+      <text x="24" y="38" fill="#d8deef" font-size="14" font-weight="700" letter-spacing="1.4">DECISION CORE</text>
+      <text x="24" y="70" fill="#8d99b3" font-size="13">transfer-v9 accuracy</text>
+      <g font-size="14" fill="#cbd3e7">
+        <text x="24" y="113">SFT v2</text><rect x="105" y="96" width="181" height="22" rx="11" fill="#2dd4bf"/><text x="299" y="113" fill="#fff">82.41</text>
+        <text x="24" y="158">RLCR v2</text><rect x="105" y="141" width="180" height="22" rx="11" fill="#7957df"/><text x="299" y="158" fill="#fff">82.31</text>
+        <text x="24" y="203">Jev</text><rect x="105" y="186" width="188" height="22" rx="11" fill="#43506c"/><text x="299" y="203" fill="#fff">85.37</text>
+      </g>
+      <line x1="24" y1="232" x2="326" y2="232" stroke="#29334b"/>
+      <text x="24" y="263" fill="#2dd4bf" font-size="22" font-weight="720">SFT stays default</text>
+      <text x="24" y="290" fill="#9ca8c2" font-size="13">RL improves development NLL,</text>
+      <text x="24" y="311" fill="#9ca8c2" font-size="13">not overall transfer accuracy.</text>
+    </g>
+
+    <g transform="translate(425 126)">
+      <rect width="350" height="330" rx="20" fill="url(#panel)" stroke="#313b56"/>
+      <text x="24" y="38" fill="#d8deef" font-size="14" font-weight="700" letter-spacing="1.4">AGENTS + MULTIMODAL</text>
+      <g fill="#fff" font-size="31" font-weight="750">
+        <text x="24" y="98">98%</text><text x="190" y="98">48%</text>
+        <text x="24" y="202">87%</text><text x="190" y="202">68%</text>
+      </g>
+      <g fill="#9ca8c2" font-size="13">
+        <text x="24" y="120">FrozenLake success</text><text x="190" y="120">Sokoban success</text>
+        <text x="24" y="224">AI2D, RLCR</text><text x="190" y="224">MMMU, SFT</text>
+      </g>
+      <line x1="24" y1="146" x2="326" y2="146" stroke="#29334b"/>
+      <line x1="24" y1="250" x2="326" y2="250" stroke="#29334b"/>
+      <text x="24" y="281" fill="#8d99b3" font-size="13">50 agent episodes per environment.</text>
+      <text x="24" y="304" fill="#8d99b3" font-size="13">Images evaluated; video path exercised.</text>
+    </g>
+
+    <g transform="translate(808 126)">
+      <rect width="350" height="330" rx="20" fill="url(#panel)" stroke="#313b56"/>
+      <text x="24" y="38" fill="#d8deef" font-size="14" font-weight="700" letter-spacing="1.4">TEST TIME + HARNESS</text>
+      <text x="24" y="85" fill="#f7f8ff" font-size="19" font-weight="700">No-label adaptation</text>
+      <text x="24" y="113" fill="#9ca8c2" font-size="13">MMLU-Pro accuracy: 73.0 → 72.0</text>
+      <text x="24" y="136" fill="#9ca8c2" font-size="13">MuSR accuracy: 60.7 → 61.1</text>
+      <rect x="24" y="159" width="302" height="38" rx="10" fill="#2b1830" stroke="#7d3d75"/>
+      <text x="175" y="184" text-anchor="middle" fill="#f4a9df" font-size="13" font-weight="650">negative result: calibration regressed</text>
+      <line x1="24" y1="224" x2="326" y2="224" stroke="#29334b"/>
+      <text x="24" y="260" fill="#2dd4bf" font-size="19" font-weight="700">Bedrock → typed questions</text>
+      <text x="24" y="289" fill="#8b5cf6" font-size="19" font-weight="700">LLM tree → JevAny nodes</text>
+      <text x="24" y="316" fill="#9ca8c2" font-size="13">Validated schema, branches, and trace.</text>
+    </g>
+
+    <text x="600" y="492" text-anchor="middle" fill="#69758f" font-size="13">Exact metrics and protocol hashes live in results/release-v0.2.json</text>
+  </g>
+</svg>

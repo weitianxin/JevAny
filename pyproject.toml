@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jevany"
-version = "0.1.0"
-description = "A Qwen3.8-27B decision model with calibrated answer probabilities"
+version = "0.2.0"
+description = "Calibration-aware reinforcement learning for adaptive decision systems"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Tianxin Wei" }]
 requires-python = ">=3.12"
-keywords = ["decision-model", "calibration", "rlcr", "lora", "qwen"]
+keywords = ["decision-model", "calibration", "reinforcement-learning", "agents", "multimodal"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -38,6 +38,7 @@ Models = "https://huggingface.co/collections/tianxinwei/jevany-6ab2c941bcecb4d2c
 serve = ["fastapi>=0.115", "uvicorn>=0.30"]
 train = ["datasets>=3.0", "wandb>=0.19"]
 multimodal = ["av>=14", "pillow>=10", "torchvision>=0.21,<0.24"]
+bedrock = ["boto3>=1.40"]
 dev = ["httpx>=0.28", "pytest>=9"]
 
 [tool.pytest.ini_options]

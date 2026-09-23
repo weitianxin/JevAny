@@ -1,0 +1,106 @@
+{
+  "date": "2026-09-23",
+  "default_checkpoint": "jevany-27b-sft-v2-step13000",
+  "models": {
+    "jevany-27b-sft-v2": {
+      "development": {
+        "questions": 1004,
+        "excluded_sources": ["video_feedback"],
+        "accuracy": 0.9033864541832669,
+        "nll": 0.2654128626648485,
+        "ece": 0.01962514330269942,
+        "brier": 0.1413240315287555
+      },
+      "development_full_suite_including_single_class_video": {
+        "questions": 1104,
+        "accuracy": 0.9121376811594203,
+        "nll": 0.24137330383740896,
+        "ece": 0.017846042198372398,
+        "brier": 0.1285229417994204
+      },
+      "transfer_v9": {
+        "questions": 1046,
+        "accuracy": 0.8240917782026769,
+        "mmlu_pro_accuracy": 0.73,
+        "nll": 0.5174174964,
+        "ece": 0.0315040856,
+        "brier": 0.2607609416
+      },
+      "multimodal_holdouts": {
+        "ai2d_accuracy": 0.86,
+        "mmmu_accuracy": 0.68
+      }
+    },
+    "jevany-27b-rlcr-v2-step1000": {
+      "status": "experimental",
+      "development": {
+        "questions": 1004,
+        "excluded_sources": ["video_feedback"],
+        "accuracy": 0.897410358565737,
+        "nll": 0.259805443003199,
+        "ece": 0.019205083049605463,
+        "brier": 0.13815720522357963
+      },
+      "development_full_suite_including_single_class_video": {
+        "questions": 1104,
+        "accuracy": 0.9067028985507246,
+        "nll": 0.23627248664529402,
+        "ece": 0.01746534683064753,
+        "brier": 0.1256429656210935
+      },
+      "transfer_v9": {
+        "questions": 1046,
+        "accuracy": 0.8231357552581262,
+        "mmlu_pro_accuracy": 0.735,
+        "nll": 0.5216869607897341,
+        "ece": 0.03272064832648508,
+        "brier": 0.2623652722595904
+      },
+      "multimodal_holdouts": {
+        "ai2d_accuracy": 0.87,
+        "mmmu_accuracy": 0.63
+      }
+    },
+    "jev": {
+      "transfer_v9_accuracy": 0.853728,
+      "mmlu_pro_accuracy": 0.84,
+      "note": "Different hosted system evaluated through the same decision suite; not a weight-matched ablation."
+    }
+  },
+  "paired_sft_vs_rlcr_transfer": {
+    "accuracy_delta_percentage_points": -0.09560229445507074,
+    "fixes": 3,
+    "regressions": 4,
+    "bootstrap_95_percent_ci_percentage_points": [-0.579, 0.386]
+  },
+  "agents": {
+    "checkpoint_adapter_sha256": "7f4312a93a0fe42e53405b0de8f8b08cfbdf0d7f67454e815a5cb3a2703463b9",
+    "checkpoint_head_sha256": "b66068285aa87b0e3e4aa647748968803b404a0a4448142d35d2c428f1c40897",
+    "ragen_revision": "d97bb3284e99568adfd44ee15c736d7685c07512",
+    "ragen_frozen_lake": {"episodes": 50, "seed_start": 1000, "max_steps": 64, "success_rate": 0.98, "mean_steps": 3.18},
+    "ragen_sokoban": {"episodes": 50, "seed_start": 2000, "max_steps": 64, "success_rate": 0.48, "mean_steps": 37.12}
+  },
+  "test_time_training": {
+    "protocol": "strict-majority pseudo labels from 16 stochastic samples; no ground-truth labels in adaptation",
+    "fixed_parent_temperature": 1.8660659830736146,
+    "mmlu_pro": {
+      "questions": 200,
+      "parent": {"accuracy": 0.73, "nll": 0.9417626912959005, "ece": 0.10267834683650012},
+      "sft": {"accuracy": 0.72, "nll": 0.9304798514475094, "ece": 0.08209799191402624},
+      "rlcr": {"accuracy": 0.72, "nll": 0.9325236711320316, "ece": 0.08458678831482509}
+    },
+    "musr": {
+      "questions": 756,
+      "parent": {"accuracy": 0.6071428571428571, "nll": 1.1220553423687993, "ece": 0.2354030804961095},
+      "sft": {"accuracy": 0.6111111111111112, "nll": 1.5523951007004888, "ece": 0.30531118259892986},
+      "rlcr": {"accuracy": 0.6097883597883598, "nll": 1.483282957311335, "ece": 0.3017742822861045}
+    }
+  },
+  "notes": [
+    "SFT v2 is the default checkpoint because it has the best overall accuracy and transfer stability.",
+    "RLCR v2 is an experimental calibration-focused checkpoint, not an overall accuracy improvement.",
+    "AI2D and MMMU use native images through the checkpoint's multimodal processor.",
+    "The VideoFeedback real configuration is single-class after conversion; it exercises the video path but is excluded from headline development metrics.",
+    "The test-time training protocol was locked before post-adaptation gold scoring and was not tuned after seeing results."
+  ]
+}

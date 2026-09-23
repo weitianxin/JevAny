@@ -3,7 +3,7 @@
 """Fine-tune the decision model on labelled requests (a frozen suite's training partition, records built on the
 fly from the public sources, or your own JSONL), with the pointer head trained from scratch.
 
-    uv run python -m jevany.train --suite data/decision-v7 --out runs/sft
+    python -m jevany.train --data examples/train.jsonl --out runs/sft
     uv run python -m jevany.train --data data/rlcr.jsonl --init_from runs/sft --rlcr --out runs/rlcr
 
 Batch size is small (variable-length records with custom masks) and gradients are accumulated over --accum micro-batches.

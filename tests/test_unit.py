@@ -18,6 +18,87 @@ def test_render_flattens_structured_content():
     assert render({"what": "A", "not_for": "B"}) == "what: A\nnot_for: B"
     assert render(["x", "y"]) == "- x\n- y"
     assert render({"ticket": {"channel": "email", "body": "hi"}}) == "ticket:\n  channel: email\n  body: hi"
+
+
+def test_server_media_is_disabled_by_default(monkeypatch):
+    from fastapi import HTTPException
+    from jevany import serve
+
+    request = SystemOneRequest(
+        state="inspect", media=[{"type": "image", "uri": "image.png"}],
+        questions={"q": {"type": "noul", "instructions": "Valid?"}},
+    )
+    monkeypatch.setattr(serve, "MEDIA_ROOT", None)
+    with pytest.raises(HTTPException, match="media is disabled"):
+        serve.prepare(request)
+
+
+def test_server_media_stays_inside_bounded_root(tmp_path, monkeypatch):
+    from fastapi import HTTPException
+    from jevany import serve
+
+    root = tmp_path / "media"
+    root.mkdir()
+    image = root / "image.png"
+    image.write_bytes(b"image")
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(b"outside")
+    big = root / "big.png"
+    big.write_bytes(b"larger")
+    second = root / "second.png"
+    second.write_bytes(b"more")
+    monkeypatch.setattr(serve, "MEDIA_ROOT", str(root))
+    monkeypatch.setattr(serve, "MEDIA_MAX_BYTES", 5)
+    monkeypatch.setattr(serve, "MEDIA_TOTAL_BYTES", 5)
+    monkeypatch.setattr(serve, "_validate_media_file", lambda item, path: None)
+
+    def request(uri):
+        return SystemOneRequest(
+            state="inspect", media=[{"type": "image", "uri": uri}],
+            questions={"q": {"type": "noul", "instructions": "Valid?"}},
+        )
+
+    assert serve.prepare(request("image.png")).media[0].uri == str(image)
+    with pytest.raises(HTTPException, match="network"):
+        serve.prepare(request("https://example.com/image.png"))
+    with pytest.raises(HTTPException, match="outside"):
+        serve.prepare(request("../outside.png"))
+    with pytest.raises(HTTPException, match="outside"):
+        serve.prepare(request(str(outside)))
+    link = root / "link.png"
+    link.symlink_to(outside)
+    with pytest.raises(HTTPException, match="outside"):
+        serve.prepare(request("link.png"))
+    with pytest.raises(HTTPException, match="does not exist"):
+        serve.prepare(request("missing.png"))
+    with pytest.raises(HTTPException, match="exceeds"):
+        serve.prepare(request("big.png"))
+    combined = SystemOneRequest(
+        state="inspect", media=[{"type": "image", "uri": "image.png"},
+                                {"type": "image", "uri": "second.png"}],
+        questions={"q": {"type": "noul", "instructions": "Valid?"}},
+    )
+    with pytest.raises(HTTPException, match="in total"):
+        serve.prepare(combined)
+    monkeypatch.setattr(serve, "MEDIA_ROOT", str(tmp_path / "missing"))
+    with pytest.raises(HTTPException, match="root is unavailable"):
+        serve.prepare(request("image.png"))
+
+
+def test_models_reports_media_policy(monkeypatch):
+    from jevany import serve
+
+    fake = SimpleNamespace(
+        checkpoint=SimpleNamespace(requested="run", meta=SimpleNamespace(base="base", lora=16)),
+        model=SimpleNamespace(head=SimpleNamespace(temperature=1.0)),
+        device="cpu", prefix_hits=0, prefix_misses=0, prefix_cache={},
+    )
+    monkeypatch.setattr(serve.app.state, "server", fake, raising=False)
+    monkeypatch.setattr(serve, "MEDIA_ROOT", None)
+    limits = serve.models()["models"][0]["limits"]
+    assert limits["media_enabled"] is False
+    assert limits["media_max_file_bytes"] == serve.MEDIA_MAX_BYTES
+    assert limits["media_max_total_bytes"] == serve.MEDIA_TOTAL_BYTES
     assert render({"examples": ["a", "b"]}) == "examples:\n  - a\n  - b"
 
 

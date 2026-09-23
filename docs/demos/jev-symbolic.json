@@ -1,0 +1,112 @@
+{
+  "planner": {
+    "model": "us.anthropic.claude-opus-4-7",
+    "reasoning_enabled": false,
+    "max_output_tokens": 4096,
+    "usage": {
+      "inputTokens": 261,
+      "outputTokens": 1122,
+      "totalTokens": 1383,
+      "cacheReadInputTokens": 0,
+      "cacheWriteInputTokens": 0
+    },
+    "stop_reason": "end_turn"
+  },
+  "tree": {
+    "root": "n1_reversible",
+    "nodes": {
+      "n1_reversible": {
+        "question": {
+          "instructions": "Assess whether the action's effects can be fully undone by the agent without external assistance or data loss.",
+          "criteria": {
+            "reversible": "Effects are contained and can be rolled back (e.g., sandbox, ephemeral files, local scratch).",
+            "irreversible": "Effects persist outside the agent's rollback capability (e.g., production writes, external API side effects, deletions)."
+          }
+        },
+        "branches": {
+          "reversible": "n2_scope",
+          "irreversible": "n3_blast_radius"
+        }
+      },
+      "n2_scope": {
+        "question": {
+          "instructions": "Determine whether the action stays within the explicitly authorized task scope and resource boundaries.",
+          "criteria": {
+            "in_scope": "Action targets resources/files the agent was granted access to for this task.",
+            "out_of_scope": "Action touches resources outside the granted scope or exceeds declared permissions."
+          }
+        },
+        "branches": {
+          "in_scope": "n4_sensitivity",
+          "out_of_scope": "ask"
+        }
+      },
+      "n3_blast_radius": {
+        "question": {
+          "instructions": "Estimate the maximum potential harm if the irreversible action is wrong or misused.",
+          "criteria": {
+            "low": "Limited to non-critical assets; recoverable via backups or reissue.",
+            "medium": "Affects shared resources, user-visible state, or minor cost/data exposure.",
+            "high": "Affects production systems, security posture, external users, funds, or protected data."
+          }
+        },
+        "branches": {
+          "low": "n5_policy",
+          "medium": "ask",
+          "high": "deny"
+        }
+      },
+      "n4_sensitivity": {
+        "question": {
+          "instructions": "Check whether the action reads, writes, or transmits sensitive data (secrets, credentials, PII, proprietary code) beyond its origin.",
+          "criteria": {
+            "sensitive": "Involves sensitive data flowing to new destinations or being exposed.",
+            "non_sensitive": "No sensitive data involvement, or data stays within its original trust boundary."
+          }
+        },
+        "branches": {
+          "sensitive": "ask",
+          "non_sensitive": "n5_policy"
+        }
+      },
+      "n5_policy": {
+        "question": {
+          "instructions": "Verify whether the action matches an explicit pre-approved allowlist entry or standing policy for autonomous execution.",
+          "criteria": {
+            "explicitly_allowed": "Action type is on the pre-approved allowlist under current context.",
+            "not_listed": "Action is neither explicitly allowed nor explicitly forbidden.",
+            "explicitly_forbidden": "Action type is on a denylist or violates a hard policy rule."
+          }
+        },
+        "branches": {
+          "explicitly_allowed": "allow",
+          "not_listed": "ask",
+          "explicitly_forbidden": "deny"
+        }
+      }
+    },
+    "outcomes": {
+      "allow": "Agent may execute the action autonomously.",
+      "ask": "Agent must request human confirmation before executing.",
+      "deny": "Agent must refuse to execute the action."
+    }
+  },
+  "result": {
+    "outcome_id": "deny",
+    "outcome": "Agent must refuse to execute the action.",
+    "trace": [
+      {
+        "node": "n1_reversible",
+        "choice": "irreversible",
+        "confidence": 0.93,
+        "next": "n3_blast_radius"
+      },
+      {
+        "node": "n3_blast_radius",
+        "choice": "high",
+        "confidence": 0.72,
+        "next": "deny"
+      }
+    ]
+  }
+}

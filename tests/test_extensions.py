@@ -4,6 +4,7 @@ import pytest
 
 from jevany.agent import action_request, run_episode
 from jevany.api import validate_response
+from jevany.bedrock import BedrockGenerator
 from jevany.harness import HTTPDecisionClient, JevHarness, json_object, normalize_questions
 from jevany.self_train import blind_record, permute_choices, pseudo_label, sample_answer
 from jevany.symbolic import JevTree
@@ -14,6 +15,24 @@ def response(question, choice, options, confidence=0.8):
     return {"answers": {question: {"type": "choice", "choice": choice, "confidence": confidence,
                                     "probabilities": {option: confidence if option == choice else remainder
                                                       for option in options}}}}
+
+
+def test_bedrock_generator_uses_converse_without_reasoning():
+    class Client:
+        def converse(self, **request):
+            self.request = request
+            return {"output": {"message": {"content": [{"text": "{\"questions\":{}}"}]}},
+                    "usage": {"inputTokens": 7, "outputTokens": 3}, "stopReason": "end_turn"}
+
+    client = Client()
+    result = BedrockGenerator("model", client=client).generate("compile", {"max_output_tokens": 42})
+    assert client.request == {
+        "modelId": "model",
+        "messages": [{"role": "user", "content": [{"text": "compile"}]}],
+        "inferenceConfig": {"maxTokens": 42},
+    }
+    assert result["text"] == '{"questions":{}}'
+    assert result["stop_reason"] == "end_turn"
 
 
 def test_agent_runs_discrete_environment():
