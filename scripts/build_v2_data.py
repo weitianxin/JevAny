@@ -15,7 +15,7 @@ from datasets import load_dataset
 
 from jevany.data import materialize
 from jevany.model import MAX_BRANCH, MAX_PACKED, MAX_STATE, encode, load_tokenizer
-from jevany.suite import digest, read_jsonl, write_json, write_jsonl
+from jevany.suite import digest, read_jsonl, semantic_hash as content_hash, write_json, write_jsonl
 
 
 SOURCES = {
@@ -58,16 +58,6 @@ def sample(rows, count, seed):
     indices = list(range(len(rows)))
     random.Random(seed).shuffle(indices)
     return [rows[index] for index in indices[: min(count, len(indices))]]
-
-
-def content_hash(item):
-    questions = {
-        question_id: {key: value for key, value in question.items()
-                      if key in ("type", "instructions", "criteria")}
-        for question_id, question in item["questions"].items()
-    }
-    payload = json.dumps({"state": item["state"], "questions": questions}, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(" ".join(payload.casefold().split()).encode()).hexdigest()
 
 
 def metadata(source, identifier, split, state, questions, **extra):

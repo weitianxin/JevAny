@@ -24,6 +24,17 @@ def record_digest(record):
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
+def semantic_hash(record):
+    """Hash decision content without labels or provenance metadata."""
+    questions = {
+        question_id: {key: value for key, value in question.items()
+                      if key in ("type", "instructions", "criteria")}
+        for question_id, question in record["questions"].items()
+    }
+    payload = json.dumps({"state": record["state"], "questions": questions}, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(" ".join(payload.casefold().split()).encode()).hexdigest()
+
+
 def read_json(path):
     return json.loads(Path(path).read_text(encoding=ENCODING))
 
