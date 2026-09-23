@@ -248,6 +248,8 @@ def batch_loss(model, a, batch, dev, autocast, distributed_forward=None, rlcr_si
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="Qwen/Qwen3.8-27B")
+    ap.add_argument("--base_load_path", default="",
+                    help="optional node-local mirror used for weight I/O while checkpoint provenance keeps --base")
     ap.add_argument("--epochs", type=int, default=1)
     ap.add_argument("--lr", type=float, default=2e-4)
     ap.add_argument("--head_lr", type=float, default=0.0, help="separate learning rate for the pointer head (0 = same as --lr); the head trains from scratch")
@@ -490,12 +492,18 @@ def main():
     manifest = read_manifest(a.suite) if a.suite else None
     revision = pinned_revision(a, manifest)
     holdout = manifest["holdout_sources"] if manifest else []
-    tok = load_preprocessor(a.base, revision=revision, multimodal=a.multimodal)
-    model = DecisionModel(a.base, tok, dev, lora=a.lora, revision=revision,
+    model_source = a.base_load_path or a.base
+    if a.base_load_path and not Path(a.base_load_path).is_dir():
+        raise ValueError(f"base load path does not exist: {a.base_load_path}")
+    load_revision = None if a.base_load_path else revision
+    tok = load_preprocessor(model_source, revision=load_revision, multimodal=a.multimodal)
+    model = DecisionModel(model_source, tok, dev, lora=a.lora, revision=load_revision,
                           head_dim=a.head_dim, lora_targets=a.lora_targets,
                           option_isolation=bool(a.option_isolation), special_embeddings=bool(a.special_embeddings),
                           dtype=torch.bfloat16 if a.weights_dtype == "bf16" else torch.float32,
                           multimodal=a.multimodal)
+    for adapter_config in getattr(model.lm, "peft_config", {}).values():
+        adapter_config.base_model_name_or_path = a.base
     if a.checkpointing:
         model.lm.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     model.lm.config.use_cache = False
