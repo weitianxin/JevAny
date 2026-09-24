@@ -22,29 +22,44 @@ Both require separately distributed base weights and the JevAny runtime.
 
 The released **JevAny-27B-SFT** checkpoint drives all three demos by choosing among explicit actions. Each **4.8-second** highlight shows recorded execution with accelerated playback and inference waits removed.
 
-**Robotics · Pick, lift, and place**
+<table width="100%">
+  <tr>
+    <td width="34%" valign="middle">
+      <h3>Robotics</h3>
+      <p><strong>Pick, lift, and place</strong></p>
+      <p>Camera images and simulator state guide six decisions from eight available motion primitives. PyBullet simulates the finger contacts and object motion; the teal cube reaches the tray while the coral cube stays in place.</p>
+    </td>
+    <td width="66%" align="center" valign="middle">
+      <img src="docs/demos/jev-robot.gif" alt="JevAny selects motions that make a simulated Franka Panda grasp the teal cube, lift it, and release it inside the tray" width="100%">
+    </td>
+  </tr>
+</table>
 
-<p align="center">
-  <img src="docs/demos/jev-robot.gif" alt="JevAny selects motions that make a simulated Franka Panda grasp the teal cube, lift it, and release it inside the tray" width="100%">
-</p>
+<table width="100%">
+  <tr>
+    <td width="66%" align="center" valign="middle">
+      <img src="docs/demos/jev-browser.gif" alt="JevAny operates Chromium, filters Tokyo flights to evening nonstop departures, and saves the lowest qualifying fare to a demo itinerary" width="100%">
+    </td>
+    <td width="34%" valign="middle">
+      <h3>Computer use</h3>
+      <p><strong>Find the right flight</strong></p>
+      <p>JevAny reads screenshots and page state, then selects controls for Playwright to click in a real Chromium browser. In this local travel sandbox, it finds the cheapest nonstop flight departing after 18:00 within a $900 budget: <strong>19:10, $840</strong>.</p>
+    </td>
+  </tr>
+</table>
 
-Camera images and simulator state guide six decisions from eight available motion primitives. PyBullet simulates the finger contacts and object motion; the teal cube reaches the tray while the coral cube stays in place.
-
-**Computer use · Find the right flight**
-
-<p align="center">
-  <img src="docs/demos/jev-browser.gif" alt="JevAny operates Chromium, filters Tokyo flights to evening nonstop departures, and saves the lowest qualifying fare to a demo itinerary" width="100%">
-</p>
-
-JevAny reads screenshots and page state, then selects controls for Playwright to click in a real Chromium browser. In this local travel sandbox, it finds the cheapest nonstop flight departing after 18:00 within a $900 budget: **19:10, $840**.
-
-**Coding · Turn failing tests green**
-
-<p align="center">
-  <img src="docs/demos/jev-coding.gif" alt="JevAny selects a Python patch fixing adjacent meeting intervals, and real pytest execution changes from two failing tests to twelve passing tests" width="100%">
-</p>
-
-JevAny selects one of **four provided Python patches** from the source and test failures. Applying that exact patch changes **2 failed / 10 passed → 12 passed**. The animation replays the recorded source, selected diff, and actual pytest output.
+<table width="100%">
+  <tr>
+    <td width="34%" valign="middle">
+      <h3>Coding</h3>
+      <p><strong>Code repair, review, and validation</strong></p>
+      <p>Use JevAny as a decision layer for software maintenance: assess candidate changes against source context, bug reports, and test evidence, then connect the selected repair to execution and validation. This demo follows a complete repair loop—from reproducing a regression to applying the selected fix and verifying the resulting behavior.</p>
+    </td>
+    <td width="66%" align="center" valign="middle">
+      <img src="docs/demos/jev-coding.gif" alt="JevAny selects a Python patch fixing adjacent meeting intervals, and real pytest execution changes from two failing tests to twelve passing tests" width="100%">
+    </td>
+  </tr>
+</table>
 
 The first successful run in each predefined list is shown. The [execution record](docs/demos/action-demo-runs.json) retains all eight illustrative trials, all 35 decisions and option distributions, the exact checkpoint, selection rules, and scope. Broader agent benchmarks remain part of the [roadmap](ROADMAP.md).
 
