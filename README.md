@@ -18,6 +18,36 @@ The current 27B release uses a Qwen3.8 backbone and contains two rank 16 LoRA ch
 
 Both require separately distributed base weights and the JevAny runtime.
 
+## See It Act
+
+The released **JevAny-27B-SFT** checkpoint drives all three demos by choosing among explicit actions. Each **4.8-second** highlight shows recorded execution with accelerated playback and inference waits removed.
+
+**Robotics · Pick, lift, and place**
+
+<p align="center">
+  <img src="docs/demos/jev-robot.gif" alt="JevAny selects motions that make a simulated Franka Panda grasp the teal cube, lift it, and release it inside the tray" width="100%">
+</p>
+
+Camera images and simulator state guide six decisions from eight available motion primitives. PyBullet simulates the finger contacts and object motion; the teal cube reaches the tray while the coral cube stays in place.
+
+**Computer use · Find the right flight**
+
+<p align="center">
+  <img src="docs/demos/jev-browser.gif" alt="JevAny operates Chromium, filters Tokyo flights to evening nonstop departures, and saves the lowest qualifying fare to a demo itinerary" width="100%">
+</p>
+
+JevAny reads screenshots and page state, then selects controls for Playwright to click in a real Chromium browser. In this local travel sandbox, it finds the cheapest nonstop flight departing after 18:00 within a $900 budget: **19:10, $840**.
+
+**Coding · Turn failing tests green**
+
+<p align="center">
+  <img src="docs/demos/jev-coding.gif" alt="JevAny selects a Python patch fixing adjacent meeting intervals, and real pytest execution changes from two failing tests to twelve passing tests" width="100%">
+</p>
+
+JevAny selects one of **four provided Python patches** from the source and test failures. Applying that exact patch changes **2 failed / 10 passed → 12 passed**. The animation replays the recorded source, selected diff, and actual pytest output.
+
+The first successful run in each predefined list is shown. The [execution record](docs/demos/action-demo-runs.json) retains all eight illustrative trials, all 35 decisions and option distributions, the exact checkpoint, selection rules, and scope. Broader agent benchmarks remain part of the [roadmap](ROADMAP.md).
+
 ## One Core, Several Systems
 
 | System | What it does | Status |
@@ -31,7 +61,7 @@ Both require separately distributed base weights and the JevAny runtime.
 | **Jev-Image** | Makes decisions from native image evidence | Evaluated with blank and shuffled controls |
 | **Jev-Video** | Scores native video evidence | Evaluated on three temporal decision tasks |
 
-Next priorities are harder agent tasks, long context, document images, broader temporal reasoning, computer use, coding, robotics, and guarded test-time updates. See [ROADMAP.md](ROADMAP.md) for acceptance criteria.
+Next priorities are harder agent tasks, long context, document images, broader temporal reasoning, broader computer-use, coding and robotics evaluations, and guarded test-time updates. See [ROADMAP.md](ROADMAP.md) for acceptance criteria.
 
 ## Quick Start
 
