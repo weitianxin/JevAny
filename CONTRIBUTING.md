@@ -7,7 +7,7 @@ python -m pip install -e '.[dev]'
 python -m pytest tests -m 'not server' -q
 ```
 
-The framework tests create a tiny local Qwen backbone, run real SFT and RLCR
+The integration tests create a tiny local Qwen backbone, run real SFT and RLCR
 updates, reload the saved adapter, and check Python/HTTP/official-SDK contracts.
 This is an integration check of the workflow, not a task-quality benchmark.
 The unit tests also use a Qwen2.5 tokenizer, downloaded on first use.

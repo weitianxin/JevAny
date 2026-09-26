@@ -14,7 +14,7 @@
 
 **Train your own Jev. Deploy it in your own application.**
 
-JevAny is an open framework for training and serving Jev-style decision models. Fine-tune an open Qwen backbone on your labelled decisions, or start with our pretrained checkpoint. Both paths use the same Python and HTTP interface, following the [Jev API's request and answer format](docs/API.md).
+JevAny is open infra for training and serving Jev-style decision models. Fine-tune an open Qwen backbone on your labelled decisions, or start with our pretrained checkpoint. Both paths use the same Python and HTTP interface, following the [Jev API's request and answer format](docs/API.md).
 
 Give the model a state, a question, and possible answers. It returns a choice and the probability of each option. Your application can route a message, select a query repair, or choose an agent's next action.
 

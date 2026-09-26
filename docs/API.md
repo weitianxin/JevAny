@@ -2,7 +2,7 @@
 
 `JevClient`, `JevModel`, and `POST /v1/systemone` share a request/answer envelope.
 Training data adds a label and optionally a soft target to each question.
-The framework is an independent implementation of Jev-style decision models.
+JevAny is an independent implementation of Jev-style decision models.
 
 ## Request and response
 
