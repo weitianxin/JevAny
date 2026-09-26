@@ -51,7 +51,7 @@ class Media(BaseModel):
 
 class SystemOneRequest(BaseModel):
     state: JSONContent
-    model: str = "jevany-27b"
+    model: str = Field(default="jevany-latest", min_length=1)
     media: list[Media] = Field(default_factory=list, max_length=32)
     questions: dict[str, Question] = Field(min_length=1, max_length=MAX_QUESTIONS)
 

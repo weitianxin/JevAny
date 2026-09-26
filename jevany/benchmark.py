@@ -166,7 +166,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", help="checkpoint dir or Hub id (local scoring)")
     ap.add_argument("--remote", help="base URL of a System One-compatible endpoint to score instead of a local checkpoint")
-    ap.add_argument("--remote-model", default="jevany-27b")
+    ap.add_argument("--remote-model", default="jevany-latest")
     ap.add_argument("--suite", help="frozen suite directory (scores its development partition)")
     ap.add_argument("--data", help="your own labelled requests, one JSON object per line (jevany.data.load_records); an alternative to --suite")
     ap.add_argument("--out", required=True)

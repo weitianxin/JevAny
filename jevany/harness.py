@@ -44,7 +44,7 @@ HTTPDecisionClient = JevClient
 class JevHarness:
     """Use an LLM as a task compiler and JevAny as the bounded decision layer."""
 
-    def __init__(self, generator: TextGenerator, decide: Callable[[dict], dict], model="jevany-27b",
+    def __init__(self, generator: TextGenerator, decide: Callable[[dict], dict], model="jevany-latest",
                  include_evidence_in_planner=False):
         self.generator, self.decide, self.model = generator, decide, model
         self.include_evidence_in_planner = include_evidence_in_planner

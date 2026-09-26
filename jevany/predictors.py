@@ -82,7 +82,7 @@ class RemotePredictor:
     taken from the response as returned (renormalised by validate_distribution like every other predictor). Records the
     server-reported model id so the manifest can pin what was scored."""
 
-    def __init__(self, base_url, model="jevany-27b", api_key="local", timeout=120, retries=3):
+    def __init__(self, base_url, model="jevany-latest", api_key="local", timeout=120, retries=3):
         self.base_url, self.model, self.api_key, self.timeout, self.retries = base_url.rstrip("/"), model, api_key, timeout, retries
         self.served_model = None
 

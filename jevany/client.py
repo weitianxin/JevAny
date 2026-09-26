@@ -21,7 +21,7 @@ class DecisionClient:
     ) -> dict[str, Any]:
         """Evaluate typed questions; return the JSON-compatible response body."""
         request = SystemOneRequest(
-            state=state, questions=questions, model=model or self.model_id,
+            state=state, questions=questions, model=self.model_id if model is None else model,
             media=media or [],
         )
         return self(request)

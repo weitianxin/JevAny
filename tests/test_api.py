@@ -19,9 +19,10 @@ def post(body):
 
 
 def test_choice_basic():
-    code, r = post({"state": "My running shoes arrived in the wrong size. Can I swap them for a size 10?", "model": "jevany-27b",
+    code, r = post({"state": "My running shoes arrived in the wrong size. Can I swap them for a size 10?", "model": "jevany-latest",
                     "questions": {"department": {"type": "choice", "instructions": "Which team should handle this?", "criteria": DEPARTMENT}}})
-    assert code == 200 and r["model"] == "jevany-27b"
+    assert code == 200
+    assert r["model"] == httpx.get(f"{BASE}/v1/models").json()["models"][0]["id"]
     a = r["answers"]["department"]
     assert a["type"] == "choice" and a["choice"] in DEPARTMENT and set(a["probabilities"]) == set(DEPARTMENT)
     assert math.isclose(sum(a["probabilities"].values()), 1.0, abs_tol=0.03) and 0 <= a["confidence"] <= 1
@@ -30,7 +31,7 @@ def test_choice_basic():
 
 
 def test_five_questions_and_null_descriptions():
-    code, r = post({"state": "Shoes arrived two weeks late and in the wrong size. Also I see two charges on my card. What are you going to do about this?", "model": "jevany-27b",
+    code, r = post({"state": "Shoes arrived two weeks late and in the wrong size. Also I see two charges on my card. What are you going to do about this?", "model": "jevany-latest",
                     "questions": {
                         "department": {"type": "choice", "instructions": "Which team should handle this?", "criteria": DEPARTMENT},
                         "return_reason": {"type": "choice", "instructions": "If the customer wants to return something, why?", "criteria": {"wrong_size": "The item doesn't fit", "wrong_item": "A different product was delivered", "damaged": "The item arrived broken or faulty", "changed_mind": "The item is fine, the customer no longer wants it", "other": "A return reason that fits none of the above"}},
@@ -41,7 +42,7 @@ def test_five_questions_and_null_descriptions():
 
 
 def test_structured_instructions_and_criteria():
-    code, r = post({"state": "I sent the shoes back a week ago. When do I get my money?", "model": "jevany-27b",
+    code, r = post({"state": "I sent the shoes back a week ago. When do I get my money?", "model": "jevany-latest",
                     "questions": {"return_topic": {"type": "choice",
                                                    "instructions": {"question": "Which returns topic is the customer asking about?", "focus": "Classify the information the customer wants."},
                                                    "criteria": {"return_policy": {"what": "Whether and how an item can be returned", "not_for": "Progress of a return already sent", "examples": ["Can I return shoes I've worn once?", "How long do I have to return an order?"]},
@@ -50,7 +51,7 @@ def test_structured_instructions_and_criteria():
 
 
 def test_noul_score_and_object_state():
-    code, r = post({"state": {"document": "I was charged twice. Please fix this ASAP."}, "model": "jevany-27b",
+    code, r = post({"state": {"document": "I was charged twice. Please fix this ASAP."}, "model": "jevany-latest",
                     "questions": {"billing": {"type": "noul", "instructions": "Is this ticket about billing?", "criteria": {"true": "Explicitly about charges", "false": "Not about charges"}},
                                   "urgency": {"type": "score", "instructions": "How urgent is this ticket?", "criteria": ["can wait", "this week", "today"]}}})
     assert code == 200
@@ -73,8 +74,8 @@ def test_packed_equals_separate():
     qs = {"a": {"type": "noul", "instructions": "Is the weather described as nice?"},
           "b": {"type": "choice", "instructions": "Which season is it most likely?", "criteria": {"summer": None, "winter": None, "unknown": None}}}
     state = "The weather is nice today and the park is full of people."
-    both = post({"state": state, "model": "m", "questions": qs})[1]["answers"]
-    alone = post({"state": state, "model": "m", "questions": {"b": qs["b"]}})[1]["answers"]
+    both = post({"state": state, "model": "jevany-latest", "questions": qs})[1]["answers"]
+    alone = post({"state": state, "model": "jevany-latest", "questions": {"b": qs["b"]}})[1]["answers"]
     for k in both["b"]["probabilities"]:
         assert abs(both["b"]["probabilities"][k] - alone["b"]["probabilities"][k]) <= 0.011
 

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .backbones import (
-    LEGACY_TOKENS, decision_tokens, get_backbone_adapter, prepare_embeddings, prepare_tokenizer,
+    InferenceCapabilities, LEGACY_TOKENS, decision_tokens, get_backbone_adapter, prepare_embeddings, prepare_tokenizer,
 )
 
 # Reuse existing rarely-used Qwen special tokens as delimiters (state, q, opt, /opt, decide) so no
@@ -274,6 +274,15 @@ class DecisionModel(nn.Module):
         self.head = PointerHead(self.lm.get_input_embeddings().weight.shape[1], dp=head_dim)
         self.device = device
         self.to(device)
+
+    @property
+    def inference_capabilities(self) -> InferenceCapabilities:
+        """Use the same adapter contract after training and checkpoint reload."""
+        capabilities = self.adapter.inference_capabilities(self.lm.config)
+        if not self.multimodal and capabilities.media_types:
+            from dataclasses import replace
+            capabilities = replace(capabilities, media_types=(), max_media_questions=None)
+        return capabilities
 
     def encode(self, tok, rec, **kw):
         """encode() with this model's option-isolation setting; use this from serving/eval code."""

@@ -170,10 +170,7 @@ def test_training_and_local_http_parity(tiny_run, monkeypatch):
                    "noul": Noul(), "score": Score(criteria=["low", "high"])},
     )
     expected = local(request)
-    runtime = local.runtime
-    server = serve.Server(runtime.checkpoint, runtime.tok, runtime.model, runtime.device, runtime.model_id)
-    monkeypatch.setattr(serve.app.state, "server", server, raising=False)
-    with TestClient(serve.app) as http:
+    with TestClient(serve.create_app(model=local)) as http:
         actual = http.post("/v1/systemone", json=request.model_dump()).json()
         assert actual["model"] == "my-jev"
         assert actual["answers"] == expected["answers"]

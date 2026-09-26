@@ -34,7 +34,9 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def decide_main(argv: list[str]) -> None:
+    from dataclasses import fields
     from .client import JevClient
+    from .inference import InferenceOptions, add_inference_arguments, inference_options_from_args
 
     parser = argparse.ArgumentParser(prog="jevany decide")
     parser.add_argument("request", help="JSON request file; - reads stdin")
@@ -43,16 +45,22 @@ def decide_main(argv: list[str]) -> None:
     mode.add_argument("--base-url", default="http://127.0.0.1:8008", help="call a running server")
     parser.add_argument("--device", choices=["cpu", "mps", "cuda"])
     parser.add_argument("--dtype", choices=["fp32", "fp16", "bf16"])
+    parser.add_argument("--model-name", help="identity for a locally loaded checkpoint")
+    add_inference_arguments(parser)
     args = parser.parse_args(argv)
     content = sys.stdin.read() if args.request == "-" else Path(args.request).read_text(encoding="utf-8")
     from .api import SystemOneRequest
     request = SystemOneRequest.model_validate_json(content)
     if args.checkpoint:
         from .runtime import JevModel
-        client = JevModel.from_pretrained(args.checkpoint, device=args.device, dtype=args.dtype)
+        client = JevModel.from_pretrained(
+            args.checkpoint, device=args.device, dtype=args.dtype, model_name=args.model_name,
+            inference_options=inference_options_from_args(args),
+        )
     else:
-        if args.device or args.dtype:
-            parser.error("--device and --dtype require --checkpoint")
+        if (args.device or args.dtype or args.model_name is not None
+                or any(getattr(args, item.name) is not None for item in fields(InferenceOptions))):
+            parser.error("device, dtype, model-name and inference limit options require --checkpoint")
         client = JevClient(args.base_url)
     print(json.dumps(client(request), indent=2, ensure_ascii=False))
 

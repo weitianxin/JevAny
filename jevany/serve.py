@@ -8,12 +8,15 @@ TypeSafe-compatible: POST /v1/systemone and GET /v1/models (no auth). JEVANY_PRE
 JEVANY_PREFIX_MIN_TOKENS size the state-prefix cache; JEVANY_DATE_FACTS=1 enables deterministic date preprocessing.
 """
 import argparse, os
+from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from .api import SystemOneRequest, with_date_facts
-from .runtime import (DEFAULT_CHECKPOINT, DecisionRuntime, JevModel, INFER_MAX_STATE,
-                      INFER_MAX_BRANCH, INFER_MAX_PACKED, PREFIX_CACHE_SIZE, PREFIX_MIN_TOKENS)
+from .checkpoint import LoadOptions
+from .inference import InferenceOptions, add_inference_arguments, inference_options_from_args
+from .runtime import DEFAULT_CHECKPOINT, DecisionRuntime, JevModel
 DATE_FACTS = os.environ.get("JEVANY_DATE_FACTS", "0") == "1"
 MEDIA_ROOT = os.environ.get("JEVANY_MEDIA_ROOT")
 MEDIA_MAX_BYTES = int(os.environ.get("JEVANY_MEDIA_MAX_BYTES", str(50 * 1024 * 1024)))
@@ -24,16 +27,6 @@ if min(MEDIA_MAX_BYTES, MEDIA_TOTAL_BYTES, MEDIA_MAX_PIXELS, MEDIA_MAX_VIDEO_FRA
     raise ValueError("JEVANY media limits must be positive")
 if MEDIA_TOTAL_BYTES < MEDIA_MAX_BYTES:
     raise ValueError("JEVANY_MEDIA_TOTAL_BYTES must be at least JEVANY_MEDIA_MAX_BYTES")
-
-
-class Server(DecisionRuntime):
-    """The loaded checkpoint and the state-prefix cache shared by every request (one model, one lock)."""
-    def answer(self, req):
-        """The /v1/systemone response body for one request."""
-        try:
-            return super().answer(prepare(req))
-        except ValueError as error:
-            raise HTTPException(422, str(error)) from error
 
 
 def _validate_media_file(item, path):
@@ -106,39 +99,84 @@ def prepare(req):
     return req.model_copy(update=updates) if updates else req
 
 
-app = FastAPI(title="JevAny")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+routes = APIRouter()
 
 
-def server() -> Server:
-    return app.state.server
+def server(request: Request) -> DecisionRuntime:
+    runtime = getattr(request.app.state, "server", None)
+    if runtime is None:
+        raise HTTPException(503, "model is not ready")
+    return runtime
 
 
-@app.post("/v1/systemone")
-def systemone(req: SystemOneRequest):
+@routes.post("/v1/systemone")
+def systemone(req: SystemOneRequest, request: Request):
     """TypeSafe-compatible endpoint: typed questions in, typed answers out, one prefill pass."""
-    return server().answer(req)
+    runtime = server(request)
+    try:
+        return runtime.answer(prepare(req))
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
 
 
-@app.get("/v1/models")
-def models():
-    s = server()
-    return {"models": [{"id": getattr(s, "model_id", "jevany-27b"), "aliases": ["jevany-latest"], "run": s.checkpoint.requested, "base": s.checkpoint.meta.base,
-                        "lora": s.checkpoint.meta.lora, "device": s.device, "temperature": s.model.head.temperature,
-                        "limits": {"state_tokens": INFER_MAX_STATE, "branch_tokens": INFER_MAX_BRANCH,
-                                   "packed_tokens": INFER_MAX_PACKED,
-                                   "media_enabled": bool(MEDIA_ROOT),
-                                   "media_max_file_bytes": MEDIA_MAX_BYTES,
-                                   "media_max_total_bytes": MEDIA_TOTAL_BYTES,
-                                   "media_max_pixels": MEDIA_MAX_PIXELS,
-                                   "media_max_video_frames": MEDIA_MAX_VIDEO_FRAMES},
-                        "prefix_cache": {"size": PREFIX_CACHE_SIZE, "min_state_tokens": PREFIX_MIN_TOKENS, "hits": s.prefix_hits,
-                                         "misses": s.prefix_misses, "cached_states": len(s.prefix_cache)}}]}
+@routes.get("/v1/models")
+def models(request: Request):
+    description = server(request).describe()
+    description["limits"].update({
+        "media_enabled": bool(MEDIA_ROOT) and bool(description["capabilities"]["media_types"]),
+        "media_max_file_bytes": MEDIA_MAX_BYTES,
+        "media_max_total_bytes": MEDIA_TOTAL_BYTES,
+        "media_max_pixels": MEDIA_MAX_PIXELS,
+        "media_max_video_frames": MEDIA_MAX_VIDEO_FRAMES,
+    })
+    return {"models": [description]}
 
 
-@app.get("/health")
-def health():
-    return {"status": "ready" if getattr(app.state, "server", None) is not None else "loading"}
+@routes.get("/health")
+def health(request: Request):
+    ready = getattr(request.app.state, "server", None) is not None
+    return JSONResponse({"status": "ready" if ready else "loading"}, status_code=200 if ready else 503)
+
+
+def create_app(
+    checkpoint: str | Path | None = None, *,
+    model: JevModel | None = None, device: str | None = None,
+    dtype: str | None = None, model_name: str | None = None,
+    options: LoadOptions | None = None, inference_options: InferenceOptions | None = None,
+) -> FastAPI:
+    """Build an isolated app, loading one checkpoint during ASGI startup.
+
+    Alternatively inject an already loaded JevModel to share its runtime, lock
+    and cache with Python callers. Loading options cannot accompany an injected
+    model. Each worker loads its own full model; use one worker per device.
+    """
+    if model is not None and any(value is not None for value in (
+        checkpoint, device, dtype, model_name, options, inference_options,
+    )):
+        raise ValueError("pass either a loaded model or checkpoint loading options")
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        local = model if model is not None else JevModel.from_pretrained(
+            DEFAULT_CHECKPOINT if checkpoint is None else checkpoint,
+            device=device, dtype=dtype, model_name=model_name, options=options,
+            inference_options=inference_options,
+        )
+        application.state.server = local.runtime
+        try:
+            yield
+        finally:
+            application.state.server = None
+            if model is None:
+                local.clear_cache()
+
+    application = FastAPI(title="JevAny", lifespan=lifespan)
+    application.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+    application.include_router(routes)
+    return application
+
+
+app = create_app()
 
 
 def main(argv=None):
@@ -147,15 +185,14 @@ def main(argv=None):
     ap.add_argument("--model-name", help="identity reported in every response; defaults to the checkpoint name")
     ap.add_argument("--device", choices=["cpu", "mps", "cuda"], default=None)
     ap.add_argument("--dtype", choices=["fp32", "fp16", "bf16"])
+    add_inference_arguments(ap)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8008)
     a = ap.parse_args(argv)
-    local = JevModel.from_pretrained(a.run, device=a.device, dtype=a.dtype, model_name=a.model_name)
-    runtime = local.runtime
-    app.state.server = Server(runtime.checkpoint, runtime.tok, runtime.model, runtime.device, runtime.model_id)
-    print(f"serving {runtime.checkpoint.requested} on {runtime.device} {a.host}:{a.port}")
+    application = create_app(a.run, device=a.device, dtype=a.dtype, model_name=a.model_name,
+                             inference_options=inference_options_from_args(a))
     import uvicorn
-    uvicorn.run(app, host=a.host, port=a.port)
+    uvicorn.run(application, host=a.host, port=a.port)
 
 
 if __name__ == "__main__":

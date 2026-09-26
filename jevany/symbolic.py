@@ -69,7 +69,7 @@ class JevTree:
         if unreachable_outcomes:
             raise ValueError(f"decision tree has unreachable outcomes: {sorted(unreachable_outcomes)}")
 
-    def run(self, state, decide: Callable[[dict], dict], *, model="jevany-27b", max_depth=None):
+    def run(self, state, decide: Callable[[dict], dict], *, model="jevany-latest", max_depth=None):
         node_name, trace = self.root, []
         max_depth = len(self.nodes) if max_depth is None else max_depth
         while node_name in self.nodes:

@@ -1,10 +1,11 @@
-"""Backbone and tokenizer adapters for decision training.
+"""Backbone and tokenizer adapters shared by training and inference.
 
 The default adapter uses Transformers' base-model interface. Custom adapters can
 subclass ``BackboneAdapter`` and be selected by an import path (``module:Class``)
 in both the training recipe and the saved checkpoint.
 """
 import importlib
+from dataclasses import dataclass
 
 import torch
 from torch import nn
@@ -17,6 +18,32 @@ from transformers.pytorch_utils import Conv1D
 
 LEGACY_TOKENS = ["<|fim_prefix|>", "<|fim_middle|>", "<|box_start|>", "<|box_end|>", "<|fim_suffix|>"]
 DECISION_TOKENS = ["<|jev_state|>", "<|jev_question|>", "<|jev_option|>", "<|jev_end_option|>", "<|jev_decide|>"]
+
+
+@dataclass(frozen=True)
+class InferenceCapabilities:
+    """Backbone constraints, independent of deployment limits.
+
+    Prefix reuse is optional: opt in only when cache construction, copying and
+    reordering work, plus cropping for packed branches. Unknown context windows
+    use the operator's token limits. Media adapters declare accepted types and
+    their question limit (None means no extra limit).
+    """
+
+    context_window: int | None = None
+    prefix_cache: bool = False
+    media_types: tuple[str, ...] = ()
+    max_media_questions: int | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("context_window", "max_media_questions"):
+            value = getattr(self, name)
+            if value is not None and (type(value) is not int or value < 1):
+                raise ValueError(f"{name} must be a positive integer or None")
+        if type(self.prefix_cache) is not bool:
+            raise ValueError("prefix_cache must be a bool")
+        if not isinstance(self.media_types, tuple) or any(t not in ("image", "video") for t in self.media_types):
+            raise ValueError("media_types must be a tuple containing image and/or video")
 
 
 def decision_tokens(tokenizer: PreTrainedTokenizerBase) -> list[str]:
@@ -133,6 +160,22 @@ class BackboneAdapter:
         if not targets:
             raise ValueError(f"lora_targets={preset!r} has no matching layers; use 'all' or explicit lora_target_modules")
         return targets
+
+    def inference_capabilities(self, config) -> InferenceCapabilities:
+        """Declare serving constraints; unknown architectures run without caching.
+
+        Override for a different context layout or a model-specific cache. The
+        cache allowlist is separate from packed-mask support.
+        """
+        return InferenceCapabilities(
+            context_window=getattr(config, "max_position_embeddings", None),
+            prefix_cache=config.model_type in {
+                "qwen2", "qwen3", "qwen3_5_text", "llama", "mistral",
+                "phi3", "gemma", "gemma2", "gemma3_text", "gpt2",
+            },
+            media_types=tuple(sorted(self.media_types)),
+            max_media_questions=1 if self.media_types else None,
+        )
 
     def attach_language_model(self, multimodal_model, language_model) -> None:
         """Attach a PEFT-wrapped language model to a multimodal parent."""

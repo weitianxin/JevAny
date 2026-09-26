@@ -55,6 +55,19 @@ constructors fill it in. Instructions may be omitted; explicit instructions
 usually make the intended decision clearer. A request contains 1–64 questions.
 Each question is isolated from siblings during inference.
 
+The default model selector is `jevany-latest`, an alias for the one loaded
+checkpoint. Its reported model ID is also accepted. Unknown selectors raise
+`ValueError` locally and return HTTP 422. Responses always identify the loaded
+model. This replaces the earlier behavior that silently ignored request model
+names; callers serving a custom checkpoint should omit `model`, use the alias,
+or send the ID reported by `GET /v1/models`.
+
+`JevModel.describe()` and `GET /v1/models` expose the resolved backbone adapter,
+branch layout, context window, media types, active token limits and prefix-cache
+support/statistics. The HTTP description also includes the server's media-file
+policy. Requests exceeding those limits return HTTP 422 without truncation.
+See [DEPLOYMENT.md](DEPLOYMENT.md#inference-settings) for configuration.
+
 ## Compatibility with Jev
 
 The reference is TypeSafe's [HTTP API](https://docs.typesafe.ai/api) and

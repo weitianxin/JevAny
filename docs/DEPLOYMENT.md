@@ -3,6 +3,9 @@
 Install from the checkout using Python 3.12 or newer. The `local` extra loads
 weights in Python; `serve` includes the same runtime plus FastAPI and Uvicorn.
 Both use the adapter's recorded base model and temperature.
+Training and serving resolve the same saved backbone adapter, tokenizer,
+decision tokens and branch layout. Changing model families does not change
+the request or response schema.
 
 ## Python
 
@@ -33,6 +36,31 @@ own checkpoint. Loading happens once; reuse the object between requests.
 The common runtime serializes model/processor access and reuses eligible
 state prefixes. Calling `model(request_dict)` accepts the complete HTTP body.
 
+Configure inference without changing the checkpoint:
+
+```python
+from jevany import InferenceOptions, JevModel
+
+model = JevModel.from_pretrained(
+    "runs/my-jev",
+    device="cuda",
+    inference_options=InferenceOptions(
+        max_state_tokens=2048,
+        max_branch_tokens=4096,
+        max_packed_tokens=8192,
+        prefix_cache_size=4,
+        prefix_min_tokens=384,
+    ),
+)
+print(model.describe())
+model.clear_cache()
+```
+
+`describe()` reports the resolved adapter, branch layout, context window, media
+types, effective token limits and cache statistics. `clear_cache()` releases
+prefixes and resets those statistics. Unknown architectures run without prefix
+caching unless their adapter declares support; this optimization is optional.
+
 ## HTTP
 
 ```bash
@@ -56,13 +84,53 @@ curl http://127.0.0.1:8008/v1/models
 ```
 
 The model name in responses identifies the configured deployment, even when the
-request uses an alias. The request's `model` field does not load a different
-checkpoint: this is a single-model server. Missing checkpoints fail startup;
-there is no automatic fallback to another run.
+request uses an alias. Omit `model` or send `jevany-latest` to select the loaded
+checkpoint; its exact reported ID is also accepted. Other IDs now return HTTP
+422 rather than being silently ignored. This is a single-model server, and the
+request cannot load another checkpoint. Missing checkpoints fail startup.
 
 The server binds to loopback and has no authentication. Use `--host 0.0.0.0`
 only inside a deployment with suitable network access controls; terminate
 TLS and authentication at your gateway if exposing the API beyond a trusted host.
+
+For an application embedding the server:
+
+```python
+from jevany.serve import create_app
+
+app = create_app("runs/my-jev", device="cuda", model_name="my-jev")
+```
+
+The ASGI lifespan loads weights once at startup and releases the runtime on
+shutdown. Alternatively, `create_app(model=model)` shares an existing `JevModel`,
+including its lock and cache, with local callers. Each app has its own configured
+runtime. `/health` returns 200 when ready and 503 when no runtime is loaded;
+decision and model-discovery requests also return 503 while unavailable.
+Use one Uvicorn worker per device: each worker loads a full model.
+
+## Inference settings
+
+Python and HTTP use `InferenceOptions`. Both `jevany serve` and local
+`jevany decide --checkpoint` accept the corresponding CLI flags:
+
+| Python field | CLI flag | Environment variable | Default |
+|---|---|---|---|
+| `max_state_tokens` | `--max-state-tokens` | `JEVANY_MAX_STATE_TOKENS` | 8192 |
+| `max_branch_tokens` | `--max-branch-tokens` | `JEVANY_MAX_BRANCH_TOKENS` | 8192 |
+| `max_packed_tokens` | `--max-packed-tokens` | `JEVANY_MAX_PACKED_TOKENS` | 8192 |
+| `prefix_cache_size` | `--prefix-cache-size` | `JEVANY_PREFIX_CACHE` | 4 |
+| `prefix_min_tokens` | `--prefix-min-tokens` | `JEVANY_PREFIX_MIN_TOKENS` | 384 |
+
+A branch includes its shared state. State and branch limits are capped at the
+backbone's context window; the packed limit covers the complete request, including
+all branches. Oversized inputs are rejected without truncation. Set the cache size
+to zero to disable reuse. Native media requests bypass the text prefix cache.
+
+Explicit CLI flags override environment values. Passing an `InferenceOptions`
+object in Python uses that whole object; otherwise settings are read from the
+environment when loading. Invalid values fail before weights load. Weight-loading
+controls remain in `jevany.checkpoint.LoadOptions`, shared with training and
+evaluation.
 
 ## A lightweight HTTP client
 
@@ -136,7 +204,9 @@ not implemented. BF16-trained checkpoints retain their recorded loading behavior
 For the server, install the `multimodal` extra and set `JEVANY_MEDIA_ROOT` to a
 directory of inputs before startup. Paths in requests resolve inside that root;
 network URLs, path escapes and oversized files are rejected. A media request
-contains one question. In-process inference accepts trusted local paths directly.
+contains one question for the built-in adapters. In-process inference accepts
+trusted local paths directly. Accepted media types come from the saved backbone
+adapter; setting a media root does not enable vision in a text checkpoint.
 
 ```bash
 JEVANY_MEDIA_ROOT="$PWD/media" jevany serve \
@@ -144,6 +214,44 @@ JEVANY_MEDIA_ROOT="$PWD/media" jevany serve \
 ```
 
 See [DATA.md](DATA.md#native-media) for the request format and
-`GET /v1/models` for the active limits. The server admits 8,192 packed tokens;
+`GET /v1/models` for the active limits and capabilities. The default packed limit is 8,192 tokens;
 the validated training window is 2,048. Longer inputs are not an evaluated
 capability. Confidence thresholds may need recalibration on your domain.
+
+## Extend backbone support
+
+Serving uses the same `backbone_adapter = "my_package.adapters:MyAdapter"` saved
+by training. Install that trusted package in the serving environment; no HTTP
+handler or client changes are needed. See [TRAINING.md](TRAINING.md#backbone-support)
+for model-loading and media hooks.
+
+An adapter's `inference_capabilities(config)` returns
+`jevany.backbones.InferenceCapabilities`. It declares the context window,
+prefix-cache support, accepted media types, and optional media question limit.
+The built-in implementation reads the context window from the decoder config
+and media types from the adapter. For example, a custom decoder can disable cache
+reuse while retaining the other constraints:
+
+```python
+from dataclasses import replace
+from jevany.backbones import BackboneAdapter
+
+class MyAdapter(BackboneAdapter):
+    def inference_capabilities(self, config):
+        return replace(super().inference_capabilities(config), prefix_cache=False)
+```
+
+Only opt into caching after validating `new_cache()`, cache copying and batch
+reordering, plus cropping for packed branches. Unknown text architectures use
+independent rows and uncached inference by default. A model with a different
+context layout should report its usable window explicitly.
+
+The offline serving tests cover Qwen, Llama, Gemma, Mistral, Phi and GPT-2 text
+checkpoints; Qwen, Llama, Gemma, Pixtral and Phi vision checkpoints; and a custom
+adapter without cache support. They use tiny real architectures and native
+processors to check Python/HTTP parity, media, cache behavior, limits and
+lifecycle handling. They do not establish full-size model quality or GPU capacity.
+
+```bash
+python -m pytest tests/test_serving.py -q
+```

@@ -87,16 +87,15 @@ def test_server_media_stays_inside_bounded_root(tmp_path, monkeypatch):
 
 
 def test_models_reports_media_policy(monkeypatch):
+    from fastapi import Request
     from jevany import serve
 
     fake = SimpleNamespace(
-        checkpoint=SimpleNamespace(requested="run", meta=SimpleNamespace(base="base", lora=16)),
-        model=SimpleNamespace(head=SimpleNamespace(temperature=1.0)),
-        device="cpu", prefix_hits=0, prefix_misses=0, prefix_cache={},
+        describe=lambda: {"limits": {}, "capabilities": {"media_types": []}},
     )
     monkeypatch.setattr(serve.app.state, "server", fake, raising=False)
     monkeypatch.setattr(serve, "MEDIA_ROOT", None)
-    limits = serve.models()["models"][0]["limits"]
+    limits = serve.models(Request({"type": "http", "app": serve.app}))["models"][0]["limits"]
     assert limits["media_enabled"] is False
     assert limits["media_max_file_bytes"] == serve.MEDIA_MAX_BYTES
     assert limits["media_max_total_bytes"] == serve.MEDIA_TOTAL_BYTES

@@ -41,7 +41,7 @@ def _observation(value):
     return value[0] if isinstance(value, tuple) else value
 
 
-def action_request(goal, observation, actions: Mapping[str, str], history, model="jevany-27b"):
+def action_request(goal, observation, actions: Mapping[str, str], history, model="jevany-latest"):
     return {
         "model": model,
         "state": {"goal": goal, "observation": observation, "recent_actions": history},
@@ -54,7 +54,7 @@ def action_request(goal, observation, actions: Mapping[str, str], history, model
 
 
 def run_episode(env: DiscreteEnvironment, decide: DecisionFunction, goal: str, *, seed=None,
-                max_steps=32, history_limit=8, model="jevany-27b") -> Episode:
+                max_steps=32, history_limit=8, model="jevany-latest") -> Episode:
     """Run one episode against a RAGEN-style discrete environment.
 
     The environment owns transition and reward logic. JevAny only sees the rendered
