@@ -231,6 +231,13 @@ class DecisionModel(nn.Module):
     def __init__(self, name, tok, device, lora=None, revision=None, attn=None, head_dim=256, option_isolation=False,
                  special_embeddings=False, lora_targets="all", dtype=torch.float32, multimodal=False):
         super().__init__()
+        tokenizer = tokenizer_of(tok)
+        vocabulary = tokenizer.get_vocab()
+        if any(token not in vocabulary for token in SPECIAL):
+            raise ValueError(
+                "base tokenizer lacks JevAny's decision delimiters; use a supported Qwen tokenizer "
+                "or implement a tokenizer/backbone adapter before training this architecture"
+            )
         # backbone only (no vocab head): we never generate text.
         # eager on MPS/CPU (known-good with our float 4D mask); SDPA on CUDA (accepts arbitrary additive masks).
         attn = attn or ("sdpa" if str(device).startswith("cuda") else "eager")
@@ -242,7 +249,6 @@ class DecisionModel(nn.Module):
         ).model
         if self.mm is not None:
             self.mm.visual.requires_grad_(False)
-        tokenizer = tokenizer_of(tok)
         self.pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
         # hybrid backbones (Qwen3.5: Gated DeltaNet layers, recurrent) cannot honour the block-causal mask, so every
         # question runs as its own causal row continuing from the state (rows_of). Attention-only backbones keep the

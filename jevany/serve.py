@@ -7,20 +7,13 @@ Run: uv run --extra serve python -m jevany.serve --run runs/rlcr --port 8008
 TypeSafe-compatible: POST /v1/systemone and GET /v1/models (no auth). JEVANY_PREFIX_CACHE /
 JEVANY_PREFIX_MIN_TOKENS size the state-prefix cache; JEVANY_DATE_FACTS=1 enables deterministic date preprocessing.
 """
-import argparse, os, threading, time
-from dataclasses import dataclass, field, replace
+import argparse, os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .api import SystemOneRequest, to_record, to_answers, output_tokens, with_date_facts
-from .checkpoint import Checkpoint, LoadOptions, is_hub_id
-from .device import default_device, sync
-
-# Interactive limits are larger than the frozen 2048-token benchmark window.
-# Training admission uses the tighter constants in jevany.model.
-INFER_MAX_STATE, INFER_MAX_BRANCH, INFER_MAX_PACKED = 8192, 8192, 8192
-PREFIX_CACHE_SIZE = int(os.environ.get("JEVANY_PREFIX_CACHE", "4"))          # states kept (KV + hidden); 0 disables
-PREFIX_MIN_TOKENS = int(os.environ.get("JEVANY_PREFIX_MIN_TOKENS", "384"))   # below this the branch-only pass is not faster on MPS (per-op overhead dominates)
+from .api import SystemOneRequest, with_date_facts
+from .runtime import (DEFAULT_CHECKPOINT, DecisionRuntime, JevModel, INFER_MAX_STATE,
+                      INFER_MAX_BRANCH, INFER_MAX_PACKED, PREFIX_CACHE_SIZE, PREFIX_MIN_TOKENS)
 DATE_FACTS = os.environ.get("JEVANY_DATE_FACTS", "0") == "1"
 MEDIA_ROOT = os.environ.get("JEVANY_MEDIA_ROOT")
 MEDIA_MAX_BYTES = int(os.environ.get("JEVANY_MEDIA_MAX_BYTES", str(50 * 1024 * 1024)))
@@ -33,52 +26,14 @@ if MEDIA_TOTAL_BYTES < MEDIA_MAX_BYTES:
     raise ValueError("JEVANY_MEDIA_TOTAL_BYTES must be at least JEVANY_MEDIA_MAX_BYTES")
 
 
-@dataclass
-class Server:
+class Server(DecisionRuntime):
     """The loaded checkpoint and the state-prefix cache shared by every request (one model, one lock)."""
-    checkpoint: Checkpoint
-    tok: object
-    model: object
-    device: str
-    lock: threading.Lock = field(default_factory=threading.Lock)
-    prefix_cache: dict = field(default_factory=dict)   # (state token ids, option_isolation) -> prefix, in LRU order
-    prefix_hits: int = 0
-    prefix_misses: int = 0
-
-    def probs(self, rec):
-        """One forward pass. The state prefix (tokens up to the first question) is cached across requests, so a repeated
-        state only pays for its question branches. Exact: the state's activations do not depend on the branches."""
-        try:
-            enc = self.model.encode(self.tok, rec, max_state=INFER_MAX_STATE,
-                                    max_branch=INFER_MAX_BRANCH, strict=True)
-            if len(enc["ids"]) > INFER_MAX_PACKED:
-                raise ValueError(f"request exceeds {INFER_MAX_PACKED} packed tokens: {len(enc['ids'])}")
-        except ValueError as e: raise HTTPException(422, str(e))
-        Ls = enc["seg"].count(0); key = (tuple(enc["ids"][:Ls]), bool(enc.get("option_isolation")))
-        cache, hit = self.prefix_cache, False
-        with self.lock:
-            sync(self.device); t = time.time()
-            eligible = PREFIX_CACHE_SIZE and Ls >= PREFIX_MIN_TOKENS and not enc.get("multimodal")
-            if eligible and key in cache:
-                prefix = cache.pop(key)                            # pop + reinsert = LRU order
-                ps = self.model.probs_with_prefix(enc, prefix); cache[key] = prefix
-                self.prefix_hits += 1; hit = True
-            elif eligible:
-                ps, prefix = self.model.probs_and_prefix(enc)      # one pass, and the state prefix is kept for next time
-                cache[key] = prefix
-                while len(cache) > PREFIX_CACHE_SIZE: cache.pop(next(iter(cache)))
-                self.prefix_misses += 1
-            else:
-                ps = self.model.probs(enc)
-            sync(self.device); dt = time.time() - t
-        return [p.tolist() for p in ps], {"tokens": len(enc["ids"]), "state_tokens": Ls, "latency_ms": round(dt * 1000, 1), "prefix_cache_hit": hit}
-
     def answer(self, req):
         """The /v1/systemone response body for one request."""
-        rec, meta = to_record(prepare(req))
-        ps, m = self.probs(rec)
-        answers = to_answers(ps, meta)
-        return {"model": req.model, "answers": answers, "usage": {"input_tokens": m["tokens"], "output_tokens": output_tokens(self.tok, answers)}, "latency_ms": m["latency_ms"]}
+        try:
+            return super().answer(prepare(req))
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
 
 
 def _validate_media_file(item, path):
@@ -168,7 +123,7 @@ def systemone(req: SystemOneRequest):
 @app.get("/v1/models")
 def models():
     s = server()
-    return {"models": [{"id": "jevany-27b", "aliases": ["jevany-latest"], "run": s.checkpoint.requested, "base": s.checkpoint.meta.base,
+    return {"models": [{"id": getattr(s, "model_id", "jevany-27b"), "aliases": ["jevany-latest"], "run": s.checkpoint.requested, "base": s.checkpoint.meta.base,
                         "lora": s.checkpoint.meta.lora, "device": s.device, "temperature": s.model.head.temperature,
                         "limits": {"state_tokens": INFER_MAX_STATE, "branch_tokens": INFER_MAX_BRANCH,
                                    "packed_tokens": INFER_MAX_PACKED,
@@ -181,24 +136,26 @@ def models():
                                          "misses": s.prefix_misses, "cached_states": len(s.prefix_cache)}}]}
 
 
-def main():
+@app.get("/health")
+def health():
+    return {"status": "ready" if getattr(app.state, "server", None) is not None else "loading"}
+
+
+def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run", default="runs/rlcr")
-    ap.add_argument("--fallback", default="runs/sft")
+    ap.add_argument("--checkpoint", "--run", dest="run", default=DEFAULT_CHECKPOINT)
+    ap.add_argument("--model-name", help="identity reported in every response; defaults to the checkpoint name")
     ap.add_argument("--device", choices=["cpu", "mps", "cuda"], default=None)
+    ap.add_argument("--dtype", choices=["fp32", "fp16", "bf16"])
+    ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8008)
-    a = ap.parse_args()
-    run = a.run if is_hub_id(a.run) or os.path.exists(f"{a.run}/head.pt") else a.fallback
-    if run != a.run: print(f"{a.run} not found, falling back to {run}")
-    dev = a.device or default_device()
-    opts = LoadOptions.from_env()
-    if dev == "mps" and opts.attn is None: opts = replace(opts, attn="sdpa")   # serving default on Apple GPUs (parity measured)
-    ck = Checkpoint(run)
-    tok, model = ck.load(dev, opts)
-    app.state.server = Server(ck, tok, model, dev)
-    print(f"serving {ck.requested} ({ck.path}) on {dev} :{a.port}")   # /v1/models reports the run as given, not the resolved cache path
+    a = ap.parse_args(argv)
+    local = JevModel.from_pretrained(a.run, device=a.device, dtype=a.dtype, model_name=a.model_name)
+    runtime = local.runtime
+    app.state.server = Server(runtime.checkpoint, runtime.tok, runtime.model, runtime.device, runtime.model_id)
+    print(f"serving {runtime.checkpoint.requested} on {runtime.device} {a.host}:{a.port}")
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=a.port)
+    uvicorn.run(app, host=a.host, port=a.port)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,22 @@
+# Continue training the released SFT adapter on your labelled JSONL.
+# Architecture settings match the released checkpoint; each GPU holds a full copy.
+base = "Qwen/Qwen3.8-27B"
+base_revision = "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+init_from = "tianxinwei/JevAny-27B-SFT"
+data = "data/starter/train.jsonl"
+out = "runs/domain-jev"
+multimodal = true
+device = "cuda"
+weights_dtype = "bf16"
+dtype = "bf16"
+lora = 16
+lora_targets = "all"
+head_dim = 256
+epochs = 1
+lr = 0.00001
+batch = 1
+accum = 8
+checkpointing = 1
+p_none = 0.0
+p_none_distract = 0.0
+p_distract = 0.0

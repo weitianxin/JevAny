@@ -1,11 +1,10 @@
 """Composable LLM planning and JevAny decision harnesses."""
 import json
 import re
-import urllib.request
 from typing import Callable, Protocol
-from urllib.parse import urlparse
 
 from .api import SystemOneRequest, validate_response
+from .client import JevClient
 
 
 class TextGenerator(Protocol):
@@ -39,28 +38,7 @@ def normalize_questions(value):
     return questions
 
 
-class HTTPDecisionClient:
-    def __init__(self, base_url="http://127.0.0.1:8008", api_key="local", timeout=120):
-        parsed = urlparse(base_url)
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError("decision endpoint must use HTTP or HTTPS")
-        if parsed.scheme == "http" and parsed.hostname not in ("127.0.0.1", "localhost", "::1"):
-            raise ValueError("non-loopback decision endpoints must use HTTPS")
-        self.url = base_url.rstrip("/") + "/v1/systemone"
-        self.api_key, self.timeout = api_key, timeout
-
-    def __call__(self, request: dict) -> dict:
-        validated = SystemOneRequest.model_validate(request)
-        payload = validated.model_dump(mode="json")
-        headers = {"content-type": "application/json"}
-        if self.api_key:
-            headers["authorization"] = f"Bearer {self.api_key}"
-        http_request = urllib.request.Request(
-            self.url, data=json.dumps(payload).encode(), method="POST",
-            headers=headers,
-        )
-        with urllib.request.urlopen(http_request, timeout=self.timeout) as response:
-            return validate_response(validated, json.loads(response.read()))
+HTTPDecisionClient = JevClient
 
 
 class JevHarness:

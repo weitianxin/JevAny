@@ -5,29 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jevany"
 version = "0.2.0"
-description = "Calibration-aware reinforcement learning for adaptive decision systems"
+description = "Train and deploy your own Jev-style decision models with one API"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Tianxin Wei" }]
 requires-python = ">=3.12"
-keywords = ["decision-model", "calibration", "reinforcement-learning", "agents", "multimodal"]
+keywords = ["jev", "decision-model", "fine-tuning", "agents", "multimodal"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = [
-    "accelerate>=1.15.0",
-    "huggingface-hub>=0.34",
-    "numpy>=2.2",
-    "peft>=0.21",
-    "pydantic>=2.9",
-    "scikit-learn>=1.6",
-    "torch>=2.6,<2.9",
-    "transformers>=5.17,<6",
-]
+dependencies = ["pydantic>=2.9"]
+
+[project.scripts]
+jevany = "jevany.cli:main"
 
 [project.urls]
 Repository = "https://github.com/weitianxin/JevAny"
@@ -35,15 +29,28 @@ Issues = "https://github.com/weitianxin/JevAny/issues"
 Models = "https://huggingface.co/collections/tianxinwei/jevany-adaptive-decision-systems-6ab2c941bcecb4d2c61d1326"
 
 [project.optional-dependencies]
-serve = ["fastapi>=0.115", "uvicorn>=0.30"]
-train = ["datasets>=3.0", "wandb>=0.19"]
+local = [
+    "accelerate>=1.15.0",
+    "huggingface-hub>=0.34",
+    "numpy>=2.2",
+    "peft>=0.21",
+    "scikit-learn>=1.6",
+    "torch>=2.6,<2.9",
+    "transformers>=5.17,<6",
+]
+
+serve = ["jevany[local]", "fastapi>=0.115", "uvicorn>=0.30"]
+train = ["jevany[local]", "datasets>=3.0", "wandb>=0.19"]
 multimodal = ["av>=14", "pillow>=10", "torchvision>=0.21,<0.24"]
 bedrock = ["boto3>=1.40"]
-dev = ["httpx>=0.28", "pytest>=9"]
+dev = ["jevany[train,serve,multimodal]", "httpx>=0.28", "pytest>=9", "build>=1.2", "typesafe-sdk"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["server: needs a running JevAny server"]
 
-[tool.setuptools]
-packages = ["jevany"]
+[tool.setuptools.packages.find]
+include = ["jevany*"]
+
+[tool.setuptools.package-data]
+"jevany.datasets" = ["starter/*.jsonl", "starter/*.md"]

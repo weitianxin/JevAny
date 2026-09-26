@@ -2,6 +2,16 @@
 
 Training and inference share one JSON structure. Training rows add `label` and may add `target`. Store one object per line in UTF-8 JSONL.
 
+For a dataset you can use immediately, run `jevany data init --out data/starter`.
+It copies 24 original synthetic training records and 8 development records from
+the installed package, with all three question types and provenance. This starter
+is for learning the workflow. Validate it with
+`jevany data validate data/starter/train.jsonl`.
+
+For larger data, `jevany data build-sft` and `jevany data build-rlcr` expose the
+public-source builders from an installed package. See [TRAINING.md](TRAINING.md)
+for a text-only build and recipe commands.
+
 ## Question Types
 
 ### Choice
@@ -58,7 +68,7 @@ Use a soft target when the evidence does not support one certain answer:
 }
 ```
 
-The `label` remains required for evaluation compatibility. Training uses `target` when present. Values are normalized after loading.
+The `label` remains required for evaluation compatibility. Training uses `target` when present. Values are normalized after loading. Targets may omit zero-weight options; unknown keys, negative or nonfinite weights, and zero total mass are rejected, along with labels outside the question's options.
 
 ## Native Media
 

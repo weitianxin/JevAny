@@ -10,7 +10,7 @@ import json
 import math
 import re
 from datetime import datetime
-from typing import Any, Literal, Union
+from typing import Annotated, Any, Literal, Union
 from pydantic import BaseModel, Field, model_validator
 
 JSONContent = Union[str, dict, list, int, float, bool, None]
@@ -19,14 +19,14 @@ MAX_QUESTIONS = 64
 
 
 class Noul(BaseModel):
-    type: Literal["noul"]
-    instructions: JSONContent
+    type: Literal["noul"] = "noul"
+    instructions: JSONContent = None
     criteria: dict[str, JSONContent] | None = None
 
 
 class Choice(BaseModel):
-    type: Literal["choice"]
-    instructions: JSONContent
+    type: Literal["choice"] = "choice"
+    instructions: JSONContent = None
     criteria: dict[str, JSONContent]
 
     @model_validator(mode="after")
@@ -36,12 +36,12 @@ class Choice(BaseModel):
 
 
 class Score(BaseModel):
-    type: Literal["score"]
-    instructions: JSONContent
+    type: Literal["score"] = "score"
+    instructions: JSONContent = None
     criteria: list[JSONContent] = Field(min_length=2, max_length=MAX_OPTIONS)
 
 
-Question = Union[Noul, Choice, Score]
+Question = Annotated[Union[Noul, Choice, Score], Field(discriminator="type")]
 
 
 class Media(BaseModel):
@@ -115,6 +115,9 @@ def validate_response(request: SystemOneRequest | dict, response: dict) -> dict:
                 raise ValueError(f"score for {question_id!r} must be numeric") from error
             if not math.isfinite(score) or not 0 <= score <= len(question.criteria) - 1:
                 raise ValueError(f"invalid score for {question_id!r}")
+            legend = answer.get("legend")
+            if not isinstance(legend, dict) or set(legend) != set(keys):
+                raise ValueError(f"score legend for {question_id!r} must cover every level")
     return response
 
 
@@ -184,7 +187,7 @@ def to_record(req: SystemOneRequest):
             opts = [option_text(k, v) for k, v in q.criteria.items()]
         else:
             opts = [render(x) for x in q.criteria]
-            m["legend"] = dict(zip(m["keys"], opts))
+            m["legend"] = dict(zip(m["keys"], q.criteria))
         qs.append({"instr": render(q.instructions), "options": opts, "label": 0}); meta.append(m)
     record = {"state": render(req.state), "questions": qs}
     if req.media:

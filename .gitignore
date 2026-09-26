@@ -12,3 +12,6 @@ release/
 *.tar.gz
 *.log
 .DS_Store
+data/
+dist/
+build/

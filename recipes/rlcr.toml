@@ -1,0 +1,22 @@
+# Continue the small SFT recipe. Override data with your domain examples.
+base = "Qwen/Qwen2.5-0.5B"
+init_from = "runs/my-jev"
+data = "data/starter/train.jsonl"
+out = "runs/my-jev-rlcr"
+device = "cuda"
+weights_dtype = "bf16"
+dtype = "bf16"
+lora = 16
+head_dim = 256
+rlcr = true
+rlcr_group_size = 32
+rlcr_policy_w = 0.25
+rlcr_ce_w = 0.5
+epochs = 1
+lr = 0.000002
+batch = 1
+accum = 8
+checkpointing = 1
+p_none = 0.0
+p_none_distract = 0.0
+p_distract = 0.0

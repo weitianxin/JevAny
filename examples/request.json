@@ -1,0 +1,31 @@
+{
+  "state": {
+    "ticket": "I paid once, but there are duplicate transactions on my account.",
+    "policy": "Route payment issues to billing, delivery issues to shipping, and damaged/wrong/ill-fitting items to returns. Ask for clarification if the issue is unspecified. Urgent review is required only for duplicate charges, charges after cancellation, a missing parcel marked delivered, or an item that arrived damaged. Priority is high for urgent review, normal for other concrete delivery/return/refund problems or an address change, and low for general information, account details, invoices or clarification."
+  },
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which team should handle this ticket under the policy?",
+      "criteria": {
+        "billing": "Charges, payments and invoices",
+        "shipping": "Delivery and tracking",
+        "returns": "Damaged, incorrect or unwanted items",
+        "clarify": "Ask for more information"
+      }
+    },
+    "urgent": {
+      "type": "noul",
+      "instructions": "Does the policy require urgent review?"
+    },
+    "priority": {
+      "type": "score",
+      "instructions": "What priority does the policy assign?",
+      "criteria": [
+        "low",
+        "normal",
+        "high"
+      ]
+    }
+  }
+}

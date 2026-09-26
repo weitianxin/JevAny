@@ -29,7 +29,11 @@ def is_hub_id(run):
 def resolve_run(run):
     """Local run directory as given, or a Hub repo id such as tianxinwei/JevAny-27B-RLCR, optionally pinned to a revision."""
     if os.path.isdir(run):
+        if not (Path(run) / "head.pt").is_file():
+            raise ValueError(f"{run}: missing head.pt; pass a trained JevAny checkpoint, not base weights")
         return str(run)
+    if not is_hub_id(run):
+        raise ValueError(f"checkpoint does not exist: {run}; use a local directory or owner/repo[@revision]")
     from huggingface_hub import snapshot_download
     repo, _, revision = str(run).partition("@")
     return snapshot_download(repo, revision=revision or None, allow_patterns=["*.json", "*.safetensors", "*.pt", "*.txt", "*.jinja"])

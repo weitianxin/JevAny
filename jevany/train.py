@@ -106,8 +106,17 @@ def distributed_slice(records, rank, world_size):
         return records, 0
     per_rank = math.ceil(len(records) / world_size)
     padding = per_rank * world_size - len(records)
-    padded = records + records[:padding]
+    padded = records + [records[index % len(records)] for index in range(padding)]
     return padded[rank::world_size], padding
+
+
+def learning_rate_schedule(optimizer, max_lrs, steps):
+    """Keep warmup nondegenerate for short user runs; preserve long-run settings."""
+    steps = max(steps, 1)
+    warmup = max(0.1, 2 / steps) if steps > 2 else 0.0
+    return torch.optim.lr_scheduler.OneCycleLR(
+        optimizer, max_lr=max_lrs, total_steps=steps, pct_start=warmup,
+    )
 
 
 def distributed_group_slice(records, rank, world_size):
@@ -258,8 +267,10 @@ def batch_loss(model, a, batch, dev, autocast, distributed_forward=None, rlcr_si
 
 # --- run --------------------------------------------------------------------------------------------------------------
 
-def parse_args():
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
+    ap.add_argument("--config", help="flat TOML recipe; CLI flags override recipe values")
+    ap.add_argument("--dry-run", action="store_true", help="validate configuration and labelled data without loading weights")
     ap.add_argument("--base", default="Qwen/Qwen3.8-27B")
     ap.add_argument("--base_load_path", default="",
                     help="optional node-local mirror used for weight I/O while checkpoint provenance keeps --base")
@@ -317,12 +328,15 @@ def parse_args():
     ap.add_argument("--wandb_group", default="")
     ap.add_argument("--wandb_entity", default="")
     ap.add_argument("--wandb_mode", choices=["online", "offline", "disabled"], default="online")
-    a = ap.parse_args()
+    from .training import configure_parser
+    a = configure_parser(ap, argv)
+    if any(isinstance(value, float) and not math.isfinite(value) for value in vars(a).values()):
+        ap.error("numeric training settings must be finite")
     if min(a.epochs, a.accum, a.lora, a.batch) < 1:
         ap.error("epochs, accum, lora and batch must be positive")
     if a.dtype == "bf16" and a.device != "cuda":
         ap.error("--dtype bf16 requires --device cuda")
-    if a.lr <= 0 or a.head_lr < 0 or a.weight_decay < 0:
+    if any(not math.isfinite(value) for value in (a.lr, a.head_lr, a.weight_decay)) or a.lr <= 0 or a.head_lr < 0 or a.weight_decay < 0:
         ap.error("invalid learning rate or weight decay")
     if a.replay and not (a.data and a.suite):
         ap.error("--replay needs both --data and --suite")
@@ -348,6 +362,11 @@ def parse_args():
         ap.error("training context limits must be positive")
     if max(a.max_state, a.max_branch) > a.max_packed:
         ap.error("state and branch limits cannot exceed the packed limit")
+    probabilities = (a.p_none, a.p_none_distract, a.p_distract, a.p_none_pair)
+    if any(not math.isfinite(value) or not 0 <= value <= 1 for value in probabilities) or sum(probabilities[:3]) > 1:
+        ap.error("augmentation probabilities must be in [0, 1]; none/distractor probabilities must sum to at most 1")
+    if not a.data and not a.suite:
+        ap.error("pass --data or --suite, directly or in --config")
     if Path(a.out).exists() and int(os.environ.get("RANK", "0")) == 0:
         ap.error("refusing to overwrite an existing run")
     return a
@@ -494,8 +513,19 @@ def pinned_revision(a, manifest):
     return revision
 
 
-def main():
-    a = parse_args()
+def main(argv=None):
+    a = parse_args(argv)
+    if a.data:
+        from .data import validate_dataset
+        data_summary = validate_dataset(a.data)
+    else:
+        data_summary = None
+    if a.dry_run:
+        if a.suite:
+            validate_training(load_split(a.suite, "train"), read_manifest(a.suite))
+        print(json.dumps({"config": vars(a), "data": data_summary,
+                          "note": "Token admission and backbone compatibility are checked when training starts."}, indent=2))
+        return Path(a.out)
     dev = a.device or default_device()
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     distributed = world_size > 1
@@ -503,11 +533,19 @@ def main():
         if dev != "cuda":
             raise ValueError("distributed training requires CUDA")
         local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+        if not 0 <= local_rank < torch.cuda.device_count():
+            raise ValueError(f"LOCAL_RANK={local_rank} has no CUDA device; launch at most one process per visible GPU")
         torch.cuda.set_device(local_rank)
         dist.init_process_group(backend="nccl", device_id=torch.device("cuda", local_rank))
         rank, world_size = dist.get_rank(), dist.get_world_size()
     else:
         rank = 0
+    if dev == "cuda":
+        print(json.dumps({"rank": rank, "local_rank": int(os.environ.get("LOCAL_RANK", "0")),
+                          "world_size": world_size, "visible_gpus": torch.cuda.device_count(),
+                          "cuda_device": torch.cuda.current_device(),
+                          "device_name": torch.cuda.get_device_name(),
+                          "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES")}), flush=True)
     main_process = rank == 0
     out_dir = Path(a.out)
     if main_process:
@@ -576,7 +614,7 @@ def main():
     groups = [{"params": [p for p in model.trainable_parameters() if id(p) not in head_ids], "lr": a.lr},
               {"params": head_params, "lr": a.head_lr or a.lr}]
     opt = torch.optim.AdamW(groups, lr=a.lr, weight_decay=a.weight_decay)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=[a.lr, a.head_lr or a.lr], total_steps=max(steps, 1), pct_start=0.1)
+    sched = learning_rate_schedule(opt, [a.lr, a.head_lr or a.lr], steps)
     distributed_forward = None
     if distributed:
         device_index = torch.cuda.current_device()
@@ -759,6 +797,7 @@ def main():
     if distributed:
         dist.barrier()
         dist.destroy_process_group()
+    return out_dir
 
 
 if __name__ == "__main__":

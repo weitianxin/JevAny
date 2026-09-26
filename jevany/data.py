@@ -3,6 +3,8 @@
 """Load labelled System One JSONL records and prepare training variants."""
 import hashlib
 import json
+import math
+from collections import Counter
 from pathlib import Path
 
 from .api import SystemOneRequest, to_record
@@ -103,16 +105,19 @@ def load_records(path, source="custom"):
     for index, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines()):
         if not line.strip():
             continue
-        record = json.loads(line)
-        if "state" not in record or not isinstance(record.get("questions"), dict) or not record["questions"]:
-            raise ValueError(f"{path}:{index + 1}: a record needs a state and non-empty questions")
-        for question_id, question in record["questions"].items():
-            if "label" not in question:
-                raise ValueError(f"{path}:{index + 1}: question {question_id!r} has no label")
-            question.setdefault("src", f"{source}_{question['type']}")
-        for media in record.get("media", []):
-            if media.get("type") not in ("image", "video") or not media.get("uri"):
-                raise ValueError(f"{path}:{index + 1}: invalid media entry")
+        try:
+            record = json.loads(line)
+            if not isinstance(record, dict) or "state" not in record or not isinstance(record.get("questions"), dict) or not record["questions"]:
+                raise ValueError("a record needs a state and non-empty questions")
+            for question_id, question in record["questions"].items():
+                if not isinstance(question, dict) or "label" not in question:
+                    raise ValueError(f"question {question_id!r} has no label")
+                question.setdefault("src", f"{source}_{question.get('type', 'unknown')}")
+            materialize(record)
+            if not isinstance(record.get("_meta", {}), dict):
+                raise ValueError("_meta must be an object")
+        except (ValueError, TypeError, KeyError) as error:
+            raise ValueError(f"{path}:{index + 1}: {error}") from error
         resolve_media(record, Path(path).parent)
         text = record["state"] if isinstance(record["state"], str) else json.dumps(record["state"], sort_keys=True, ensure_ascii=False)
         defaults = {
@@ -150,12 +155,42 @@ def materialize(request):
     record, metadata = to_record(SystemOneRequest.model_validate(api_request(request)))
     for question, info, (question_id, source_question) in zip(record["questions"], metadata, request["questions"].items()):
         label = source_question["label"]
+        if info["type"] == "choice" and (not isinstance(label, str) or label not in info["keys"]):
+            raise ValueError(f"label for {question_id!r} must be one of {info['keys']}")
+        if info["type"] == "noul" and (type(label) not in (bool, int) or label not in (0, 1)):
+            raise ValueError(f"label for {question_id!r} must be true or false (or 0/1)")
+        if info["type"] == "score" and (type(label) is not int or not 0 <= label < len(info["keys"])):
+            raise ValueError(f"label for {question_id!r} must be an integer in 0..{len(info['keys']) - 1}")
         question["label"] = info["keys"].index(label) if info["type"] == "choice" else int(label)
-        question.update(src=source_question["src"], qtype=info["type"], qid=question_id, keys=info["keys"])
+        question.update(src=source_question.get("src", f"custom_{info['type']}"),
+                        qtype=info["type"], qid=question_id, keys=info["keys"])
         if source_question.get("target") is not None:
-            target = [float(source_question["target"].get(key, 0.0)) for key in question["keys"]]
+            raw_target = source_question["target"]
+            if not isinstance(raw_target, dict) or set(raw_target) - set(info["keys"]):
+                raise ValueError(f"target for {question_id!r} must use the question's option keys")
+            try:
+                target = [float(raw_target.get(key, 0.0)) for key in question["keys"]]
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"target for {question_id!r} must contain numeric weights") from error
+            if any(not math.isfinite(value) or value < 0 for value in target):
+                raise ValueError(f"target for {question_id!r} must contain finite nonnegative weights")
             total = sum(target)
-            if total <= 0:
+            if not math.isfinite(total) or total <= 0:
                 raise ValueError(f"target for {question_id} puts no mass on any option")
             question["target"] = [value / total for value in target]
     return record
+
+
+def validate_dataset(path: str | Path) -> dict:
+    """Validate labelled JSONL without loading weights; return counts by type/source."""
+    records = load_records(path)
+    missing = [item["uri"] for record in records for item in record.get("media", [])
+               if "://" not in item["uri"] and not Path(item["uri"]).is_file()]
+    if missing:
+        raise ValueError(f"{path}: missing media file: {missing[0]}")
+    return {
+        "records": len(records),
+        "questions": sum(len(record["questions"]) for record in records),
+        "types": dict(Counter(q["type"] for record in records for q in record["questions"].values())),
+        "sources": dict(Counter(record["_meta"]["source"] for record in records)),
+    }

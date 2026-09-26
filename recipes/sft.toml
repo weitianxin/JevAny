@@ -1,0 +1,19 @@
+# Run from the repository root after `jevany data init`.
+# A small text backbone for learning the workflow; no task-quality claim.
+base = "Qwen/Qwen2.5-0.5B"
+data = "data/starter/train.jsonl"
+out = "runs/my-jev"
+device = "cuda"
+weights_dtype = "bf16"
+dtype = "bf16"
+lora = 16
+head_dim = 256
+epochs = 3
+lr = 0.0002
+batch = 1
+accum = 8
+checkpointing = 1
+seed = 42
+p_none = 0.0
+p_none_distract = 0.0
+p_distract = 0.0

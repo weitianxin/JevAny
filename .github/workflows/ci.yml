@@ -13,5 +13,13 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - run: uv sync --extra dev --extra serve
-      - run: uv run python -m pytest tests/test_unit.py -q
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: uv venv --python 3.12
+      - run: uv pip install --torch-backend cpu -e '.[dev]'
+      - run: .venv/bin/python -m pytest tests -m 'not server' -q
+        env:
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+      - run: .venv/bin/python -m build

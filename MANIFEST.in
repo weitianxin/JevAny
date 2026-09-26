@@ -1,0 +1,5 @@
+include README.zh-CN.md ACKNOWLEDGEMENTS.md CONTRIBUTING.md ROADMAP.md
+recursive-include examples *.py *.json *.jsonl *.md
+recursive-include recipes *.toml
+recursive-include infra *.sh
+recursive-include scripts *.py *.sh
