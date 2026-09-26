@@ -826,6 +826,9 @@ def main(argv=None):
             tracker.finish()
         print("saved", a.out, flush=True)
     if distributed:
+        # NCCL teardown can create a CUDA context on another local device.
+        # Release cached training buffers on every rank before that happens.
+        empty_cache(dev)
         dist.barrier()
         dist.destroy_process_group()
     return out_dir
