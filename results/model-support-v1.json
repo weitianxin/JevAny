@@ -1,0 +1,5948 @@
+{
+  "date": "2026-09-26",
+  "summary": {
+    "families": 7,
+    "series": 16,
+    "checkpoints": 37,
+    "required_checks": 108,
+    "passed_checks": 108,
+    "missing_checks": 0,
+    "failed_attempts": 15
+  },
+  "hardware": "NVIDIA A100-SXM4-80GB",
+  "training_topology": [
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        1
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        2
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        8
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        2,
+        4
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        8
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        8
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        8
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    },
+    {
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "world_sizes": [
+        8
+      ],
+      "verified_distinct_rank_bindings": 8,
+      "gpus_observed_in_training": 8
+    }
+  ],
+  "utilization": "Each run reserved eight GPUs on one host and launched eight training processes, one per GPU. Downloads, model loading, rank-0-only checkpoint/serving checks and completed worker queues include idle GPU intervals.",
+  "environment": {
+    "python": "3.12",
+    "pytorch": "2.6.0",
+    "cuda": "12.6",
+    "transformers": "5.17.0",
+    "peft": "0.21.0",
+    "accelerate": "1.15.0",
+    "weights_dtype": "bfloat16"
+  },
+  "protocol": {
+    "sft_steps": [
+      12,
+      48
+    ],
+    "rlcr_steps": [
+      2
+    ],
+    "training_fixture_records": 8,
+    "evaluation": "Early runs score four rows; later runs cover all eight training rows. Current media probes score each row in both choice orders (16 evaluations) to match training-time option permutation. Each check records its evaluation size and choice-order coverage.",
+    "reload_max_probability_delta_limit": 1e-05,
+    "sft_requires_lower_final_nll": true,
+    "rlcr_requires_updated_lora_and_finite_losses": true,
+    "serving": "Reloaded checkpoint through the public Python API and FastAPI ASGI HTTP routes, including repeated valid requests, health, model listing and invalid-request rejection."
+  },
+  "scope": "Official pretrained weights, short SFT and RLCR runs, checkpoint reload, Python and HTTP serving. Synthetic optimization fixtures; no task-quality or generalization claim.",
+  "models": [
+    {
+      "family": "Qwen",
+      "series": "Qwen3.8",
+      "size": "27B",
+      "id": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8921655765204923
+            },
+            {
+              "step": 4,
+              "nll": 0.6908708877877312
+            },
+            {
+              "step": 8,
+              "nll": 0.5823770341674711
+            },
+            {
+              "step": 12,
+              "nll": 0.5601120683299707
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.4609667687313106e-08,
+          "media_probability_max_delta": 0.19723975658416748,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5601120683299707
+            },
+            {
+              "step": 1,
+              "nll": 0.47693688046027416
+            },
+            {
+              "step": 2,
+              "nll": 0.4753569298518625
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.4027518519840214e-08,
+          "media_probability_max_delta": 0.26185721158981323,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7964504200853935
+            },
+            {
+              "step": 4,
+              "nll": 0.5765982170070678
+            },
+            {
+              "step": 8,
+              "nll": 0.4685680366866636
+            },
+            {
+              "step": 12,
+              "nll": 0.43359194429361525
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.6431469568599653e-08,
+          "media_probability_max_delta": 0.36060631275177,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.43359194429361525
+            },
+            {
+              "step": 1,
+              "nll": 0.35668784952464816
+            },
+            {
+              "step": 2,
+              "nll": 0.3607664245815
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.70546800015714e-08,
+          "media_probability_max_delta": 0.42153599858283997,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.6",
+      "size": "27B",
+      "id": "Qwen/Qwen3.6-27B",
+      "revision": "6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7734188919841288
+            },
+            {
+              "step": 4,
+              "nll": 0.5770735158072178
+            },
+            {
+              "step": 8,
+              "nll": 0.4722823656388095
+            },
+            {
+              "step": 12,
+              "nll": 0.4469146676225251
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.1875617156320573e-08,
+          "media_probability_max_delta": 0.3102680444717407,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.4469146676225251
+            },
+            {
+              "step": 1,
+              "nll": 0.4091133063242668
+            },
+            {
+              "step": 2,
+              "nll": 0.40910572262701794
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.620035987112914e-08,
+          "media_probability_max_delta": 0.34434643387794495,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.9315116105843512
+            },
+            {
+              "step": 4,
+              "nll": 0.6347775576988248
+            },
+            {
+              "step": 8,
+              "nll": 0.5404091162278712
+            },
+            {
+              "step": 12,
+              "nll": 0.49159872283479206
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.440631241551472e-08,
+          "media_probability_max_delta": 0.27576586604118347,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.49159872283479206
+            },
+            {
+              "step": 1,
+              "nll": 0.443319621608514
+            },
+            {
+              "step": 2,
+              "nll": 0.43965389591663373
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.5741517866985077e-08,
+          "media_probability_max_delta": 0.31402111053466797,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.6",
+      "size": "35B-A3B",
+      "id": "Qwen/Qwen3.6-35B-A3B",
+      "revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+      "model_type": "qwen3_5_moe",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7676158022838593
+            },
+            {
+              "step": 4,
+              "nll": 0.7496277792353871
+            },
+            {
+              "step": 8,
+              "nll": 0.4570709392166751
+            },
+            {
+              "step": 12,
+              "nll": 0.5308021493778441
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.3714515673975995e-08,
+          "media_probability_max_delta": 0.20504236221313477,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5308021493778441
+            },
+            {
+              "step": 1,
+              "nll": 0.6012253685809966
+            },
+            {
+              "step": 2,
+              "nll": 0.5657650076573638
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.289547684775073e-08,
+          "media_probability_max_delta": 0.18808412551879883,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.156293819031471
+            },
+            {
+              "step": 4,
+              "nll": 0.9459328986951341
+            },
+            {
+              "step": 8,
+              "nll": 0.666901027855296
+            },
+            {
+              "step": 12,
+              "nll": 0.8278557420587132
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.0216819662799423e-08,
+          "media_probability_max_delta": 0.04014095664024353,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8278557420587132
+            },
+            {
+              "step": 1,
+              "nll": 0.7752135612855856
+            },
+            {
+              "step": 2,
+              "nll": 0.6995964963334931
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.8086878994516553e-08,
+          "media_probability_max_delta": 0.013548612594604492,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.5",
+      "size": "0.8B",
+      "id": "Qwen/Qwen3.5-0.8B",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 2.37485238710916
+            },
+            {
+              "step": 4,
+              "nll": 1.3837679042143618
+            },
+            {
+              "step": 8,
+              "nll": 0.7147725017099477
+            },
+            {
+              "step": 12,
+              "nll": 0.6693105161343895
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.569808088548342e-08,
+          "media_probability_max_delta": 0.16636860370635986,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6693105161343895
+            },
+            {
+              "step": 1,
+              "nll": 0.6473795830069385
+            },
+            {
+              "step": 2,
+              "nll": 0.6360907039972685
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.0442774029127975e-08,
+          "media_probability_max_delta": 0.20631934702396393,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 3.591405082893813
+            },
+            {
+              "step": 4,
+              "nll": 2.6562265554248055
+            },
+            {
+              "step": 8,
+              "nll": 1.6062401627050291
+            },
+            {
+              "step": 12,
+              "nll": 1.3818134784115466
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.165053180127387e-08,
+          "media_probability_max_delta": 0.008298933506011963,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.3818134784115466
+            },
+            {
+              "step": 1,
+              "nll": 1.098565401857758
+            },
+            {
+              "step": 2,
+              "nll": 1.0765213238906088
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.555884768388864e-08,
+          "media_probability_max_delta": 0.011894792318344116,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.5",
+      "size": "2B",
+      "id": "Qwen/Qwen3.5-2B",
+      "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.7160625210473925
+            },
+            {
+              "step": 4,
+              "nll": 0.8119146367752843
+            },
+            {
+              "step": 8,
+              "nll": 0.544921505345538
+            },
+            {
+              "step": 12,
+              "nll": 0.5308286859841299
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.6570099787015522e-08,
+          "media_probability_max_delta": 0.27950286865234375,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5308286859841299
+            },
+            {
+              "step": 1,
+              "nll": 0.45600858297362157
+            },
+            {
+              "step": 2,
+              "nll": 0.42492058781933373
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.0849714005576345e-08,
+          "media_probability_max_delta": 0.3435106873512268,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.040034947295673
+            },
+            {
+              "step": 4,
+              "nll": 0.6918213256088372
+            },
+            {
+              "step": 8,
+              "nll": 0.7799901620380805
+            },
+            {
+              "step": 12,
+              "nll": 0.8035499239552814
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.455086727832679e-08,
+          "media_probability_max_delta": 0.10980135947465897,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8035499239552814
+            },
+            {
+              "step": 1,
+              "nll": 0.6508776985416342
+            },
+            {
+              "step": 2,
+              "nll": 0.6228148464082517
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.365820139793584e-08,
+          "media_probability_max_delta": 0.15632939338684082,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.5",
+      "size": "4B",
+      "id": "Qwen/Qwen3.5-4B",
+      "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.647803457763067
+            },
+            {
+              "step": 4,
+              "nll": 0.39423374263521177
+            },
+            {
+              "step": 8,
+              "nll": 0.31215351083968645
+            },
+            {
+              "step": 12,
+              "nll": 0.3131005078190418
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.626226131534736e-08,
+          "media_probability_max_delta": 0.5254169702529907,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.3131005078190418
+            },
+            {
+              "step": 1,
+              "nll": 0.19584527695068557
+            },
+            {
+              "step": 2,
+              "nll": 0.20808355176130877
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.596942965700123e-09,
+          "media_probability_max_delta": 0.6486520767211914,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5066134450157245
+            },
+            {
+              "step": 4,
+              "nll": 0.36727905366948493
+            },
+            {
+              "step": 8,
+              "nll": 0.3507383228331479
+            },
+            {
+              "step": 12,
+              "nll": 0.27609711239913737
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.6548450932372134e-08,
+          "media_probability_max_delta": 0.5520313382148743,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.27609711239913737
+            },
+            {
+              "step": 1,
+              "nll": 0.25003464799136477
+            },
+            {
+              "step": 2,
+              "nll": 0.2402478599031952
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.7276128800046706e-08,
+          "media_probability_max_delta": 0.5909923315048218,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.5",
+      "size": "9B",
+      "id": "Qwen/Qwen3.5-9B",
+      "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7247175128243625
+            },
+            {
+              "step": 4,
+              "nll": 0.5954957700643382
+            },
+            {
+              "step": 8,
+              "nll": 0.6172608759599025
+            },
+            {
+              "step": 12,
+              "nll": 0.5966429812056794
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.6474434583766424e-08,
+          "media_probability_max_delta": 0.16944187879562378,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5966429812056794
+            },
+            {
+              "step": 1,
+              "nll": 0.5458527193698687
+            },
+            {
+              "step": 2,
+              "nll": 0.543841474266264
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.1208706185428241e-08,
+          "media_probability_max_delta": 0.20021583139896393,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6981755703826253
+            },
+            {
+              "step": 4,
+              "nll": 0.5581862355965397
+            },
+            {
+              "step": 8,
+              "nll": 0.5296799145200607
+            },
+            {
+              "step": 12,
+              "nll": 0.5172738350231363
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.515125679420805e-08,
+          "media_probability_max_delta": 0.23828254640102386,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5172738350231363
+            },
+            {
+              "step": 1,
+              "nll": 0.4770414277158246
+            },
+            {
+              "step": 2,
+              "nll": 0.4718926040124273
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.596279545854287e-08,
+          "media_probability_max_delta": 0.2757808566093445,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.5",
+      "size": "27B",
+      "id": "Qwen/Qwen3.5-27B",
+      "revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+      "model_type": "qwen3_5",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7368904570449082
+            },
+            {
+              "step": 4,
+              "nll": 0.6284205446811464
+            },
+            {
+              "step": 8,
+              "nll": 0.5892692801973176
+            },
+            {
+              "step": 12,
+              "nll": 0.5861391515460301
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.8701608595073083e-08,
+          "media_probability_max_delta": 0.20383067429065704,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5861391515460301
+            },
+            {
+              "step": 1,
+              "nll": 0.5221794992805099
+            },
+            {
+              "step": 2,
+              "nll": 0.5164061379848804
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.6483375997466965e-08,
+          "media_probability_max_delta": 0.2435009926557541,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7931128353329533
+            },
+            {
+              "step": 4,
+              "nll": 0.6768858418430846
+            },
+            {
+              "step": 8,
+              "nll": 0.627990738724443
+            },
+            {
+              "step": 12,
+              "nll": 0.6049933279218528
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.7091163807012606e-08,
+          "media_probability_max_delta": 0.1891172081232071,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6049933279218528
+            },
+            {
+              "step": 1,
+              "nll": 0.5547846677984108
+            },
+            {
+              "step": 2,
+              "nll": 0.5539787357421222
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.46949861063095e-08,
+          "media_probability_max_delta": 0.20810653269290924,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3.5",
+      "size": "35B-A3B",
+      "id": "Qwen/Qwen3.5-35B-A3B",
+      "revision": "59d61f3ce65a6d9863b86d2e96597125219dc754",
+      "model_type": "qwen3_5_moe",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8827746666101599
+            },
+            {
+              "step": 4,
+              "nll": 0.6702944485334223
+            },
+            {
+              "step": 8,
+              "nll": 0.7360917148194901
+            },
+            {
+              "step": 12,
+              "nll": 0.4984376369856532
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.328017883497125e-08,
+          "media_probability_max_delta": 0.27722179889678955,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.4984376369856532
+            },
+            {
+              "step": 1,
+              "nll": 0.6108697330522792
+            },
+            {
+              "step": 2,
+              "nll": 0.6121532817609061
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.849493835859306e-08,
+          "media_probability_max_delta": 0.15419282019138336,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7022283904369158
+            },
+            {
+              "step": 4,
+              "nll": 0.7334868641131037
+            },
+            {
+              "step": 8,
+              "nll": 0.6584635748244738
+            },
+            {
+              "step": 12,
+              "nll": 0.6844397721409582
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.454882357978306e-08,
+          "media_probability_max_delta": 0.10200732946395874,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6844397721409582
+            },
+            {
+              "step": 1,
+              "nll": 0.5678146931189934
+            },
+            {
+              "step": 2,
+              "nll": 0.5625770383597185
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.2132074617431385e-08,
+          "media_probability_max_delta": 0.17972815036773682,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "0.6B",
+      "id": "Qwen/Qwen3-0.6B",
+      "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "model_type": "qwen3",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 2.1372951618872964
+            },
+            {
+              "step": 4,
+              "nll": 1.3856747205114006
+            },
+            {
+              "step": 8,
+              "nll": 0.6962389069847426
+            },
+            {
+              "step": 12,
+              "nll": 0.584547352818607
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.621064442211775e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.584547352818607
+            },
+            {
+              "step": 1,
+              "nll": 0.5104707403966796
+            },
+            {
+              "step": 2,
+              "nll": 0.5105577072729567
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 7.224632092572847e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "1.7B",
+      "id": "Qwen/Qwen3-1.7B",
+      "revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "model_type": "qwen3",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8203612574643276
+            },
+            {
+              "step": 4,
+              "nll": 0.4342165757081386
+            },
+            {
+              "step": 8,
+              "nll": 0.2192421030955004
+            },
+            {
+              "step": 12,
+              "nll": 0.20675187621734717
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.2196719552432e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.20675187621734717
+            },
+            {
+              "step": 1,
+              "nll": 0.19066836457186812
+            },
+            {
+              "step": 2,
+              "nll": 0.19074808382142486
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.246339911974985e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "4B",
+      "id": "Qwen/Qwen3-4B-Instruct-2507",
+      "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+      "model_type": "qwen3",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7173903796323305
+            },
+            {
+              "step": 4,
+              "nll": 0.3548975007999684
+            },
+            {
+              "step": 8,
+              "nll": 0.25945837702825764
+            },
+            {
+              "step": 12,
+              "nll": 0.26017785010435807
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.560654287555366e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.26017785010435807
+            },
+            {
+              "step": 1,
+              "nll": 0.2250080791983415
+            },
+            {
+              "step": 2,
+              "nll": 0.22339084365060705
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.743156133470762e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "8B",
+      "id": "Qwen/Qwen3-8B",
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "model_type": "qwen3",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6073357466137117
+            },
+            {
+              "step": 4,
+              "nll": 0.24886526625345304
+            },
+            {
+              "step": 8,
+              "nll": 0.117484963686576
+            },
+            {
+              "step": 12,
+              "nll": 0.10505380270556565
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.03520340369812e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.10505380270556565
+            },
+            {
+              "step": 1,
+              "nll": 0.09399039741427882
+            },
+            {
+              "step": 2,
+              "nll": 0.09479916678061756
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.865953040500415e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "14B",
+      "id": "Qwen/Qwen3-14B",
+      "revision": "40c069824f4251a91eefaf281ebe4c544efd3e18",
+      "model_type": "qwen3",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5999675253413683
+            },
+            {
+              "step": 4,
+              "nll": 0.2511585583517152
+            },
+            {
+              "step": 8,
+              "nll": 0.12119213218893266
+            },
+            {
+              "step": 12,
+              "nll": 0.1031982573985198
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.233905747166091e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.1031982573985198
+            },
+            {
+              "step": 1,
+              "nll": 0.0848125019118164
+            },
+            {
+              "step": 2,
+              "nll": 0.08491785181949889
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.4310315800165654e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "30B-A3B",
+      "id": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+      "revision": "0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe",
+      "model_type": "qwen3_moe",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5165912889886665
+            },
+            {
+              "step": 4,
+              "nll": 0.36414642392712016
+            },
+            {
+              "step": 8,
+              "nll": 0.3333231312104231
+            },
+            {
+              "step": 12,
+              "nll": 0.29504923181617304
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.856773189703233e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.29504923181617304
+            },
+            {
+              "step": 1,
+              "nll": 0.2723926980161903
+            },
+            {
+              "step": 2,
+              "nll": 0.2723926628651319
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.45550023542296e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3",
+      "size": "32B",
+      "id": "Qwen/Qwen3-32B",
+      "revision": "9216db5781bf21249d130ec9da846c4624c16137",
+      "model_type": "qwen3",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8097359232278046
+            },
+            {
+              "step": 4,
+              "nll": 0.37907953539486233
+            },
+            {
+              "step": 8,
+              "nll": 0.16482708451556874
+            },
+            {
+              "step": 12,
+              "nll": 0.14589037460601603
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.818281561571382e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.14589037460601603
+            },
+            {
+              "step": 1,
+              "nll": 0.11223170603486228
+            },
+            {
+              "step": 2,
+              "nll": 0.11178548936167827
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.452015029381528e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3-VL",
+      "size": "2B",
+      "id": "Qwen/Qwen3-VL-2B-Instruct",
+      "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+      "model_type": "qwen3_vl",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6770763021833857
+            },
+            {
+              "step": 4,
+              "nll": 0.6374812713260651
+            },
+            {
+              "step": 8,
+              "nll": 0.6178974135422886
+            },
+            {
+              "step": 12,
+              "nll": 0.6155456763033595
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.1616091422084196e-08,
+          "media_probability_max_delta": 0.1540876179933548,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6155456763033595
+            },
+            {
+              "step": 1,
+              "nll": 0.5706724696494268
+            },
+            {
+              "step": 2,
+              "nll": 0.5678404167519966
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.200615445424603e-08,
+          "media_probability_max_delta": 0.17340075969696045,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6634220795705101
+            },
+            {
+              "step": 4,
+              "nll": 0.6263698600659194
+            },
+            {
+              "step": 8,
+              "nll": 0.6273283648046096
+            },
+            {
+              "step": 12,
+              "nll": 0.6074498983967415
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.956383621770641e-08,
+          "media_probability_max_delta": 0.10848820209503174,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6074498983967415
+            },
+            {
+              "step": 1,
+              "nll": 0.5764353649707799
+            },
+            {
+              "step": 2,
+              "nll": 0.5813968385757506
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.044798740387989e-08,
+          "media_probability_max_delta": 0.13927292823791504,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3-VL",
+      "size": "8B",
+      "id": "Qwen/Qwen3-VL-8B-Instruct",
+      "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+      "model_type": "qwen3_vl",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7440900550826378
+            },
+            {
+              "step": 4,
+              "nll": 0.5862445067213288
+            },
+            {
+              "step": 8,
+              "nll": 0.5133375953476359
+            },
+            {
+              "step": 12,
+              "nll": 0.489551674983033
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.1459927885002514e-08,
+          "media_probability_max_delta": 0.26773369312286377,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.489551674983033
+            },
+            {
+              "step": 1,
+              "nll": 0.44024629716038055
+            },
+            {
+              "step": 2,
+              "nll": 0.4329342763516595
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.637145752297897e-08,
+          "media_probability_max_delta": 0.3151446282863617,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8301740032735194
+            },
+            {
+              "step": 4,
+              "nll": 0.7285727434319559
+            },
+            {
+              "step": 8,
+              "nll": 0.6787117978779443
+            },
+            {
+              "step": 12,
+              "nll": 0.6533368120693561
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.8585258998449206e-08,
+          "media_probability_max_delta": 0.0956486165523529,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6533368120693561
+            },
+            {
+              "step": 1,
+              "nll": 0.6190182854712916
+            },
+            {
+              "step": 2,
+              "nll": 0.6266095802373772
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.509207358032285e-08,
+          "media_probability_max_delta": 0.10567730665206909,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3-VL",
+      "size": "32B",
+      "id": "Qwen/Qwen3-VL-32B-Instruct",
+      "revision": "0cfaf48183f594c314753d30a4c4974bc75f3ccb",
+      "model_type": "qwen3_vl",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.0566551482191362
+            },
+            {
+              "step": 4,
+              "nll": 0.6268952938841081
+            },
+            {
+              "step": 8,
+              "nll": 0.4366579411685625
+            },
+            {
+              "step": 12,
+              "nll": 0.39111776450631097
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.516947106290246e-08,
+          "media_probability_max_delta": 0.3861183822154999,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.39111776450631097
+            },
+            {
+              "step": 1,
+              "nll": 0.3129126249970613
+            },
+            {
+              "step": 2,
+              "nll": 0.31041106805957586
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.5390028019222086e-08,
+          "media_probability_max_delta": 0.47061631083488464,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8594005670110649
+            },
+            {
+              "step": 4,
+              "nll": 0.4757946565967835
+            },
+            {
+              "step": 8,
+              "nll": 0.3628195441177431
+            },
+            {
+              "step": 12,
+              "nll": 0.31699730403839704
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.8527157918946102e-08,
+          "media_probability_max_delta": 0.47496670484542847,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.31699730403839704
+            },
+            {
+              "step": 1,
+              "nll": 0.26967140580479293
+            },
+            {
+              "step": 2,
+              "nll": 0.2799658193244138
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.27572407585086e-08,
+          "media_probability_max_delta": 0.5116987228393555,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Qwen",
+      "series": "Qwen3-Coder",
+      "size": "30B-A3B",
+      "id": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+      "revision": "b2cff646eb4bb1d68355c01b18ae02e7cf42d120",
+      "model_type": "qwen3_moe",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7763879667316487
+            },
+            {
+              "step": 4,
+              "nll": 0.5068030233944945
+            },
+            {
+              "step": 8,
+              "nll": 0.3915686542697292
+            },
+            {
+              "step": 12,
+              "nll": 0.30318043209725304
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.001294611783891e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.30318043209725304
+            },
+            {
+              "step": 1,
+              "nll": 0.3231236139473779
+            },
+            {
+              "step": 2,
+              "nll": 0.32075906887216793
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.606851156108149e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Gemma",
+      "series": "Gemma 4",
+      "size": "E4B",
+      "id": "google/gemma-4-E4B-it",
+      "revision": "ee0ef6023621cff504d758262d4e04895a5af4a2",
+      "model_type": "gemma4",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 12,
+          "world_size": 2,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7239610344002884
+            },
+            {
+              "step": 4,
+              "nll": 0.7268016169058642
+            },
+            {
+              "step": 8,
+              "nll": 0.6913911991628876
+            },
+            {
+              "step": 12,
+              "nll": 0.6758037062573851
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.872524467762872e-08,
+          "media_probability_max_delta": 0.08916547894477844,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 2,
+          "world_size": 2,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6758037062573851
+            },
+            {
+              "step": 1,
+              "nll": 0.6802276241934779
+            },
+            {
+              "step": 2,
+              "nll": 0.6802276241934779
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.216511885144712e-08,
+          "media_probability_max_delta": 0.08867663145065308,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 12,
+          "world_size": 2,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.7976791561412708
+            },
+            {
+              "step": 4,
+              "nll": 1.6475177164263557
+            },
+            {
+              "step": 8,
+              "nll": 1.603716798534893
+            },
+            {
+              "step": 12,
+              "nll": 1.534588917648141
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 8.035179888121746e-08,
+          "media_probability_max_delta": 0.02780856192111969,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 2,
+          "world_size": 2,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.534588917648141
+            },
+            {
+              "step": 1,
+              "nll": 1.4601146243925882
+            },
+            {
+              "step": 2,
+              "nll": 1.4601146243925882
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.5196426662054137e-08,
+          "media_probability_max_delta": 0.031983453780412674,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Gemma",
+      "series": "Gemma 4",
+      "size": "12B Unified",
+      "id": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "model_type": "gemma4_unified",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 12,
+          "world_size": 2,
+          "learning_rate": 2e-07,
+          "head_learning_rate": 2e-07,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 3.067436930462615
+            },
+            {
+              "step": 4,
+              "nll": 2.9940951433437655
+            },
+            {
+              "step": 8,
+              "nll": 3.3119788390132254
+            },
+            {
+              "step": 12,
+              "nll": 2.9501788738352825
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.4606108967902856e-08,
+          "media_probability_max_delta": 0.003467049216851592,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 2,
+          "world_size": 2,
+          "learning_rate": 2e-07,
+          "head_learning_rate": 2e-07,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 2.9501788738352825
+            },
+            {
+              "step": 1,
+              "nll": 3.462404616267991
+            },
+            {
+              "step": 2,
+              "nll": 3.462404616267991
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 8.513158500367268e-08,
+          "media_probability_max_delta": 0.006772559601813555,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "2188452",
+          "steps": 48,
+          "world_size": 8,
+          "learning_rate": 2e-07,
+          "head_learning_rate": 0.0001,
+          "evaluation_records": 16,
+          "training_dtype": "fp32",
+          "choice_orders_per_media_row": 2,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 2.4992937488555524
+            },
+            {
+              "step": 16,
+              "nll": 0.0037785586148495224
+            },
+            {
+              "step": 32,
+              "nll": 2.725441810206762e-05
+            },
+            {
+              "step": 48,
+              "nll": 0.0001431966798474159
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.039832245452459e-08,
+          "media_probability_max_delta": 0.9996469616889954,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "2188452",
+          "steps": 2,
+          "world_size": 8,
+          "learning_rate": 2e-07,
+          "head_learning_rate": 0.0001,
+          "evaluation_records": 16,
+          "training_dtype": "fp32",
+          "choice_orders_per_media_row": 2,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.0001431966798474159
+            },
+            {
+              "step": 1,
+              "nll": 0.10779115620889447
+            },
+            {
+              "step": 2,
+              "nll": 0.10779066815149603
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.5576625190845164e-08,
+          "media_probability_max_delta": 0.8041365742683411,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Gemma",
+      "series": "Gemma 4",
+      "size": "31B",
+      "id": "google/gemma-4-31B-it",
+      "revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "model_type": "gemma4",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 9.500544187068941
+            },
+            {
+              "step": 4,
+              "nll": 1.7528480066310848
+            },
+            {
+              "step": 8,
+              "nll": 6.0480841215221535
+            },
+            {
+              "step": 12,
+              "nll": 5.609328402003873
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.87164297791054e-08,
+          "media_probability_max_delta": 2.277211387990974e-05,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 5.609328402003873
+            },
+            {
+              "step": 1,
+              "nll": 2.976017661367089
+            },
+            {
+              "step": 2,
+              "nll": 3.1937924115481446
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.344955024076057e-08,
+          "media_probability_max_delta": 0.0006421208381652832,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "050f45c",
+          "steps": 12,
+          "world_size": 4,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 8,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 4.3768313569301265
+            },
+            {
+              "step": 4,
+              "nll": 3.7786538375555088
+            },
+            {
+              "step": 8,
+              "nll": 3.22670643559651
+            },
+            {
+              "step": 12,
+              "nll": 2.976862528430106
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.7021702542207038e-08,
+          "media_probability_max_delta": 0.0009754346683621407,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "050f45c",
+          "steps": 2,
+          "world_size": 4,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 8,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 2.976862528430106
+            },
+            {
+              "step": 1,
+              "nll": 3.1578029724796997
+            },
+            {
+              "step": 2,
+              "nll": 3.1380959522555747
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.775814093667009e-08,
+          "media_probability_max_delta": 0.0006153092253953218,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Muse",
+      "series": "Glimmer",
+      "size": "30B",
+      "id": "meta-models/Muse-Glimmer-30B",
+      "revision": "a4e59da52a7bc87ae7251dd5545c0dd437c44b68",
+      "model_type": "muse_glimmer",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 12,
+          "world_size": 8,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.8766844912721465
+            },
+            {
+              "step": 4,
+              "nll": 0.7647282564661334
+            },
+            {
+              "step": 8,
+              "nll": 0.7692664540903444
+            },
+            {
+              "step": 12,
+              "nll": 0.7352111823908148
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.7597365897792372e-08,
+          "media_probability_max_delta": 0.02926972508430481,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 2,
+          "world_size": 8,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7352111823908148
+            },
+            {
+              "step": 1,
+              "nll": 0.6629821458280283
+            },
+            {
+              "step": 2,
+              "nll": 0.6836600799816208
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.7057586121360657e-08,
+          "media_probability_max_delta": 0.02344125509262085,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.6545874890758776
+            },
+            {
+              "step": 4,
+              "nll": 1.3552718285041025
+            },
+            {
+              "step": 8,
+              "nll": 1.561229988122907
+            },
+            {
+              "step": 12,
+              "nll": 1.5291128564851761
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.763485340562255e-08,
+          "media_probability_max_delta": 0.022073209285736084,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.5291128564851761
+            },
+            {
+              "step": 1,
+              "nll": 1.2119828804240238
+            },
+            {
+              "step": 2,
+              "nll": 1.266296525160286
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.2618619260607034e-08,
+          "media_probability_max_delta": 0.05935412645339966,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Mistral",
+      "series": "Ministral 3",
+      "size": "3B",
+      "id": "mistralai/Ministral-3-3B-Instruct-2512-BF16",
+      "revision": "b6d637bef2393152b3da2b2fde72eecdee30557e",
+      "model_type": "mistral3",
+      "media": [
+        "image"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6533543404651607
+            },
+            {
+              "step": 4,
+              "nll": 0.2551659751267402
+            },
+            {
+              "step": 8,
+              "nll": 0.15693789952685544
+            },
+            {
+              "step": 12,
+              "nll": 0.1259994051975973
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.455838637478337e-08,
+          "media_probability_max_delta": 0.7655171751976013,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.1259994051975973
+            },
+            {
+              "step": 1,
+              "nll": 0.3316612629681091
+            },
+            {
+              "step": 2,
+              "nll": 0.2884719640563579
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.8133975765444177e-08,
+          "media_probability_max_delta": 0.5504245162010193,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Mistral",
+      "series": "Ministral 3",
+      "size": "8B",
+      "id": "mistralai/Ministral-3-8B-Instruct-2512-BF16",
+      "revision": "f6fae9795746f63c9be8344932f01275f3c63734",
+      "model_type": "mistral3",
+      "media": [
+        "image"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7209891284910717
+            },
+            {
+              "step": 4,
+              "nll": 0.08809724262600829
+            },
+            {
+              "step": 8,
+              "nll": 0.024654764052550675
+            },
+            {
+              "step": 12,
+              "nll": 0.015505788570924425
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 7.086816888879355e-08,
+          "media_probability_max_delta": 0.9693115949630737,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.015505788570924425
+            },
+            {
+              "step": 1,
+              "nll": 0.007046491803784696
+            },
+            {
+              "step": 2,
+              "nll": 0.007758361968528235
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.311598084643208e-08,
+          "media_probability_max_delta": 0.9845643043518066,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Mistral",
+      "series": "Ministral 3",
+      "size": "14B",
+      "id": "mistralai/Ministral-3-14B-Instruct-2512-BF16",
+      "revision": "3cea74c1ebaf5ce5f5a2553de470e2ceab825142",
+      "model_type": "mistral3",
+      "media": [
+        "image"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.884506891104691
+            },
+            {
+              "step": 4,
+              "nll": 0.23030138482061305
+            },
+            {
+              "step": 8,
+              "nll": 0.29359746586185725
+            },
+            {
+              "step": 12,
+              "nll": 0.10354425511485385
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.634169665200915e-08,
+          "media_probability_max_delta": 0.812947154045105,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.10354425511485385
+            },
+            {
+              "step": 1,
+              "nll": 0.0006326230792795305
+            },
+            {
+              "step": 2,
+              "nll": 0.0007271107015860624
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.580039957349015e-08,
+          "media_probability_max_delta": 0.9985467791557312,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Mistral",
+      "series": "Devstral 2",
+      "size": "Small 24B",
+      "id": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+      "revision": "55c5b41e98c2dbd21b0c8afffc540dcfc9eb5128",
+      "model_type": "mistral3",
+      "media": [
+        "image"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7388626648196543
+            },
+            {
+              "step": 4,
+              "nll": 0.0012244216481392496
+            },
+            {
+              "step": 8,
+              "nll": 0.00020325646358024165
+            },
+            {
+              "step": 12,
+              "nll": 3.8682476310617047e-05
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.87451445874143e-09,
+          "media_probability_max_delta": 0.9999226331710815,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 3.8682476310617047e-05
+            },
+            {
+              "step": 1,
+              "nll": 3.2164011371546624e-09
+            },
+            {
+              "step": 2,
+              "nll": 1.8154220327157457e-09
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.8732560775068805e-09,
+          "media_probability_max_delta": 1.0,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "GLM",
+      "series": "GLM-4.7",
+      "size": "Flash 30B-A3B",
+      "id": "zai-org/GLM-4.7-Flash",
+      "revision": "7dd20894a642a0aa287e9827cb1a1f7f91386b67",
+      "model_type": "glm4_moe_lite",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.34145374510396936
+            },
+            {
+              "step": 4,
+              "nll": 0.16430434892697468
+            },
+            {
+              "step": 8,
+              "nll": 0.10864660084897039
+            },
+            {
+              "step": 12,
+              "nll": 0.07678450958645591
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.0630772524252734e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.07678450958645591
+            },
+            {
+              "step": 1,
+              "nll": 0.08907563504446081
+            },
+            {
+              "step": 2,
+              "nll": 0.07452631812331578
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.855813627915097e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "GLM",
+      "series": "GLM-4.6V",
+      "size": "Flash 9B",
+      "id": "zai-org/GLM-4.6V-Flash",
+      "revision": "411bb4d77144a3f03accbf4b780f5acb8b7cde4e",
+      "model_type": "glm4v",
+      "media": [
+        "image",
+        "video"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 12,
+          "world_size": 2,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.6801531474251005
+            },
+            {
+              "step": 4,
+              "nll": 0.7192614791638864
+            },
+            {
+              "step": 8,
+              "nll": 0.6096345068630933
+            },
+            {
+              "step": 12,
+              "nll": 0.5681991087802313
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 1.811809602347836e-08,
+          "media_probability_max_delta": 0.1359085738658905,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "fc6cca0",
+          "smoke_script_commit": "fc6cca0",
+          "steps": 2,
+          "world_size": 2,
+          "learning_rate": 2e-06,
+          "head_learning_rate": 2e-06,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5681991087802313
+            },
+            {
+              "step": 1,
+              "nll": 0.4656021600291726
+            },
+            {
+              "step": 2,
+              "nll": 0.5529602320755561
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.0585564586284022e-08,
+          "media_probability_max_delta": 0.16979944705963135,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 2.262259356276777
+            },
+            {
+              "step": 4,
+              "nll": 1.7730891974425809
+            },
+            {
+              "step": 8,
+              "nll": 1.4682114729047866
+            },
+            {
+              "step": 12,
+              "nll": 1.1438385443080878
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.586671553674648e-08,
+          "media_probability_max_delta": 0.05426818132400513,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "video",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.1438385443080878
+            },
+            {
+              "step": 1,
+              "nll": 0.5069838148881761
+            },
+            {
+              "step": 2,
+              "nll": 0.8426279674704841
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.281684240492467e-08,
+          "media_probability_max_delta": 0.06010034680366516,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Nemotron",
+      "series": "Nemotron 3.5 Lightning",
+      "size": "30B-A3B",
+      "id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "revision": "a9904d24bcc1d289a1950fa9d2b978c47cf903b9",
+      "model_type": "nemotron_h",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.0011045824068263
+            },
+            {
+              "step": 4,
+              "nll": 0.46751652615165656
+            },
+            {
+              "step": 8,
+              "nll": 0.3076794668068688
+            },
+            {
+              "step": 12,
+              "nll": 0.28323507763900746
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.3951371431205644e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.28323507763900746
+            },
+            {
+              "step": 1,
+              "nll": 0.2500386238475692
+            },
+            {
+              "step": 2,
+              "nll": 0.2407827796887858
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.664571101071658e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Nemotron",
+      "series": "Nemotron 3 Nano",
+      "size": "4B",
+      "id": "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",
+      "revision": "dfaf35de3e30f1867dd8dbc38a7fc9fb52d3914f",
+      "model_type": "nemotron_h",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.902488256723772
+            },
+            {
+              "step": 4,
+              "nll": 0.031078328308088907
+            },
+            {
+              "step": 8,
+              "nll": 0.003726562841948771
+            },
+            {
+              "step": 12,
+              "nll": 0.0022467991653224067
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 7.927929079887264e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.0022467991653224067
+            },
+            {
+              "step": 1,
+              "nll": 0.0008645184712642189
+            },
+            {
+              "step": 2,
+              "nll": 0.0008705165191784632
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.644437011704696e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Nemotron",
+      "series": "Nemotron 3 Nano",
+      "size": "30B-A3B",
+      "id": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+      "revision": "bf77c3174f68ad409e1c2aa60daeb46e32d1c606",
+      "model_type": "nemotron_h",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.116592182617672
+            },
+            {
+              "step": 4,
+              "nll": 0.3732375024956191
+            },
+            {
+              "step": 8,
+              "nll": 0.16574059199837624
+            },
+            {
+              "step": 12,
+              "nll": 0.1319347256695699
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 3.941613879732131e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.1319347256695699
+            },
+            {
+              "step": 1,
+              "nll": 0.16620837580269562
+            },
+            {
+              "step": 2,
+              "nll": 0.1662083266538116
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 7.643639610144248e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Llama",
+      "series": "Llama 3.2",
+      "size": "1B",
+      "id": "meta-llama/Llama-3.2-1B-Instruct",
+      "revision": "9213176726f574b556790deb65791e0c5aa438b6",
+      "model_type": "llama",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "050f45c",
+          "steps": 12,
+          "world_size": 2,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 8,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.7050515691777438
+            },
+            {
+              "step": 4,
+              "nll": 0.48746476453033455
+            },
+            {
+              "step": 8,
+              "nll": 0.29931998379726804
+            },
+            {
+              "step": 12,
+              "nll": 0.27079589473892124
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 5.162610561271208e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "050f45c",
+          "steps": 2,
+          "world_size": 2,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 8,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.27079589473892124
+            },
+            {
+              "step": 1,
+              "nll": 0.24096575611735851
+            },
+            {
+              "step": 2,
+              "nll": 0.24010868662515886
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.436607213888834e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Llama",
+      "series": "Llama 3.2",
+      "size": "3B",
+      "id": "meta-llama/Llama-3.2-3B-Instruct",
+      "revision": "0cb88a4f764b7a12671c53f0838cd831a0843b95",
+      "model_type": "llama",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "050f45c",
+          "steps": 12,
+          "world_size": 2,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 8,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.5818086873071476
+            },
+            {
+              "step": 4,
+              "nll": 0.24696859144062153
+            },
+            {
+              "step": 8,
+              "nll": 0.12362178310169364
+            },
+            {
+              "step": 12,
+              "nll": 0.11174212961539276
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 6.893178228217778e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "0aebd56",
+          "smoke_script_commit": "050f45c",
+          "steps": 2,
+          "world_size": 2,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 8,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.11174212961539276
+            },
+            {
+              "step": 1,
+              "nll": 0.09789839433299136
+            },
+            {
+              "step": 2,
+              "nll": 0.09857387702092794
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 7.09824254929714e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Llama",
+      "series": "Llama 3.2",
+      "size": "11B Vision",
+      "id": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+      "revision": "9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+      "model_type": "mllama",
+      "media": [
+        "image"
+      ],
+      "checks": [
+        {
+          "input": "image",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 1.0050617595425884
+            },
+            {
+              "step": 4,
+              "nll": 0.4044184086600414
+            },
+            {
+              "step": 8,
+              "nll": 0.2685713515707603
+            },
+            {
+              "step": 12,
+              "nll": 0.20659391018307718
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 4.554277444057675e-08,
+          "media_probability_max_delta": 0.6544265151023865,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "image",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": 1,
+          "mixed_text": true,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.20659391018307718
+            },
+            {
+              "step": 1,
+              "nll": 0.0659601324648332
+            },
+            {
+              "step": 2,
+              "nll": 0.06544764916816204
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 2.5400005432274497e-08,
+          "media_probability_max_delta": 0.8747313618659973,
+          "serving": {
+            "passed": true,
+            "requests": 2,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "family": "Llama",
+      "series": "Llama 3.1",
+      "size": "8B",
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "model_type": "llama",
+      "media": [],
+      "checks": [
+        {
+          "input": "text",
+          "objective": "sft",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 12,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.9652745509766251
+            },
+            {
+              "step": 4,
+              "nll": 0.3400235025166058
+            },
+            {
+              "step": 8,
+              "nll": 0.1778184173930867
+            },
+            {
+              "step": 12,
+              "nll": 0.15355203267951553
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 7.531054169174212e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        },
+        {
+          "input": "text",
+          "objective": "rlcr",
+          "trainer_commit": "3072b67",
+          "smoke_script_commit": "3072b67",
+          "steps": 2,
+          "world_size": 1,
+          "learning_rate": 2e-05,
+          "head_learning_rate": 2e-05,
+          "evaluation_records": 4,
+          "training_dtype": "bf16",
+          "choice_orders_per_media_row": null,
+          "mixed_text": false,
+          "losses": [
+            {
+              "step": 0,
+              "nll": 0.15355203267951553
+            },
+            {
+              "step": 1,
+              "nll": 0.12783068624762128
+            },
+            {
+              "step": 2,
+              "nll": 0.13231461412005577
+            }
+          ],
+          "lora_updated": true,
+          "adapter_tensors_finite": true,
+          "checkpoint_probability_max_delta": 8.108203075618547e-08,
+          "media_probability_max_delta": null,
+          "serving": {
+            "passed": true,
+            "requests": 1,
+            "python_http_answers_equal": true,
+            "repeated_requests": true,
+            "invalid_requests_rejected": true,
+            "health": true,
+            "model_description": true
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "failed_attempts": [
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "image",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 3.067436930462615
+        },
+        {
+          "step": 4,
+          "nll": 2.59458173577126
+        },
+        {
+          "step": 8,
+          "nll": 4.238114785312695
+        },
+        {
+          "step": 12,
+          "nll": 4.318090081665966
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 5.460353347253033e-08,
+      "media_probability_max_delta": 1.928492565639317e-06,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.016129901330565077
+        },
+        {
+          "step": 4,
+          "nll": 2.9440306481738885
+        },
+        {
+          "step": 8,
+          "nll": 5.858101415175186
+        },
+        {
+          "step": 12,
+          "nll": 6.027228951959009
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 2.2129241550317147e-08,
+      "media_probability_max_delta": 9.159326873486862e-05,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-31B-it",
+      "revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 5.070179715094186
+        },
+        {
+          "step": 4,
+          "nll": 1.7791434262117185
+        },
+        {
+          "step": 8,
+          "nll": 5.392940576572548
+        },
+        {
+          "step": 12,
+          "nll": 6.253563241514641
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 2.7728468743326573e-08,
+      "media_probability_max_delta": 3.718487505466328e-06,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-E4B-it",
+      "revision": "ee0ef6023621cff504d758262d4e04895a5af4a2",
+      "input": "image",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.5783584154760963
+        },
+        {
+          "step": 4,
+          "nll": 0.5917458574010224
+        },
+        {
+          "step": 8,
+          "nll": 0.5610316596803396
+        },
+        {
+          "step": 12,
+          "nll": 0.670894340733455
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 0.19861988069571912,
+      "media_probability_max_delta": 0.032271504402160645,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-E4B-it",
+      "revision": "ee0ef6023621cff504d758262d4e04895a5af4a2",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 1.2136421813030713
+        },
+        {
+          "step": 4,
+          "nll": 0.7934197216451336
+        },
+        {
+          "step": 8,
+          "nll": 0.7670432403870417
+        },
+        {
+          "step": 12,
+          "nll": 0.6921922879210968
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 0.1785478847155828,
+      "media_probability_max_delta": 0.021107137203216553,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "zai-org/GLM-4.6V-Flash",
+      "revision": "411bb4d77144a3f03accbf4b780f5acb8b7cde4e",
+      "input": "image",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.6801531474251005
+        },
+        {
+          "step": 4,
+          "nll": 0.39095435360827835
+        },
+        {
+          "step": 8,
+          "nll": 1.1131024436218941
+        },
+        {
+          "step": 12,
+          "nll": 0.8457199328804461
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 4.0198843365146786e-08,
+      "media_probability_max_delta": 0.10413423180580139,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "meta-models/Muse-Glimmer-30B",
+      "revision": "a4e59da52a7bc87ae7251dd5545c0dd437c44b68",
+      "input": "image",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "smoke_script_commit": "3072b67",
+      "steps": 12,
+      "world_size": 1,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.8766844912721465
+        },
+        {
+          "step": 4,
+          "nll": 1.0413822787260703
+        },
+        {
+          "step": 8,
+          "nll": 1.9860125388247025
+        },
+        {
+          "step": 12,
+          "nll": 1.9201973197057574
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 4.73656182053972e-08,
+      "media_probability_max_delta": 0.000641409307718277,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "fc6cca0",
+      "smoke_script_commit": "fc6cca0",
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-07,
+      "head_learning_rate": 2e-07,
+      "evaluation_records": 4,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.016129901330565077
+        },
+        {
+          "step": 4,
+          "nll": 2.1476104271385075
+        },
+        {
+          "step": 8,
+          "nll": 2.3822926422612736
+        },
+        {
+          "step": 12,
+          "nll": 0.3268190160937765
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 3.490907263259402e-08,
+      "media_probability_max_delta": 0.473794549703598,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "0aebd56",
+      "smoke_script_commit": "050f45c",
+      "steps": 12,
+      "world_size": 4,
+      "learning_rate": 2e-07,
+      "head_learning_rate": 2e-07,
+      "evaluation_records": 8,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.43169017140085936
+        },
+        {
+          "step": 4,
+          "nll": 2.209118729750478
+        },
+        {
+          "step": 8,
+          "nll": 0.428033969902221
+        },
+        {
+          "step": 12,
+          "nll": 0.6283414220361947
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 4.929783015139577e-08,
+      "media_probability_max_delta": 0.5365740060806274,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "0aebd56",
+      "smoke_script_commit": "050f45c",
+      "steps": 12,
+      "world_size": 8,
+      "learning_rate": 2e-08,
+      "head_learning_rate": 2e-08,
+      "evaluation_records": 8,
+      "training_dtype": "bf16",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.43169017140085936
+        },
+        {
+          "step": 4,
+          "nll": 1.8855636588870404
+        },
+        {
+          "step": 8,
+          "nll": 2.167302925934377
+        },
+        {
+          "step": 12,
+          "nll": 2.1902911113532237
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 4.952676191383176e-08,
+      "media_probability_max_delta": 0.41807734966278076,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "0aebd56",
+      "smoke_script_commit": "1475a39",
+      "steps": 12,
+      "world_size": 8,
+      "learning_rate": 2e-07,
+      "head_learning_rate": 2e-07,
+      "evaluation_records": 8,
+      "training_dtype": "fp32",
+      "choice_orders_per_media_row": 1,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.43169017140085936
+        },
+        {
+          "step": 4,
+          "nll": 0.6489325958143026
+        },
+        {
+          "step": 8,
+          "nll": 0.7579703897491016
+        },
+        {
+          "step": 12,
+          "nll": 0.7098322689609706
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 5.639273181756721e-08,
+      "media_probability_max_delta": 0.298561692237854,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    },
+    {
+      "checkpoint": "google/gemma-4-12B-it",
+      "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "input": "video",
+      "objective": "sft",
+      "trainer_commit": "0aebd56",
+      "smoke_script_commit": "2188452",
+      "steps": 12,
+      "world_size": 8,
+      "learning_rate": 2e-07,
+      "head_learning_rate": 2e-07,
+      "evaluation_records": 16,
+      "training_dtype": "fp32",
+      "choice_orders_per_media_row": 2,
+      "mixed_text": true,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 2.4992937488555524
+        },
+        {
+          "step": 4,
+          "nll": 2.4896682924377687
+        },
+        {
+          "step": 8,
+          "nll": 2.4770805530000275
+        },
+        {
+          "step": 12,
+          "nll": 2.6063668255478007
+        }
+      ],
+      "lora_updated": true,
+      "adapter_tensors_finite": true,
+      "checkpoint_probability_max_delta": 6.169522581700448e-08,
+      "media_probability_max_delta": 0.9164793491363525,
+      "serving": {
+        "passed": true,
+        "requests": 2,
+        "python_http_answers_equal": true,
+        "repeated_requests": true,
+        "invalid_requests_rejected": true,
+        "health": true,
+        "model_description": true
+      },
+      "passed": false
+    }
+  ],
+  "failed_process_attempts": [
+    {
+      "checkpoint": "meta-llama/Llama-3.2-1B-Instruct",
+      "revision": "9213176726f574b556790deb65791e0c5aa438b6",
+      "input": "text",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "reason": "Validation snapshot retained HTTP gzip encoding in tokenizer JSON; restaged with HTTP decoding."
+    },
+    {
+      "checkpoint": "meta-llama/Llama-3.2-3B-Instruct",
+      "revision": "0cb88a4f764b7a12671c53f0838cd831a0843b95",
+      "input": "text",
+      "objective": "sft",
+      "trainer_commit": "3072b67",
+      "reason": "Validation snapshot retained HTTP gzip encoding in tokenizer JSON; restaged with HTTP decoding."
+    },
+    {
+      "checkpoint": "meta-models/Muse-Glimmer-30B",
+      "revision": "a4e59da52a7bc87ae7251dd5545c0dd437c44b68",
+      "input": "image",
+      "objective": "sft",
+      "trainer_commit": "fc6cca0",
+      "reason": "NCCL teardown exhausted device memory while restoring a CUDA context; release cached training buffers before teardown."
+    }
+  ]
+}

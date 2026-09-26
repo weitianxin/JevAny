@@ -207,6 +207,10 @@ Live model runs currently use text state. Robot control uses the separate `.[rob
 
 [Full results and evaluation protocols](docs/EVALUATION.md).
 
+## Supported Model Families
+
+![Supported model families, series and checkpoint sizes](docs/supported-model-families.svg)
+
 ## Documentation and Contributing
 
 [Training](docs/TRAINING.md) · [Deployment](docs/DEPLOYMENT.md) · [API compatibility](docs/API.md) · [Data](docs/DATA.md) · [Evaluation](docs/EVALUATION.md) · [Contributing](CONTRIBUTING.md)

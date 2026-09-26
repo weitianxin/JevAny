@@ -207,6 +207,10 @@ jevany demo --base-url http://127.0.0.1:8008 --text-only
 
 [完整结果与评测设置](docs/EVALUATION.md)。
 
+## Supported Model Families
+
+![支持的模型 family、series 与 checkpoint 尺寸](docs/supported-model-families.svg)
+
 ## 文档与贡献
 
 [训练](docs/TRAINING.md) · [部署](docs/DEPLOYMENT.md) · [API 兼容性](docs/API.md) · [数据](docs/DATA.md) · [评测](docs/EVALUATION.md) · [贡献指南](CONTRIBUTING.md)

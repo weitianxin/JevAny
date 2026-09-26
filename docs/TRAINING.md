@@ -325,6 +325,13 @@ or resource-provider SDK.
 
 ### Short compatibility checks
 
+The [pretrained validation record](../results/model-support-v1.json) covers all
+37 catalog checkpoints with 108 passing input/objective checks. It includes
+revisions, learning rates, precision, reload errors, serving checks and failed
+attempts. Most SFT checks use 12 steps, followed by two RLCR steps. The Gemma 4
+12B video check uses 48 SFT steps, `--dtype fp32`, `--lr 2e-7` and
+`--head-lr 1e-4`, with BF16 frozen weights.
+
 The offline tests use real, tiny Transformers architectures for the selected
 families, plus a GPT-2 fixture for the generic custom-backbone contract. They
 cover sliding-window and recurrent layers, MoE forwards, LoRA selection and gradients, added-token embeddings,

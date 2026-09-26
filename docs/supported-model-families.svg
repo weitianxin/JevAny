@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 1040" width="1120" height="1040">
+<title>JevAny supported model families</title>
+<desc>Seven families, sixteen series and thirty-seven official checkpoints. Each size selects one main checkpoint; quantized and Base variants are not separate entries.</desc>
+<rect width="1120" height="1040" rx="24" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="36" y="43" font-size="27" fill="#202938" font-weight="700" text-anchor="start">7 families</text>
+<text x="1084" y="43" font-size="22" fill="#596579" font-weight="400" text-anchor="end">16 series  ·  37 checkpoints</text>
+<rect x="36" y="72" width="1048" height="344" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="58" y="96" width="5" height="25" rx="2" fill="#7260cc"/>
+<text x="76" y="118" font-size="27" fill="#202938" font-weight="700" text-anchor="start">Qwen</text>
+<text x="1060" y="117" font-size="17" fill="#687487" font-weight="400" text-anchor="end">6 series · 20 models</text>
+<text x="60" y="153" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Qwen3.8</text>
+<text x="60" y="182" font-size="21" fill="#202938" font-weight="400" text-anchor="start">27B</text>
+<text x="60" y="237" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Qwen3.6</text>
+<text x="60" y="266" font-size="21" fill="#202938" font-weight="400" text-anchor="start">27B  ·  35B-A3B</text>
+<text x="60" y="321" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Qwen3.5</text>
+<text x="60" y="350" font-size="21" fill="#202938" font-weight="400" text-anchor="start">0.8B  ·  2B  ·  4B  ·  9B  ·  27B</text>
+<text x="60" y="376" font-size="21" fill="#202938" font-weight="400" text-anchor="start">35B-A3B</text>
+<text x="592" y="153" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Qwen3</text>
+<text x="592" y="182" font-size="21" fill="#202938" font-weight="400" text-anchor="start">0.6B  ·  1.7B  ·  4B (2507)  ·  8B</text>
+<text x="592" y="208" font-size="21" fill="#202938" font-weight="400" text-anchor="start">14B  ·  30B-A3B (2507)  ·  32B</text>
+<text x="592" y="237" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Qwen3-VL</text>
+<text x="592" y="266" font-size="21" fill="#202938" font-weight="400" text-anchor="start">2B  ·  8B  ·  32B</text>
+<text x="592" y="321" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Qwen3-Coder</text>
+<text x="592" y="350" font-size="21" fill="#202938" font-weight="400" text-anchor="start">30B-A3B</text>
+<rect x="36" y="440" width="512" height="140" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="58" y="464" width="5" height="25" rx="2" fill="#3875cf"/>
+<text x="76" y="486" font-size="27" fill="#202938" font-weight="700" text-anchor="start">Gemma</text>
+<text x="524" y="485" font-size="17" fill="#687487" font-weight="400" text-anchor="end">1 series · 3 models</text>
+<text x="60" y="520" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Gemma 4</text>
+<text x="60" y="549" font-size="21" fill="#202938" font-weight="400" text-anchor="start">E4B  ·  12B Unified  ·  31B</text>
+<rect x="572" y="440" width="512" height="140" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="594" y="464" width="5" height="25" rx="2" fill="#356e9a"/>
+<text x="612" y="486" font-size="27" fill="#202938" font-weight="700" text-anchor="start">Muse</text>
+<text x="1060" y="485" font-size="17" fill="#687487" font-weight="400" text-anchor="end">1 series · 1 model</text>
+<text x="596" y="520" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Glimmer</text>
+<text x="596" y="549" font-size="21" fill="#202938" font-weight="400" text-anchor="start">30B</text>
+<rect x="36" y="604" width="512" height="186" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="58" y="628" width="5" height="25" rx="2" fill="#cc8136"/>
+<text x="76" y="650" font-size="27" fill="#202938" font-weight="700" text-anchor="start">Mistral</text>
+<text x="524" y="649" font-size="17" fill="#687487" font-weight="400" text-anchor="end">2 series · 4 models</text>
+<text x="60" y="684" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Ministral 3</text>
+<text x="60" y="713" font-size="21" fill="#202938" font-weight="400" text-anchor="start">3B  ·  8B  ·  14B</text>
+<text x="60" y="750" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Devstral 2</text>
+<text x="60" y="779" font-size="21" fill="#202938" font-weight="400" text-anchor="start">Small 24B</text>
+<rect x="572" y="604" width="512" height="186" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="594" y="628" width="5" height="25" rx="2" fill="#4d7caa"/>
+<text x="612" y="650" font-size="27" fill="#202938" font-weight="700" text-anchor="start">GLM</text>
+<text x="1060" y="649" font-size="17" fill="#687487" font-weight="400" text-anchor="end">2 series · 2 models</text>
+<text x="596" y="684" font-size="18" fill="#596579" font-weight="600" text-anchor="start">GLM-4.7</text>
+<text x="596" y="713" font-size="21" fill="#202938" font-weight="400" text-anchor="start">Flash 30B-A3B</text>
+<text x="596" y="750" font-size="18" fill="#596579" font-weight="600" text-anchor="start">GLM-4.6V</text>
+<text x="596" y="779" font-size="21" fill="#202938" font-weight="400" text-anchor="start">Flash 9B</text>
+<rect x="36" y="814" width="512" height="194" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="58" y="838" width="5" height="25" rx="2" fill="#67833c"/>
+<text x="76" y="860" font-size="27" fill="#202938" font-weight="700" text-anchor="start">Nemotron</text>
+<text x="524" y="859" font-size="17" fill="#687487" font-weight="400" text-anchor="end">2 series · 3 models</text>
+<text x="60" y="894" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Nemotron 3.5 Lightning</text>
+<text x="60" y="923" font-size="21" fill="#202938" font-weight="400" text-anchor="start">30B-A3B</text>
+<text x="60" y="960" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Nemotron 3 Nano</text>
+<text x="60" y="989" font-size="21" fill="#202938" font-weight="400" text-anchor="start">4B  ·  30B-A3B</text>
+<rect x="572" y="814" width="512" height="194" rx="18" fill="#f8fafc" stroke="#e1e6ed"/>
+<rect x="594" y="838" width="5" height="25" rx="2" fill="#317ac0"/>
+<text x="612" y="860" font-size="27" fill="#202938" font-weight="700" text-anchor="start">Llama</text>
+<text x="1060" y="859" font-size="17" fill="#687487" font-weight="400" text-anchor="end">2 series · 4 models</text>
+<text x="596" y="894" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Llama 3.2</text>
+<text x="596" y="923" font-size="21" fill="#202938" font-weight="400" text-anchor="start">1B  ·  3B  ·  11B Vision</text>
+<text x="596" y="960" font-size="18" fill="#596579" font-weight="600" text-anchor="start">Llama 3.1</text>
+<text x="596" y="989" font-size="21" fill="#202938" font-weight="400" text-anchor="start">8B</text>
+</g>
+</svg>
