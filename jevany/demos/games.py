@@ -36,12 +36,13 @@ class Crafter:
         import crafter
         self.env = crafter.Env(size=(360, 360), seed=17 if seed is None else seed,
                                length=CASES["crafter"]["limit"])
-        self.env.reset()
+        self.image = self.env.reset()
         self.names = list(self.env.action_names)
         self.steps, self.done, self.success = 0, False, False
         self.feedback = "Collect wood from a tree with Interact, then build your tools."
         self.origin = self.env._player.pos.copy()
         self.seen_resources = {}
+        self.visits = {(0, 0): 1}
         self.last_action_effect = None
         self.frames = []
         return self.observe()
@@ -74,6 +75,12 @@ class Crafter:
             "inventory": dict(player.inventory),
             "achievements": dict(player.achievements),
             "position_xy": position,
+            "position_visits": self.visits.get(tuple(position), 0),
+            "adjacent_visits": {
+                name: self.visits.get((position[0] + dx, position[1] + dy), 0)
+                for name, (dx, dy) in {"west": (-1, 0), "east": (1, 0),
+                                       "north": (0, -1), "south": (0, 1)}.items()
+            },
             "facing_xy": facing,
             "front_tile": cells[3 + facing[1]][4 + facing[0]],
             "visible_grid": cells,
@@ -83,8 +90,53 @@ class Crafter:
                 for coordinate, (tile, turn) in self.seen_resources.items()
             ],
             "last_action_effect": self.last_action_effect,
+            "action_context": self._action_context(cells),
             "turn": self.steps, "feedback": self.feedback,
         }
+
+    def _action_context(self, cells: list[list[str]]) -> dict[str, str]:
+        from crafter import constants
+        inventory = self.env._player.inventory
+        facing = self.env._player.facing
+        front = cells[3 + facing[1]][4 + facing[0]]
+        nearby = {tile for row in cells[2:5] for tile in row[3:6]}
+        context = {}
+        for action, (dx, dy) in {
+            "move_left": (-1, 0), "move_right": (1, 0),
+            "move_up": (0, -1), "move_down": (0, 1),
+        }.items():
+            tile = cells[3 + dy][4 + dx]
+            result = ("move one tile" if tile in constants.walkable else
+                      "enter lava and die" if tile == "lava" else "turn to face it without moving")
+            context[action] = f"Adjacent destination is {tile}: {result}."
+        collect = constants.collect.get(front)
+        context["do"] = f"Current interaction target is the adjacent {front}."
+        if collect:
+            context["do"] += " Can yield " + ", ".join(
+                f"{amount} {item}" for item, amount in collect["receive"].items()) + "."
+            missing = [f"{item}={amount} (carrying {inventory[item]})"
+                       for item, amount in collect["require"].items() if inventory[item] < amount]
+            if missing:
+                context["do"] += " Requirements NOT met: " + ", ".join(missing) + "."
+            if collect.get("probability", 1) < 1:
+                context["do"] += f" Yield probability is {collect['probability']:g}."
+        elif front in ("table", "furnace", "sand", "path", "boundary"):
+            context["do"] += " Interacting with this tile produces no item."
+        for prefix, recipes in (("place", constants.place), ("make", constants.make)):
+            for item, recipe in recipes.items():
+                action = f"{prefix}_{item}"
+                if action not in self.names:
+                    continue
+                missing = [f"{key}={amount} (carrying {inventory[key]})"
+                           for key, amount in recipe["uses"].items() if inventory[key] < amount]
+                missing += [f"nearby {utility}" for utility in recipe.get("nearby", []) if utility not in nearby]
+                if "where" in recipe and front not in recipe["where"]:
+                    missing.append(f"empty {'/'.join(recipe['where'])} in front (currently {front})")
+                context[action] = ("Requirements NOT met: " + ", ".join(missing) + "." if missing
+                                   else "Requirements are met.")
+                count = self.env._player.achievements.get(action, 0)
+                context[action] += f" Already completed {count} time(s) this episode."
+        return context
 
     def get_all_actions(self) -> list[str]:
         return [] if self.done else self.names[:]
@@ -93,7 +145,7 @@ class Crafter:
         if action not in self.get_all_actions():
             raise ValueError(f"unavailable Crafter action: {action!r}")
         before = self.observe()
-        _, reward, terminal, info = self.env.step(self.names.index(action))
+        self.image, reward, terminal, info = self.env.step(self.names.index(action))
         self.steps += 1
         unlocked = [key for key, value in info["achievements"].items()
                     if value > before["achievements"][key]]
@@ -111,6 +163,8 @@ class Crafter:
         }
         effects = []
         if any(movement):
+            position = tuple(int(v) for v in self.env._player.pos - self.origin)
+            self.visits[position] = self.visits.get(position, 0) + 1
             effects.append(f"moved ({movement[0]:+d}, {movement[1]:+d})")
         elif action.startswith("move_"):
             effects.append("faced that direction but did not move")
@@ -120,7 +174,9 @@ class Crafter:
             effects.append("achieved " + ", ".join(unlocked))
         if not effects:
             effects.append("no change to position, inventory, or achievements")
-        self.feedback = f"{action} facing {before['front_tile']}: " + "; ".join(effects) + "."
+        target = "" if action.startswith("move_") else f" facing {before['front_tile']}"
+        x, y = self.env._player.pos - self.origin
+        self.feedback = f"{action}{target}: " + "; ".join(effects) + f". Position ({x}, {y})."
         if self.done:
             self.feedback = ("Stone collected with a crafted pickaxe." if self.success else
                              "Episode ended before the crafting goal was completed.")
@@ -128,7 +184,9 @@ class Crafter:
         return self.observe(), float(reward), self.done, {"success": self.success}
 
     def render(self):
-        return self.env.render()
+        # Crafter's night lighting consumes the simulation RNG when rendered.
+        # Reuse the native observation so reading an image cannot change a run.
+        return self.image
 
     def close(self) -> None:
         pass

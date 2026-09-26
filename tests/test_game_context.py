@@ -27,7 +27,7 @@ def test_crafter_request_preserves_map_geometry_progress_and_all_actions():
     assert "place_table=DONE" in record["state"]
     assert "make_wood_pickaxe=pending" in record["state"]
     assert "Table within crafting distance: yes" in record["state"]
-    assert "dx=+6, dy=+1; last seen turn 8" in record["state"]
+    assert "6 tile(s) east and 1 tile(s) south (last seen turn 8)" in record["state"]
     assert request["questions"]["action"]["criteria"] == Crafter.ACTION_LOOKUP
     assert observation == original
 
@@ -46,6 +46,9 @@ def test_crafter_feedback_reports_failed_crafting_and_invalid_actions():
         assert after["last_action_effect"]["inventory_changes"] == {}
         assert "no change to position, inventory, or achievements" in after["feedback"]
         assert set(env.get_all_actions()) == set(Crafter.ACTION_LOOKUP)
+        assert "wood=1 (carrying 0)" in after["action_context"]["make_wood_pickaxe"]
+        assert "nearby table" in after["action_context"]["make_wood_pickaxe"]
+        assert "sapling" in after["action_context"]["do"]
     finally:
         env.close()
 
@@ -80,5 +83,21 @@ def test_crafter_memory_contains_only_observed_resources_and_forgets_harvested_t
         assert env.observe()["position_xy"] == [0, 0]
         assert env.observe()["last_action_effect"] is None
         assert all(r["last_seen_turn"] == 0 for r in env.observe()["known_resources"])
+    finally:
+        env.close()
+
+
+@pytest.mark.demo
+def test_crafter_repeated_screenshots_do_not_change_simulation_rng():
+    pytest.importorskip("crafter")
+    import numpy as np
+    env = Crafter(17)
+    try:
+        env.env._world.daylight = .1
+        before = env.env._world.random.get_state()
+        first, second = env.render(), env.render()
+        after = env.env._world.random.get_state()
+        assert np.array_equal(first, second)
+        assert all(np.array_equal(a, b) for a, b in zip(before, after))
     finally:
         env.close()

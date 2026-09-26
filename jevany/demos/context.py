@@ -32,13 +32,17 @@ def crafter_state(observation: dict[str, Any]) -> str:
     grid = observation["visible_grid"]
     facing = DIRECTIONS[tuple(observation["facing_xy"])]
     goals = ("collect_wood", "place_table", "make_wood_pickaxe", "collect_stone")
+    wood_needed = (0 if achievements["place_table"] else 2) + (0 if inventory["wood_pickaxe"] else 1)
     lines = [
         f"Goal: {CASES['crafter']['goal']}",
         "Goal progress: " + "; ".join(f"{key}={'DONE' if achievements[key] else 'pending'}" for key in goals),
         f"Turn {observation['turn']}. Position ({x}, {y}); +x east/right, +y south/down.",
         f"Facing {facing}. The adjacent tile in front is {observation['front_tile']}.",
         "Inventory: " + ", ".join(f"{key}={value}" for key, value in inventory.items()
-                                 if value or key in ("health", "wood", "wood_pickaxe", "stone")),
+                                 if value or key in ("health", "food", "drink", "energy",
+                                                    "wood", "wood_pickaxe", "stone")),
+        f"Remaining construction costs {wood_needed} wood; carrying {inventory['wood']}; "
+        f"wood shortfall={max(0, wood_needed - inventory['wood'])}.",
         "Adjacent tiles: " + "; ".join(
             f"{name}={grid[3 + dy][4 + dx]}" for (dx, dy), name in DIRECTIONS.items()),
         "Current 9-column × 7-row view (north at top, player @ in center):",
@@ -47,6 +51,10 @@ def crafter_state(observation: dict[str, Any]) -> str:
                               if any(tile in row for row in grid)),
         "Observed resource locations (offsets relative to you; older sightings may have changed):",
     ]
+    if "adjacent_visits" in observation:
+        lines.insert(3, f"Arrivals at this position: {observation['position_visits']}. "
+                     "Arrivals at adjacent positions: " + ", ".join(
+                         f"{direction}={count}" for direction, count in observation["adjacent_visits"].items()))
     for kind in ("tree", "table", "stone", "water"):
         resources = sorted(
             (item for item in observation["known_resources"] if item["tile"] == kind),
@@ -58,7 +66,12 @@ def crafter_state(observation: dict[str, Any]) -> str:
             rx, ry = resource["position_xy"]
             seen = ("visible now" if resource["last_seen_turn"] == observation["turn"]
                     else f"last seen turn {resource['last_seen_turn']}")
-            descriptions.append(f"(dx={rx-x:+d}, dy={ry-y:+d}; {seen})")
+            offset = []
+            if rx != x:
+                offset.append(f"{abs(rx-x)} tile(s) {'east' if rx > x else 'west'}")
+            if ry != y:
+                offset.append(f"{abs(ry-y)} tile(s) {'south' if ry > y else 'north'}")
+            descriptions.append(f"{' and '.join(offset) or 'here'} ({seen})")
         lines.append(f"{kind}: " + (", ".join(descriptions) or "none observed"))
     near_table = any("table" in row[3:6] for row in grid[2:5])
     lines.extend([
@@ -82,6 +95,8 @@ def decision_request(case: str, model: str, observation: dict[str, Any],
         state = crafter_state(observation)
         state += "\nRecent turns:\n" + ("\n".join(entry["feedback"] for entry in recent) or "None.")
         instructions = CRAFTER_RULES + "\nSelect the single next action that advances the unfinished goal while staying alive."
+        actions = {key: (description + " " + observation.get("action_context", {}).get(key, "")).rstrip()
+                   for key, description in actions.items()}
     return {
         "model": model, "state": state,
         "questions": {"action": {"type": "choice", "instructions": instructions, "criteria": actions}},
