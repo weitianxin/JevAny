@@ -289,7 +289,7 @@ def parse_args(argv=None):
     ap.add_argument("--config", help="flat TOML recipe; CLI flags override recipe values")
     ap.add_argument("--dry-run", action="store_true", help="validate configuration and labelled data without loading weights")
     ap.add_argument("--base", default="Qwen/Qwen3.8-27B")
-    ap.add_argument("--backbone_adapter", default="auto", help="auto, text, qwen_vl, or an installed module:Class")
+    ap.add_argument("--backbone_adapter", default="auto", help="auto, a built-in adapter name, or an installed module:Class")
     ap.add_argument("--branch_mode", choices=["auto", "packed", "rows"], default="auto",
                     help="auto uses packed masks where supported and independent causal rows elsewhere")
     ap.add_argument("--lora_target_modules", default="",

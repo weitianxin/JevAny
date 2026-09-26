@@ -96,7 +96,7 @@ jevany train --config recipes/rlcr.toml
 
 This recipe continues training from `runs/my-jev` and saves to `runs/my-jev-rlcr`. RLCR is under active development; see the [training objective](docs/ALGORITHM.md#rlcr).
 
-The trainer supports official Qwen, Llama, Gemma, Mistral and Phi bases, with image and video training where supported. See the [training guide](docs/TRAINING.md) for model choices and local GPU setup.
+See the [training guide](docs/TRAINING.md#backbone-support) for supported backbones, image and video capabilities, and local GPU setup.
 
 ## Pretrained Models
 

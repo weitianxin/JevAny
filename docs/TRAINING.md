@@ -157,19 +157,31 @@ Current model choices use the publishers' own repositories (checked 2026-09-26):
 | Family | Official base | Size | Native media |
 |---|---|---|---|
 | Qwen | `Qwen/Qwen3.8-27B` | 27B | Images, video |
-| Llama | `meta-llama/Llama-3.1-8B-Instruct`; `meta-llama/Llama-3.2-11B-Vision-Instruct` | 8B / 11B | Images on the Vision variant |
 | Gemma | `google/gemma-4-31B-it` | 31B | Images, video |
-| Mistral | `mistralai/Devstral-Small-2-24B-Instruct-2512`; `mistralai/Ministral-3-14B-Instruct-2512-BF16` | 24B / 14B | Images |
-| Phi | `microsoft/Phi-4-reasoning-vision-15B` | 15B | Images |
+| Muse | `meta-models/Muse-Glimmer-30B` | 30B | Images, video |
+| Mistral / Magistral | `mistralai/Magistral-Small-2509`; `mistralai/Devstral-Small-2-24B-Instruct-2512` | 24B | Images |
+| GLM | `zai-org/GLM-4.7-Flash` | 30B total / about 3B active | None |
+| Nemotron | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` | 30B total / about 3B active | None |
 
-These choices cover current general-purpose or coding bases near the requested
-27B scale. Llama stays on the mature 3.x family. Larger releases are not implied
-to fit this DDP trainer: every GPU holds a full base. The starter uses the latest
-small Qwen release, `Qwen/Qwen3.5-0.8B`; `Qwen/Qwen3.5-27B` is also checked.
+These six families share `BackboneAdapter`, the same recipe flags, and the same
+checkpoint loader. Choose a publisher repository or a local weights directory
+with `--base`; there is no separate family-specific trainer. GLM and Nemotron
+use the text adapter. Muse uses the text adapter for text-only training and
+`muse_vision` when `--multimodal` is set. Native adapter selection reads
+`config.json`, so local snapshots work without depending on repository names.
 
-Meta's official weights require an approved Hugging Face account. Third-party
-mirrors are not used for the current validation. Exact source revisions and test
-status are recorded in the [official-source report](../results/official-backbone-smoke-v1.json).
+Every GPU holds the full base, including all MoE experts; active parameter counts
+do not describe the required weight memory. The small starter remains
+`Qwen/Qwen3.5-0.8B`. Existing Llama, Phi, Gemma 3, Pixtral and Ministral adapters
+remain available for smaller runs and existing checkpoints.
+
+The official configurations above have been checked against the native
+Transformers interfaces. Offline tests exercise small random instances of these
+architectures; they do not establish full-size GPU compatibility or task quality.
+Earlier full-weight checks for Qwen, Gemma, Mistral, Llama and Phi are recorded in
+the [official-source report](../results/official-backbone-smoke-v1.json).
+Muse, GLM and Nemotron still need full-weight GPU checks. Gated repositories
+require the publisher's license acceptance and Hugging Face access.
 
 The released JevAny adapters identify `Qwen/Qwen3.8-27B` in their release manifest
 and adapter configuration. Its Transformers architecture is `qwen3_5`.
@@ -180,7 +192,7 @@ Select the base in the existing recipe or on the command line:
 
 ```bash
 jevany train --config recipes/sft.toml \
-  --base meta-llama/Llama-3.1-8B-Instruct --out runs/llama-decisions
+  --base zai-org/GLM-4.7-Flash --out runs/glm-decisions
 ```
 
 The optional adapter settings are:
@@ -188,7 +200,7 @@ The optional adapter settings are:
 ```toml
 backbone_adapter = "auto" # chooses the native media adapter when multimodal=true
 branch_mode = "auto"      # packed where supported; independent causal rows otherwise
-lora_targets = "all"     # all linear layers, preserving the existing Qwen layout
+lora_targets = "all"     # supported linear modules, preserving the existing Qwen layout
 # lora_target_modules = "q_proj,v_proj" # explicit names override the preset
 ```
 
@@ -202,10 +214,21 @@ real Qwen 27B and Llama 8B checks found excessive BF16 drift when reusing prefix
 states. Serving selects full-forward inference automatically; unsupported direct
 prefix-cache calls fail explicitly.
 
-`attn` includes fused projections such as Phi's `qkv_proj`. A fused QKV layer
+`attn` includes GLM's low-rank query/key/value projections, Nemotron's Mamba
+input projection, and fused projections such as Phi's `qkv_proj`. A fused QKV layer
 cannot apply the `qv` preset to Q and V independently; use `attn`, `all`, or explicit
 module names. Explicit names are checked against the loaded model, so a misspelled
 target does not silently produce a partial adapter.
+
+LoRA targets are resolved from actual `nn.Linear` and `Conv1D` modules. Fused
+expert tensors and GLM/Nemotron routers stay frozen. Nemotron's Mamba `out_proj`
+is excluded because its fused training kernel bypasses the module's forward
+method. With PEFT 0.21, GLM's dense/shared MLP projection names are remapped to
+fused expert parameters even when fully qualified; GLM therefore uses attention
+LoRA for `all`, `dense`, and `attn`. Explicit requests for these incompatible
+targets fail with an error. Neither model enables packed masks or prefix reuse.
+Nemotron can use Transformers' PyTorch Mamba fallback without optional CUDA
+kernels; large runs benefit from the upstream optimized kernels.
 
 Non-Qwen tokenizers receive five `<|jev_*|>` tokens. Their embeddings are
 initialized from the base embedding mean and trained automatically, including
@@ -242,14 +265,19 @@ loop, LoRA settings and checkpoint loading stay the same:
 | Family | Vision base | Adapter | Media |
 |---|---|---|---|
 | Qwen | `Qwen/Qwen3.8-27B`; `Qwen/Qwen3.5-27B` | `qwen_vl` | Images, video |
-| Llama | `meta-llama/Llama-3.2-11B-Vision-Instruct` | `llama_vision` | Images |
 | Gemma | `google/gemma-4-31B-it` | `gemma4_vision` | Images, video |
-| Mistral | Official Devstral Small 2 / Ministral 3 above | `mistral_vision` | Images |
+| Muse | `meta-models/Muse-Glimmer-30B` | `muse_vision` | Images, video |
+| Mistral / Magistral | Official Magistral Small / Devstral Small 2 above | `mistral_vision` | Images |
+| Llama (existing support) | `meta-llama/Llama-3.2-11B-Vision-Instruct` | `llama_vision` | Images |
 | Phi | `microsoft/Phi-4-reasoning-vision-15B` | `phi_reasoning_vision` | Images |
 
 `auto` selects from the base's configuration. A text-only variant does not gain
 vision support by setting the flag. Unsupported media types fail with an error.
 Audio is not part of the current training/request format.
+Muse's native processor expands image/video placeholders and supplies frame
+timestamps. Its adapter caps images at 512 merged tokens per record and videos
+at eight sampled frames with a per-frame token budget. Processor metadata is used
+during encoding and is not passed to the decoder.
 
 For example, on a local CUDA GPU:
 
@@ -307,9 +335,10 @@ or resource-provider SDK.
 
 ### Short compatibility checks
 
-The offline tests use real, tiny Transformers architectures for all five
-families, including sliding-window attention, fused projections, added-token
-gradients, branch isolation, cache reuse, checkpoint reload, and a custom adapter's
+The offline tests use real, tiny Transformers architectures for the six selected
+families and the existing adapters. They cover sliding-window and recurrent
+layers, MoE forwards, LoRA selection and gradients, added-token embeddings,
+branch isolation, supported cache reuse, native media, checkpoint reload, and
 SFT-to-RLCR continuation:
 
 ```bash

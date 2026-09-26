@@ -7,8 +7,9 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from transformers import (
-    AutoModelForCausalLM, Gemma3TextConfig, GPT2Config, LlamaConfig, MistralConfig,
-    Phi3Config, PreTrainedTokenizerFast, Qwen3Config, Qwen3_5TextConfig,
+    AutoModelForCausalLM, Gemma3TextConfig, Glm4MoeLiteConfig, GPT2Config,
+    LlamaConfig, MistralConfig, NemotronHConfig, Phi3Config,
+    PreTrainedTokenizerFast, Qwen3Config, Qwen3_5TextConfig,
 )
 
 from jevany.backbones import DECISION_TOKENS, LEGACY_TOKENS, decision_tokens, prepare_tokenizer
@@ -53,6 +54,18 @@ def make_base(path, family, *, legacy=False):
         "gemma": lambda: Gemma3TextConfig(**common, head_dim=8, query_pre_attn_scalar=8,
                                          sliding_window=16, layer_types=["sliding_attention", "full_attention"]),
         "mistral": lambda: MistralConfig(**common, sliding_window=16),
+        "glm": lambda: Glm4MoeLiteConfig(
+            **{**common, "num_key_value_heads": 4}, moe_intermediate_size=16,
+            n_routed_experts=4, num_experts_per_tok=2, q_lora_rank=16,
+            kv_lora_rank=8, qk_nope_head_dim=4, qk_rope_head_dim=4, v_head_dim=8,
+        ),
+        "nemotron": lambda: NemotronHConfig(
+            **common, head_dim=8, layers_block_type=["mamba", "attention", "moe"],
+            mamba_num_heads=4, mamba_head_dim=8, ssm_state_size=4, n_groups=2,
+            chunk_size=8, n_routed_experts=4, num_experts_per_tok=2,
+            moe_intermediate_size=16, moe_shared_expert_intermediate_size=32,
+            use_mamba_kernels=False,
+        ),
         # Padded vocab exercises newly added tokens that do not require a resize.
         "phi": lambda: Phi3Config(**{**common, "vocab_size": len(tokenizer) + 8},
                                   original_max_position_embeddings=512),
@@ -70,13 +83,15 @@ RECORD = {"state": "state " * 20, "questions": [
 ]}
 
 
-@pytest.mark.parametrize("family", ["qwen", "llama", "gemma", "mistral", "phi", "gpt2"])
+@pytest.mark.parametrize("family", ["qwen", "qwen35", "llama", "gemma", "mistral", "phi", "gpt2",
+                                  "glm", "nemotron"])
 def test_train_tokens_lora_isolation_cache_and_reload(tmp_path, family):
     torch.manual_seed(17)
     base = tmp_path / "base"
     original = make_base(base, family)
     tokenizer = load_tokenizer(base)
     model = DecisionModel(base, tokenizer, "cpu", lora=2, head_dim=8)
+    model.lm.config.use_cache = False
     encoded = model.encode(tokenizer, RECORD)
     token_ids = [tokenizer.convert_tokens_to_ids(token) for token in DECISION_TOKENS]
     assert model.special_embeddings
@@ -107,12 +122,17 @@ def test_train_tokens_lora_isolation_cache_and_reload(tmp_path, family):
         rows = [z.softmax(-1) for z in model.forward_rows_batch([encoded])[0]]
         for left, right in zip(expected, rows):
             torch.testing.assert_close(left, right, atol=2e-6, rtol=1e-5)
-        cached, prefix = model.probs_and_prefix(encoded)
-        for _ in range(2):
-            reused = model.probs_with_prefix(encoded, prefix)
-            for left, first, right in zip(expected, cached, reused):
-                torch.testing.assert_close(left, first, atol=2e-6, rtol=1e-5)
-                torch.testing.assert_close(left, right, atol=2e-6, rtol=1e-5)
+        if model.inference_capabilities.prefix_cache:
+            cached, prefix = model.probs_and_prefix(encoded)
+            for _ in range(2):
+                reused = model.probs_with_prefix(encoded, prefix)
+                for left, first, right in zip(expected, cached, reused):
+                    torch.testing.assert_close(left, first, atol=2e-6, rtol=1e-5)
+                    torch.testing.assert_close(left, right, atol=2e-6, rtol=1e-5)
+        else:
+            assert model.branch_mode == "rows"
+            with pytest.raises(ValueError, match="prefix caching is not supported"):
+                model.probs_and_prefix(encoded)
         separate = {**RECORD, "questions": RECORD["questions"][1:]}
         torch.testing.assert_close(expected[1], model.probs(model.encode(tokenizer, separate))[0],
                                    atol=2e-6, rtol=1e-5)
@@ -129,6 +149,43 @@ def test_train_tokens_lora_isolation_cache_and_reload(tmp_path, family):
     assert restored_tokenizer.get_vocab() == tokenizer.get_vocab()
     for left, right in zip(expected, restored.probs(restored.encode(restored_tokenizer, RECORD))):
         torch.testing.assert_close(left, right, atol=2e-6, rtol=1e-5)
+
+
+@pytest.mark.parametrize("family,preset", [
+    ("glm", "all"), ("glm", "dense"), ("glm", "attn"),
+    ("nemotron", "all"), ("nemotron", "dense"), ("nemotron", "attn"),
+])
+@pytest.mark.parametrize("attn", ["eager", "sdpa"])
+def test_moe_lora_projection_coverage(tmp_path, family, preset, attn):
+    base = tmp_path / "base"
+    make_base(base, family)
+    tokenizer = load_tokenizer(base)
+    model = DecisionModel(base, tokenizer, "cpu", lora=2, head_dim=8, lora_targets=preset, attn=attn)
+    model.lm.config.use_cache = False
+    targets = model.lm.peft_config["default"].target_modules
+    leaves = {name.rsplit(".", 1)[-1] for name in targets}
+    if family == "glm":
+        assert leaves == {"q_a_proj", "q_b_proj", "kv_a_proj_with_mqa", "kv_b_proj", "o_proj"}
+    else:
+        assert {"in_proj", "q_proj", "k_proj", "v_proj", "o_proj"} <= leaves
+        assert "out_proj" not in leaves
+    loss = sum(value.sum() for value in model(model.encode(tokenizer, RECORD)))
+    loss.backward()
+    for name, parameter in model.named_parameters():
+        if "lora_B" in name:
+            assert parameter.grad is not None and parameter.grad.abs().sum() > 0, name
+        if ".experts." in name or ".gate.weight" in name:
+            assert not parameter.requires_grad, name
+    if family == "nemotron":
+        with pytest.raises(ValueError, match="incompatible.*LoRA"):
+            DecisionModel(base, tokenizer, "cpu", lora=2, lora_target_modules="out_proj")
+    else:
+        with pytest.raises(ValueError, match="incompatible.*LoRA"):
+            DecisionModel(base, tokenizer, "cpu", lora=2, lora_target_modules="gate_proj,up_proj")
+        with pytest.raises(ValueError, match="no matching layers"):
+            DecisionModel(base, tokenizer, "cpu", lora=2, lora_targets="qv")
+    with pytest.raises(ValueError, match="does not support packed"):
+        DecisionModel(base, tokenizer, "cpu", lora=2, branch_mode="packed")
 
 
 def test_legacy_tokens_and_checkpoint_stay_compatible(tmp_path):
@@ -261,6 +318,68 @@ def test_custom_adapter_is_persisted_and_used_by_training(tmp_path, monkeypatch)
     tokenizer, model = checkpoint.load("cpu")
     assert type(model.adapter).__name__ == "CausalRows"
     assert torch.isfinite(model.probs(model.encode(tokenizer, RECORD))[0]).all()
+
+
+@pytest.mark.parametrize("family", ["glm", "nemotron"])
+@pytest.mark.parametrize("precision", ["fp32", "bf16"])
+def test_moe_public_trainer_and_checkpoint(tmp_path, family, precision):
+    from jevany.train import main
+    base = tmp_path / "base"
+    make_base(base, family)
+    data = tmp_path / "train.jsonl"
+    data.write_text(json.dumps({"state": "state", "questions": {
+        "q": {"type": "choice", "instructions": "choose", "criteria": {"yes": None, "no": None}, "label": "yes"},
+    }}) + "\n")
+    args = ["--base", str(base), "--data", str(data), "--device", "cpu", "--lora", "2",
+            "--head-dim", "8", "--epochs", "2", "--accum", "1", "--max-steps", "2",
+            "--checkpointing", "1", "--weights-dtype", precision, "--dtype", "fp32",
+            "--p-none", "0", "--p-none-distract", "0", "--p-distract", "0"]
+    first = main(args + ["--out", str(tmp_path / "sft")])
+    final = main(args + ["--out", str(tmp_path / "rlcr"), "--init-from", str(first), "--rlcr"])
+    checkpoint = Checkpoint(final)
+    assert checkpoint.meta.backbone_adapter == "text"
+    assert checkpoint.meta.branch_mode == "rows"
+    tokenizer, model = checkpoint.load("cpu")
+    assert model.lm.dtype == (torch.bfloat16 if precision == "bf16" else torch.float32)
+    assert torch.isfinite(model.probs(model.encode(tokenizer, RECORD))[0]).all()
+
+
+def _moe_ddp_worker(rank, base, rendezvous):
+    import torch.distributed as dist
+    from jevany.train import distributed_model
+
+    torch.set_num_threads(1)
+    dist.init_process_group("gloo", init_method=f"file://{rendezvous}", rank=rank, world_size=2)
+    try:
+        tokenizer = load_tokenizer(base)
+        model = DecisionModel(base, tokenizer, "cpu", lora=2, head_dim=8, attn="sdpa")
+        model.lm.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        model.lm.config.use_cache = False
+        model.train()
+        wrapped = distributed_model(model, None)
+        optimizer = torch.optim.SGD(model.trainable_parameters(), lr=0.01)
+        for step in range(3):
+            record = {**RECORD, "state": ("state yes " if rank else "state no ") * (3 + step)}
+            optimizer.zero_grad()
+            logits = wrapped([model.encode(tokenizer, record)])[0]
+            loss = sum(torch.nn.functional.cross_entropy(value[None], torch.tensor([rank])) for value in logits)
+            loss.backward()
+            optimizer.step()
+        parameters = torch.cat([p.detach().flatten() for p in model.trainable_parameters()])
+        assert torch.isfinite(parameters).all()
+        replicas = [torch.empty_like(parameters) for _ in range(2)]
+        dist.all_gather(replicas, parameters)
+        torch.testing.assert_close(replicas[0], replicas[1])
+    finally:
+        dist.destroy_process_group()
+
+
+@pytest.mark.parametrize("family", ["glm", "nemotron"])
+def test_moe_ddp_with_checkpointing(tmp_path, family):
+    base = tmp_path / "base"
+    make_base(base, family)
+    torch.multiprocessing.spawn(_moe_ddp_worker, args=(str(base), str(tmp_path / "rendezvous")),
+                                nprocs=2, join=True)
 
 
 class _LinearDecision(torch.nn.Module):

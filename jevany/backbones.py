@@ -152,13 +152,26 @@ class BackboneAdapter:
         if preset not in ("all", "dense", "attn", "qv"):
             raise ValueError("lora_targets must be all, dense, attn, or qv")
         linear = {name for name, module in model.named_modules() if isinstance(module, (nn.Linear, Conv1D))}
+        # Mamba's fused kernel bypasses out_proj.forward. PEFT 0.21 remaps even
+        # GLM's fully qualified dense MLP targets to incompatible fused experts.
+        excluded_leaves = {
+            "nemotron_h": {"out_proj"},
+            "glm4_moe_lite": {"gate_proj", "up_proj", "down_proj"},
+        }.get(model.config.model_type, set())
+        excluded = {name for name in linear if name.rsplit(".", 1)[-1] in excluded_leaves}
         if explicit:
             targets = [name.strip() for name in explicit.split(",")]
             missing = [target for target in targets
                        if not target or not any(name == target or name.endswith("." + target) for name in linear)]
             if missing:
                 raise ValueError(f"lora_target_modules do not name linear layers in this backbone: {missing}")
+            incompatible = [target for target in targets
+                            if any(name == target or name.endswith("." + target) for name in excluded)]
+            if incompatible:
+                raise ValueError(f"{model.config.model_type} modules incompatible with LoRA: {incompatible}; "
+                                 "use 'all', 'attn', or explicit supported projection names")
             return targets
+        linear -= excluded
         if preset in ("all", "dense"):
             # Retain the released Qwen adapter layout, including its dense ablation.
             if model.config.model_type.startswith("qwen"):
@@ -168,10 +181,15 @@ class BackboneAdapter:
                 targets = sorted(name for name in linear if name.rsplit(".", 1)[-1] in names)
                 if targets:
                     return targets
-            return "all-linear"
+            # PEFT's all-linear shorthand also selects fused MoE parameters.
+            # Keep those frozen; this contract targets linear modules only.
+            if not linear:
+                raise ValueError("backbone has no supported linear LoRA targets; provide a custom backbone_adapter")
+            return sorted(linear)
         names = {"q_proj", "v_proj"} if preset == "qv" else {
             "q_proj", "k_proj", "v_proj", "o_proj", "qkv_proj", "out_proj",
-            "in_proj_qkv", "in_proj_z", "in_proj_a", "in_proj_b",
+            "in_proj_qkv", "in_proj_z", "in_proj_a", "in_proj_b", "in_proj",
+            "q_a_proj", "q_b_proj", "kv_a_proj_with_mqa", "kv_b_proj",
         }
         targets = sorted(name for name in linear if name.rsplit(".", 1)[-1] in names)
         if not targets:
@@ -317,6 +335,23 @@ class Gemma4VisionAdapter(VisionAdapter):
                          return_tensors="pt", videos_kwargs={"num_frames": 4, "fps": None})
 
 
+class MuseVisionAdapter(VisionAdapter):
+    name = "muse_vision"
+    media_types = frozenset({"image", "video"})
+
+    def process_media(self, processor, media: list[dict], text: str):
+        prefix, images, videos = [], [], []
+        for item in media:
+            prefix.append(processor.image_token if item["type"] == "image" else processor.video_token)
+            (images if item["type"] == "image" else videos).append(item["uri"])
+        return processor(
+            text=["".join(prefix) + text], images=images or None, videos=videos or None,
+            return_tensors="pt", images_kwargs={"max_image_tokens": max(1, 512 // len(media))},
+            videos_kwargs={"num_frames": 8, "fps": None, "return_metadata": True,
+                           "max_video_frame_tokens": max(1, 128 // len(media))},
+        )
+
+
 class PixtralVisionAdapter(VisionAdapter):
     name = "pixtral"
 
@@ -339,8 +374,6 @@ class PhiVisionAdapter(VisionAdapter):
             if missing:
                 raise ValueError(f"phi_vision LoRA targets must name language decoder layers: {missing}")
             return [name for name in decoder if any(name == target or name.endswith("." + target) for target in targets)]
-        if targets == "all-linear":
-            return decoder
         targets = [name for name in targets if name.startswith("layers.")]
         if not targets:
             raise ValueError(f"lora_targets={preset!r} has no Phi decoder layers; use 'all' or 'attn'")
@@ -362,7 +395,7 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
                                  "then train with --base <directory> --multimodal")
             types = {"mllama": "llama_vision", "gemma3": "gemma_vision", "gemma4": "gemma4_vision",
                      "llava": "pixtral", "mistral3": "mistral_vision", "phi4_multimodal": "phi_vision",
-                     "phi4-siglip": "phi_reasoning_vision"}
+                     "phi4-siglip": "phi_reasoning_vision", "muse_glimmer": "muse_vision"}
             name = ("qwen_vl" if model_type and model_type.startswith("qwen") and config.get("vision_config")
                     else types.get(model_type))
             if name is None:
@@ -376,7 +409,7 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
     builtins = {"text": BackboneAdapter, "qwen_vl": QwenVisionAdapter,
                 "llama_vision": LlamaVisionAdapter, "gemma_vision": GemmaVisionAdapter,
                 "gemma4_vision": Gemma4VisionAdapter, "mistral_vision": MistralVisionAdapter,
-                "pixtral": PixtralVisionAdapter, "phi_vision": PhiVisionAdapter}
+                "muse_vision": MuseVisionAdapter, "pixtral": PixtralVisionAdapter, "phi_vision": PhiVisionAdapter}
     if name in builtins:
         if multimodal and name == "text":
             raise ValueError("backbone_adapter='text' cannot be used with multimodal=true")

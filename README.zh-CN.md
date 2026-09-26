@@ -96,7 +96,7 @@ jevany train --config recipes/rlcr.toml
 
 该 recipe 从 `runs/my-jev` 继续训练，保存到 `runs/my-jev-rlcr`。RLCR 仍在开发完善中，详见[训练目标](docs/ALGORITHM.md#rlcr)。
 
-训练支持 Qwen、Llama、Gemma、Mistral、Phi 的官方基座，并按模型能力支持图片和视频训练。模型选择和本地 GPU 用法见[训练指南](docs/TRAINING.md)。
+支持的基座、图片和视频能力，以及本地 GPU 用法见[训练指南](docs/TRAINING.md#backbone-support)。
 
 ## 预训练模型
 
