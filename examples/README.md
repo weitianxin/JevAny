@@ -23,10 +23,11 @@ The playground has three modes:
 | **Play yourself** | Your button presses execute native environment actions on CPU | The environment's optional extra |
 | **Run model** | JevAny receives the camera image, measured state and recent actions, chooses an action, and displays its probabilities | Optional extra and a running JevAny server |
 
-The two game previews are **scripted environment tours**, not JevAny gameplay.
-The robot preview is a successful JevAny-27B-SFT run with primitive Cartesian
-controls and a subgoal harness; its original option probabilities are retained. Neither is a success-rate
-benchmark. Fresh model runs keep the model's actual choices, including failures.
+All three replays show successful JevAny-27B-SFT runs and retain the original
+option probabilities. Crafter uses model-selected objectives before each native
+action; the robot uses primitive Cartesian controls and a measured subgoal
+harness. These are demonstrations, not success-rate benchmarks. Fresh runs keep
+the model's actual choices, including failures.
 
 ## Play locally or connect your model
 
@@ -101,10 +102,10 @@ green armor while preserving health and ammunition.
 Eight controls cover forward/backward movement, strafing, turning, shooting and
 waiting. A move or shot advances eight game ticks; a turn advances four.
 Observations contain the current rendered view, health, ammunition and visible
-object boxes. An episode is limited to 160 decisions. The preview uses a simple
-scripted controller for 48 decisions; it does not claim to complete the level.
+object boxes. An episode is limited to 160 decisions. In the included model
+replay, the player reaches the armor by moving through the corridor.
 
-![Accelerated local browser replay of Doom corridor with scripted controls](../docs/demos/playground-doom.gif)
+![Accelerated checkpoint replay of Doom corridor navigation](../docs/demos/playground-doom.gif)
 
 ## Crafter survival (2D)
 
@@ -114,12 +115,14 @@ place a table, make a wood pickaxe, and mine stone while remaining alive.
 Movement, crafting, food, health and resource use are handled by the game.
 
 The adapter preserves all native actions, including unavailable crafting
-attempts that consume a turn. Observations include the rendered image, inventory,
-achievements and only the visible 9 × 7 terrain window. Runs stop at goal
-completion, death or 200 decisions. The bundled scripted
-preview demonstrates the crafting sequence.
+attempts that consume a turn. The checkpoint sees the current screenshot,
+inventory, recipe requirements, a 9 × 7 visible map, and remembered locations
+from earlier views. It first chooses an immediate objective, then chooses one
+of the 17 native actions using the same screenshot. Position history and actual
+action effects provide feedback for the next turn. Runs stop at goal completion,
+death or 200 decisions. The included model replay completes the crafting sequence.
 
-![Accelerated local browser replay of Crafter gathering wood, crafting and mining stone with scripted controls](../docs/demos/playground-crafter.gif)
+![Accelerated checkpoint replay of Crafter gathering wood, crafting and mining stone](../docs/demos/playground-crafter.gif)
 
 ## Robot peg insertion
 
@@ -164,13 +167,21 @@ finally:
 Environments implement `reset`, `step`, `get_all_actions`, `render` and `close`,
 and provide `ACTION_LOOKUP` descriptions. They can also be used with
 [`jevany.agent.run_episode`](../jevany/agent.py), whose default request contains
-structured state only. The browser adds camera images and uses the arm's
-`decision_request(model, history)` method to supply its measured subgoals.
+structured state only. The browser adds camera images and game-specific context.
+Crafter makes two checkpoint calls per turn; the arm's
+`decision_request(model, history)` method supplies its measured subgoals.
 
 The viewer serves packaged HTML, CSS, JavaScript and frames without a frontend
-build or CDN. To regenerate the **scripted game previews** with the game extra
-installed, run `python scripts/record_demo_previews.py`. The recorder uses a
-fixture planner for Crafter and explicitly marks the output as scripted.
+build or CDN. To record fresh game replays, connect the recorder to your running
+model server:
+
+```bash
+python scripts/record_demo_previews.py \
+  --base-url http://127.0.0.1:8008 --model tianxinwei/JevAny-27B-SFT \
+  --media-root /tmp/jevany-media --out /tmp/jevany-replays
+```
+
+The recorder uses the same harness as the browser and preserves failed runs too.
 Recorded game imagery and upstream notices are described in
 [`recordings/LICENSES.txt`](../jevany/demos/recordings/LICENSES.txt).
 

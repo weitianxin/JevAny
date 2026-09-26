@@ -1,6 +1,8 @@
 """Format observed game state for the checkpoint's next native action."""
 from typing import Any
 
+from jevany.api import validate_response
+from jevany.client import DecisionClient
 from . import CASES
 
 CRAFTER_RULES = (
@@ -101,3 +103,66 @@ def decision_request(case: str, model: str, observation: dict[str, Any],
         "model": model, "state": state,
         "questions": {"action": {"type": "choice", "instructions": instructions, "criteria": actions}},
     }
+
+
+def focus_crafter_request(client: DecisionClient, request: dict[str, Any],
+                          observation: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Let the checkpoint choose an immediate objective before its native action."""
+    inventory, achievements = observation["inventory"], observation["achievements"]
+    needed = (0 if achievements["place_table"] else 2) + (0 if inventory["wood_pickaxe"] else 1)
+    shortfall = max(0, needed - inventory["wood"])
+    criteria = {
+        "gather_wood": (
+            "Gather additional wood from trees for the unfinished recipes. "
+            f"Carrying {inventory['wood']} wood; still need {shortfall} MORE wood."
+        ),
+        "build_table": (
+            "Build a crafting table on an empty tile, using two wood. "
+            f"Tables already placed: {achievements['place_table']}; carrying {inventory['wood']} wood."
+        ),
+        "craft_pickaxe": (
+            "Reach a crafting table and make a wood pickaxe, using one wood. "
+            f"Pickaxes already owned: {inventory['wood_pickaxe']}; carrying {inventory['wood']} wood."
+        ),
+        "gather_stone": (
+            "Find stone, stand adjacent to it, face it, and mine it with a wood pickaxe. "
+            f"Pickaxes owned: {inventory['wood_pickaxe']}; stone already collected: {achievements['collect_stone']}."
+        ),
+        "survive": (
+            "Deal with an immediate survival need, such as an attacking enemy, thirst, hunger, or exhaustion. "
+            + ", ".join(f"{key}={inventory[key]}/9" for key in ("health", "food", "drink", "energy"))
+        ),
+    }
+    for objective, resource in (("gather_wood", "tree"), ("gather_stone", "stone")):
+        if not any(item["tile"] == resource for item in observation["known_resources"]):
+            criteria[objective] += f" No {resource} has been observed; explore new ground to locate it."
+    plan_request = {
+        "model": request["model"], "state": request["state"],
+        "questions": {"priority": {
+            "type": "choice",
+            "instructions": (
+                "Choose the immediate objective for the next game action. Respect recipe prerequisites "
+                "and the current inventory. Completed equipment can be reused. Additional wood can "
+                "still be required after the first wood-collection achievement. "
+                "Prioritize an unfinished prerequisite over a later objective whose materials or tools are missing."
+            ),
+            "criteria": criteria,
+        }},
+    }
+    if "media" in request:
+        plan_request["media"] = request["media"]
+    answer = validate_response(plan_request, client(plan_request))["answers"]["priority"]
+    choice = answer["choice"]
+    focused = {
+        **request,
+        "state": f"Current objective chosen by the checkpoint: {choice}: {criteria[choice]}\n\n" + request["state"],
+        "questions": {"action": {
+            **request["questions"]["action"],
+            "instructions": request["questions"]["action"]["instructions"] + (
+                "\nChoose the one native action for the CURRENT objective above. "
+                "Navigate to an adjacent resource before interacting; Interact cannot reach distant tiles. "
+                "Avoid repeating a move that just took you back to the same position unless returning to a needed resource."
+            ),
+        }},
+    }
+    return focused, answer

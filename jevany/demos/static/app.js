@@ -47,7 +47,7 @@ function updateMetrics(observation) {
   let values;
   if (current === "doom") {
     values = [["Health", Math.round(observation.health ?? 0)], ["Ammo", observation.ammo2 ?? 0],
-      ["Kills", observation.killcount ?? 0], ["Game ticks", observation.game_ticks ?? 0]];
+      ["Kills", observation.killcount ?? 0], ["Armor", observation.armor ?? 0]];
   } else if (current === "crafter") {
     const inventory = observation.inventory || {}, achieved = observation.achievements || {};
     const milestones = ["collect_wood","place_table","make_wood_pickaxe","collect_stone"].filter(key => achieved[key] > 0).length;
@@ -102,7 +102,10 @@ async function show(snapshot, animate = false) {
     }
   } else if (frames.length) $("scene").src = frames.at(-1);
   if (stamp !== generation) return;
-  $("step-count").textContent = `STEP ${state.step} / ${mode === "replay" ? replay.steps.length - 1 : config.cases[current].limit}`;
+  $("step-count").textContent = `STEP ${state.step} / ${mode === "replay" ? replay.steps.length - 1 : config.cases[current].limit}` +
+    (observation.image_is_current === false ? " · LAST AVAILABLE FRAME" : "");
+  $("step-count").title = observation.image_is_current === false ?
+    "The engine returned no image after the episode ended. Counters show the final state." : "";
   $("feedback").textContent = [state.decision?.subgoal, state.feedback].filter(Boolean).join(" ");
   $("feedback-label").textContent = state.done ? (state.success ? "GOAL COMPLETED" : "EPISODE ENDED") : "ENVIRONMENT FEEDBACK";
   $("result-dot").className = state.done ? (state.success ? "success" : "failure") : "";

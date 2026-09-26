@@ -168,7 +168,9 @@ def test_packaged_replays_are_complete_and_preserve_controller_provenance():
     for case in CASES:
         replay = json.loads((ROOT / "recordings" / case / "replay.json").read_text())
         assert replay["case"] == case and len(replay["steps"]) > 1
-        assert replay["controller"] == ("model" if case == "arm" else "scripted")
+        assert replay["controller"] == "model"
+        assert replay["steps"][-1]["success"]
+        assert (ROOT / "recordings" / case / "000.jpg").is_file()
         for step in replay["steps"]:
             for frame in step["frames"]:
                 assert (ROOT / frame.removeprefix("/")).is_file()
@@ -176,11 +178,12 @@ def test_packaged_replays_are_complete_and_preserve_controller_provenance():
             if decision:
                 assert decision["action"] in step["actions"]
                 probabilities = decision["probabilities"]
-                if replay["controller"] == "scripted":
-                    assert probabilities is None
-                else:
-                    assert set(probabilities) == set(step["actions"])
-                    assert sum(probabilities.values()) == pytest.approx(1, abs=1e-5)
+                assert set(probabilities) == set(step["actions"])
+                assert sum(probabilities.values()) == pytest.approx(1, abs=1e-5)
+                assert decision["action"] == max(probabilities, key=probabilities.get)
+                if case == "crafter":
+                    priority = decision["priority"]
+                    assert priority["choice"] == max(priority["probabilities"], key=priority["probabilities"].get)
 
 
 @pytest.mark.demo

@@ -170,13 +170,13 @@ python -m pip install -e .
 jevany demo
 ```
 
-以下动图录自本地浏览器的 **Replay** 界面，已加速。机械臂回放保留了 JevAny-27B-SFT 的实际决策和原始选项概率。两个游戏的预览明确标注为脚本控制，不代表模型表现。
+以下动图是 JevAny-27B-SFT 操作环境的加速回放，保留了模型的实际选择和原始选项概率。
 
 ### [Doom 走廊 · 3D](examples/README.md#doom-corridor-3d)
 
-使用 ViZDoom 和随包提供的 Freedoom 资源，在走廊中移动、瞄准和战斗。
+使用 ViZDoom 和随包提供的 Freedoom 资源，在敌人的火力下穿过走廊，抵达绿色护甲。
 
-![Doom 浏览器回放：走廊战斗、动作选项、生命值和弹药](docs/demos/playground-doom.gif)
+![Doom checkpoint 回放：穿越走廊、动作概率、生命值和弹药](docs/demos/playground-doom.gif)
 
 ### [Crafter 生存建造 · 2D](examples/README.md#crafter-survival-2d)
 

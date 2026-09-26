@@ -101,6 +101,7 @@ class Crafter:
         front = cells[3 + facing[1]][4 + facing[0]]
         nearby = {tile for row in cells[2:5] for tile in row[3:6]}
         context = {}
+        x, y = (int(v) for v in self.env._player.pos - self.origin)
         for action, (dx, dy) in {
             "move_left": (-1, 0), "move_right": (1, 0),
             "move_up": (0, -1), "move_down": (0, 1),
@@ -108,7 +109,8 @@ class Crafter:
             tile = cells[3 + dy][4 + dx]
             result = ("move one tile" if tile in constants.walkable else
                       "enter lava and die" if tile == "lava" else "turn to face it without moving")
-            context[action] = f"Adjacent destination is {tile}: {result}."
+            visits = self.visits.get((x + dx, y + dy), 0)
+            context[action] = f"Adjacent destination is {tile}: {result}. Previously visited {visits} time(s)."
         collect = constants.collect.get(front)
         context["do"] = f"Current interaction target is the adjacent {front}."
         if collect:
@@ -259,9 +261,12 @@ class Doom:
              "screen_box_xywh": [label.x, label.y, label.width, label.height]}
             for label in state.labels if label.object_name != "DoomPlayer"
         ]
-        return {**variables, "visible_objects": visible, "image_size": [640, 480],
-                "game_ticks": self.last_ticks,
-                "decisions": self.steps, "feedback": self.feedback}
+        observation = {**variables, "visible_objects": visible, "image_size": [640, 480],
+                       "game_ticks": self.last_ticks,
+                       "decisions": self.steps, "feedback": self.feedback}
+        if state is None:
+            observation["image_is_current"] = False
+        return observation
 
     def get_all_actions(self) -> list[str]:
         return [] if self.done else list(self.ACTION_LOOKUP)

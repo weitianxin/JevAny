@@ -20,7 +20,7 @@ import webbrowser
 from jevany.api import validate_response
 from jevany.client import DecisionClient, JevClient
 from . import CASES, DemoEnvironment, make_environment
-from .context import decision_request
+from .context import decision_request, focus_crafter_request
 
 ROOT = Path(__file__).parent
 
@@ -100,6 +100,7 @@ class DemoApplication:
         before = self.env.observe()
         actions = {key: self.env.ACTION_LOOKUP[key] for key in self.env.get_all_actions()}
         probabilities = None
+        priority, subgoal = None, None
         started = time.monotonic()
         if model:
             if self.client is None:
@@ -112,6 +113,8 @@ class DemoApplication:
                     "holding_peg_now": entry["next_observation"]["object_between_both_fingers"],
                 } for entry in self.trace[-3:]]
                 request = builder(self.client.model_id, history)
+            if isinstance(request["state"], dict):
+                subgoal = request["state"].get("current_subgoal")
             storage = (TemporaryDirectory(prefix="jevany-frame-", dir=self.media_root)
                        if self.images and self.media_root is not None else nullcontext())
             with storage as directory:
@@ -125,6 +128,9 @@ class DemoApplication:
                         Image.fromarray(image).save(path)
                         uri = str(path)
                     request["media"] = [{"type": "image", "uri": uri}]
+                if self.case == "crafter" and "position_xy" in before:
+                    request, priority = focus_crafter_request(self.client, request, before)
+                    subgoal = "Objective: " + priority["choice"].replace("_", " ") + "."
                 response = validate_response(request, self.client(request))
             answer = response["answers"]["action"]
             action, probabilities = answer["choice"], answer["probabilities"]
@@ -137,7 +143,7 @@ class DemoApplication:
             "probabilities": probabilities, "observation": before, "next_observation": after,
             "reward": reward, "done": done, "success": info["success"],
             "feedback": self.env.feedback, "seconds": round(time.monotonic() - started, 3),
-            "subgoal": request["state"].get("current_subgoal") if model else None,
+            "subgoal": subgoal, "priority": priority,
         }
         self.trace.append(decision)
         frames = [frame_uri(image) for image in (self.env.frames or [self.env.render()])]

@@ -170,13 +170,13 @@ python -m pip install -e .
 jevany demo
 ```
 
-These GIFs show accelerated recordings of the local browser's **Replay** interface. The robot replay contains recorded JevAny-27B-SFT decisions and their original probabilities. The game previews use explicitly labelled scripted controls; they do not report model performance.
+These GIFs show accelerated replays of JevAny-27B-SFT controlling the environments. Each replay preserves the model's actual choices and original option probabilities.
 
 ### [Doom corridor · 3D](examples/README.md#doom-corridor-3d)
 
-Move, aim and fight through a corridor using ViZDoom and the included Freedoom assets.
+Reach the green armor at the far end of a hostile corridor, using ViZDoom and the included Freedoom assets.
 
-![Doom browser replay with corridor combat, action choices, health and ammunition](docs/demos/playground-doom.gif)
+![Doom checkpoint replay with corridor navigation, action probabilities, health and ammunition](docs/demos/playground-doom.gif)
 
 ### [Crafter survival · 2D](examples/README.md#crafter-survival-2d)
 
