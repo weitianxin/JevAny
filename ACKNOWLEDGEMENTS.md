@@ -9,3 +9,5 @@ The architecture was informed by the public analysis in [Jev's Architecture Unma
 RLCR follows the reward proposed in *Beyond Binary Rewards: Training LMs to Reason about Their Uncertainty* by Damani et al. JevAny adapts it to a prefill-only pointer model and does not reproduce the paper's generated reasoning rollouts.
 
 Qwen3.8-27B is produced by the Qwen team. The adapters in this project require its separately distributed base weights.
+
+The README teaser uses Lucide icons. The [source records](docs/icons/sources.json) and [license notices](docs/icons/LICENSE) accompany the editable SVG.

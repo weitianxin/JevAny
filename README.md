@@ -1,9 +1,5 @@
 <p align="center">
-  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
-</p>
-
-<p align="center">
-  <img src="docs/hero.svg" alt="JevAny: train your own decision model and deploy it with one API" width="100%">
+  <img src="docs/title.png" alt="JevAny: Your Jev from Any Model to Any Application" width="100%">
 </p>
 
 <p align="center">
@@ -12,11 +8,15 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-32d6c5"></a>
 </p>
 
-**Train your own Jev. Deploy it in your own application.**
+<p align="center">
+  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-JevAny is open infra for training and serving Jev-style decision models. Fine-tune an open language-model backbone on your labelled decisions, or start with our pretrained checkpoint. Both paths use the same Python and HTTP interface, following the [Jev API's request and answer format](docs/API.md).
+Train and serve Jev-style decision models with JevAny: fine-tune an open language model or use our pretrained checkpoint. The shared [Python and HTTP APIs](docs/API.md) follow the Jev format, taking a state, question, and candidate answers and returning a choice with per-option probabilities.
 
-Give the model a state, a question, and possible answers. It returns a choice and the probability of each option. Your application can route a message, select a query repair, or choose an agent's next action.
+<p align="center">
+  <img src="docs/hero.png" alt="JevAny workflow: train a Jev model with multi-modal data and RLCR/SFT, then deploy through a unified API with test environments and practical examples" width="100%">
+</p>
 
 | Start here | What JevAny provides |
 |---|---|

@@ -1,0 +1,16 @@
+{
+  "project": "Lucide",
+  "repository": "https://github.com/lucide-icons/lucide",
+  "revision": "66d8f9fc394b8530377e5f6112f0b8908ba01280",
+  "sources": {
+    "brain-circuit.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/brain-circuit.svg",
+    "images.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/images.svg",
+    "workflow.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/workflow.svg",
+    "cpu.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/cpu.svg",
+    "braces.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/braces.svg",
+    "flask-conical.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/flask-conical.svg",
+    "app-window.svg": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/icons/app-window.svg",
+    "LICENSE": "https://raw.githubusercontent.com/lucide-icons/lucide/66d8f9fc394b8530377e5f6112f0b8908ba01280/LICENSE"
+  },
+  "modifications": "Original icon geometry retained; display size and stroke color adjusted in ../hero.svg."
+}

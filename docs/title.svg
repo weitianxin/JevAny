@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-labelledby="title description" width="1340" height="220" viewBox="0 0 1340 220" role="img">
+  <title id="title">JevAny: Your Jev from Any Model to Any Application</title>
+  <desc id="description">JevAny logo on a navy tile beside the project name, with the tagline below. Jev is purple and Any is teal.</desc>
+  <g id="jevany-logo" transform="translate(428.5 16) scale(0.21875)"><rect width="512" height="512" rx="96" fill="#101629" />
+  <g fill="none" stroke="#8b5cf6" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M144 128 256 240V128" />
+  </g>
+  <g fill="#8b5cf6">
+    <circle cx="144" cy="128" r="28" />
+    <circle cx="256" cy="128" r="28" />
+  </g>
+  <path d="M128 320a64 64 0 0 0 128 0v-80l112-112" fill="none" stroke="#2dd4bf" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="368" cy="128" r="36" fill="#2dd4bf" />
+</g>
+  <text font-family="URW Gothic,Avenir Next,Century Gothic,sans-serif" font-size="100" font-weight="700" text-anchor="middle" x="734" y="100"><tspan fill="#7c3aed">Jev</tspan><tspan fill="#0b8b80">Any</tspan></text>
+  <text font-family="URW Gothic,Avenir Next,Century Gothic,sans-serif" font-size="44" font-weight="400" text-anchor="middle" x="670" y="190" fill="#243047"><tspan>Your </tspan><tspan fill="#7c3aed">Jev</tspan><tspan> from </tspan><tspan fill="#0b8b80">Any</tspan><tspan> Model to </tspan><tspan fill="#0b8b80">Any</tspan><tspan> Application</tspan></text>
+</svg>

@@ -1,9 +1,5 @@
 <p align="center">
-  <a href="README.md">English</a> | <strong>简体中文</strong>
-</p>
-
-<p align="center">
-  <img src="docs/hero.svg" alt="JevAny：训练自己的决策模型，通过统一 API 部署" width="100%">
+  <img src="docs/title.png" alt="JevAny：从任意模型构建你的 Jev，部署到任意应用" width="100%">
 </p>
 
 <p align="center">
@@ -12,11 +8,15 @@
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/badge/license-Apache--2.0-32d6c5"></a>
 </p>
 
-**训练自己的 Jev，部署到自己的应用中。**
+<p align="center">
+  <a href="README.md">English</a> | <strong>简体中文</strong>
+</p>
 
-JevAny 是训练和部署 Jev 风格决策模型的开源基础设施（infra）。你可以用自己的决策数据微调开源语言模型，也可以直接使用我们训练好的 checkpoint。两条路径共用 Python 和 HTTP 接口，输入输出沿用 [Jev API 的格式](docs/API.md)。
+JevAny 用于训练和部署 Jev 风格的决策模型：你可以微调开源语言模型，也可以使用预训练 checkpoint。两者共用兼容 Jev 格式的 [Python 和 HTTP API](docs/API.md)，输入状态、问题与候选答案，即可获得选择及各选项的概率。
 
-给模型当前状态、问题和候选答案，它会返回选择及各选项的概率。你的应用可以据此分类消息、选择 SQL 修复方案，或决定智能体的下一步动作。
+<p align="center">
+  <img src="docs/hero.png" alt="JevAny 训练与部署流程：多模态数据、RLCR/SFT 训练、统一 API、测试环境与应用示例" width="100%">
+</p>
 
 | 从这里开始 | JevAny 提供什么 |
 |---|---|
