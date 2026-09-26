@@ -186,6 +186,36 @@ def test_packaged_replays_are_complete_and_preserve_controller_provenance():
                     assert priority["choice"] == max(priority["probabilities"], key=priority["probabilities"].get)
 
 
+def test_playground_gifs_share_format_and_match_the_packaged_replays():
+    Image = pytest.importorskip("PIL.Image")
+    directory = ROOT.parents[1] / "docs" / "demos"
+    manifest = json.loads((directory / "playground-format.json").read_text())
+    records = {record["case"]: record for record in manifest["cases"]}
+    assert set(records) == set(CASES)
+    assert len({tuple(record["size"]) for record in records.values()}) == 1
+    assert all(record["clip"] == records["arm"]["clip"] for record in records.values())
+    for case, record in records.items():
+        replay = json.loads((ROOT / "recordings" / case / "replay.json").read_text())
+        assert record["decisions"] == len(replay["steps"]) - 1
+        assert record["success"] == replay["steps"][-1]["success"]
+        with Image.open(directory / f"playground-{case}.gif") as image:
+            assert image.size == tuple(record["size"])
+            assert image.is_animated and image.info["loop"] == 0
+            assert image.info["comment"].startswith(manifest["format"].encode())
+            assert image.info["duration"] <= 80
+            image.seek(image.n_frames - 1)
+            assert image.info["duration"] <= 80
+
+
+def test_environment_playback_timing_is_preserved_in_snapshots(app):
+    app.start("arm", 17)
+    app.env.frame_duration_ms = 1000 / 30
+    app.env.step_pause_ms = 0
+    snapshot = app.step(app.revision, action="right")
+    assert snapshot["frame_duration_ms"] == pytest.approx(1000 / 30)
+    assert snapshot["step_pause_ms"] == 0
+
+
 @pytest.mark.demo
 @pytest.mark.parametrize("case", list(CASES))
 def test_native_environment_reset_step_and_invalid_action(case):

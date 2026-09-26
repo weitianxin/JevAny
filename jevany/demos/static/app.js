@@ -88,6 +88,12 @@ function drawActions(decision) {
     button.onclick = () => liveStep(key);
     return button;
   }));
+  const selected = $("actions").querySelector(".selected");
+  if (selected) {
+    const item = selected.getBoundingClientRect(), list = $("actions").getBoundingClientRect();
+    if (item.bottom > list.bottom) $("actions").scrollTop += item.bottom - list.bottom;
+    else if (item.top < list.top) $("actions").scrollTop += item.top - list.top;
+  }
 }
 async function show(snapshot, animate = false) {
   state = snapshot;
@@ -95,13 +101,6 @@ async function show(snapshot, animate = false) {
   const observation = state.observation || {};
   const frames = state.frames || [];
   const stamp = generation;
-  if (animate && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    for (const frame of frames) {
-      if (stamp !== generation) return;
-      $("scene").src = frame; await delay(65);
-    }
-  } else if (frames.length) $("scene").src = frames.at(-1);
-  if (stamp !== generation) return;
   $("step-count").textContent = `STEP ${state.step} / ${mode === "replay" ? replay.steps.length - 1 : config.cases[current].limit}` +
     (observation.image_is_current === false ? " · LAST AVAILABLE FRAME" : "");
   $("step-count").title = observation.image_is_current === false ?
@@ -112,6 +111,12 @@ async function show(snapshot, animate = false) {
   $("state-json").textContent = JSON.stringify(observation, null, 2);
   $("scrub").value = index;
   updateMetrics(observation); drawActions(state.decision); controls();
+  if (animate && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    for (const frame of frames) {
+      if (stamp !== generation) return;
+      $("scene").src = frame; await delay(state.frame_duration_ms ?? 65);
+    }
+  } else if (frames.length) $("scene").src = frames.at(-1);
 }
 function modeLabels() {
   document.querySelectorAll("[data-mode]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.mode === mode)));
@@ -147,7 +152,7 @@ async function startPlayback() {
   if (index === replay.steps.length - 1) { index = 0; await show(replay.steps[0]); }
   playing = true; controls(); const stamp = generation, playback = ++loop;
   while (playing && playback === loop && mode === "replay" && stamp === generation && index < replay.steps.length - 1) {
-    await delay(950);
+    await delay(replay.steps[index + 1].step_pause_ms ?? 950);
     if (!playing || playback !== loop || mode !== "replay" || stamp !== generation) break;
     index++; await show(replay.steps[index], true);
   }
@@ -204,7 +209,7 @@ $("primary").onclick = async () => {
   else {
     automatic = !automatic; const run = ++loop; controls();
     while (automatic && run === loop && mode === "model" && state && !state.done) {
-      await liveStep(); if (automatic) await delay(250);
+      await liveStep(); if (automatic) await delay(Math.min(state.step_pause_ms ?? 250, 250));
     }
     controls();
   }

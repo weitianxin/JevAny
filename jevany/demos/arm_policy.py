@@ -2,6 +2,10 @@
 from typing import Any
 
 
+def _at_target(target: list[float], current: list[float]) -> bool:
+    return all(abs(round((t - c) * 100, 2)) <= .55 for t, c in zip(target, current))
+
+
 class ArmHarness:
     """Track measured task progress while leaving every motor command to Jev."""
 
@@ -28,12 +32,12 @@ class ArmHarness:
                     continue
             elif self.stage == "align":
                 target, fingers = [peg[0], peg[1], .31], "open"
-                if all(abs(t - c) <= .0055 for t, c in zip(target, tip)) and opened:
+                if _at_target(target, tip) and opened:
                     self.stage = "descend"
                     continue
             elif self.stage == "descend":
                 target, fingers = [peg[0], peg[1], .085], "open"
-                if all(abs(t - c) <= .0055 for t, c in zip(target, tip)) and opened:
+                if _at_target(target, tip) and opened:
                     self.stage = "grasp"
                     continue
             elif self.stage == "grasp":
@@ -44,27 +48,36 @@ class ArmHarness:
                     continue
             elif self.stage == "lift":
                 target, fingers = [*self.anchor, .31], "closed"
-                if abs(tip[2] - .31) <= .0055 and holding:
+                if _at_target([.31], [tip[2]]) and holding:
                     self.stage = "transport"
                     continue
             elif self.stage == "transport":
                 target, fingers = [socket[0], socket[1], .31], "closed"
-                if all(abs(t - c) <= .0055 for t, c in zip(target, tip)) and holding:
+                if _at_target(target, tip) and holding:
                     self.stage = "lower"
                     continue
             elif self.stage == "lower":
                 target, fingers = [socket[0], socket[1], .14], "closed"
-                if all(abs(t - c) <= .0055 for t, c in zip(target, tip)) and holding:
+                if _at_target(target, tip) and holding:
                     self.stage = "release"
                     continue
             else:
                 target, fingers = list(tip), "open"
             break
+        error_cm = [round((t - c) * 100, 2) for t, c in zip(target, tip)]
+        moving = [axis for axis in range(3) if abs(error_cm[axis]) > .55]
+        previous_axis = (self.last_action or "").split("_")[0]
+        preferred_axis = (
+            "xyz".index(previous_axis)
+            if previous_axis in ("x", "y", "z") and "xyz".index(previous_axis) in moving
+            else max(moving, key=lambda axis: abs(error_cm[axis]), default=None)
+        )
         return {
             "stage": self.stage,
             "target_xyz_cm": [round(t * 100, 2) for t in target],
             "current_xyz_cm": [round(t * 100, 2) for t in tip],
-            "target_minus_current_cm": [round((t - c) * 100, 2) for t, c in zip(target, tip)],
+            "target_minus_current_cm": error_cm,
+            "preferred_motion_axis": "XYZ"[preferred_axis] if preferred_axis is not None else None,
             "required_fingers": fingers, "fingers_now": "open" if opened else "closed",
             "holding_peg_now": holding,
             "peg_xyz_cm": [round(v * 100, 2) for v in peg],
@@ -98,6 +111,8 @@ class ArmHarness:
                 "peg_xyz": context["peg_xyz_cm"],
                 "recent_actions": history[-3:],
                 "remaining_motion_xyz_cm": context["target_minus_current_cm"],
+                "preferred_motion_axis": context["preferred_motion_axis"],
+                "position_tolerance_cm": .55,
             },
             "questions": {"action": {
                 "type": "choice",
@@ -107,8 +122,14 @@ class ArmHarness:
                     "Match the required finger state. When position is outside tolerance, reduce the remaining "
                     "position error and preserve the required finger state. "
                     "A positive remaining coordinate requires a plus move; a negative coordinate requires a minus move. "
-                    "Each move changes only one coordinate by 1 or 5 cm. Use 1 cm for precision. "
-                    "Position tolerance is 0.55 cm on each axis. Do not close before the grasp phase; "
+                    "Each move changes only one coordinate by 1 or 5 cm. "
+                    "Continue along preferred_motion_axis until that coordinate is within tolerance, "
+                    "then let the harness select the next axis. Use 5 cm when that axis has at least "
+                    "4.45 cm remaining; otherwise use 1 cm. "
+                    "An absolute error of 0.55 cm or less is already aligned: leave that axis alone. "
+                    "Do not reverse direction to correct an already aligned axis. "
+                    "Do not repeat open or close when the fingers already have the required state. "
+                    "Do not close before the grasp phase; "
                     "do not open while holding the peg unless the phase is release. "
                     "The harness updates subgoals only after measured physical conditions are met."
                 ),

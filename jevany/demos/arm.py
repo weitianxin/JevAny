@@ -34,6 +34,9 @@ class PegInsertion:
     LOWER = np.array([.20, -.40, .045])
     UPPER = np.array([.75, .40, .50])
     LIMIT = 120
+    FRAME_TICKS = 8
+    frame_duration_ms = 1000 * FRAME_TICKS / 240
+    step_pause_ms = 0
 
     def __init__(self, seed: int = 17):
         self.p = None
@@ -125,7 +128,7 @@ class PegInsertion:
         self.ticks += 1
         if self.ticks % 4 == 0:
             self.ever_held = self.ever_held or self._held()
-        if self.recording and self.ticks % 90 == 0:
+        if self.recording and self.ticks % self.FRAME_TICKS == 0:
             self.frames.append(self.render())
 
     def _move(self, target, steps=216):
@@ -133,9 +136,9 @@ class PegInsertion:
         target = np.asarray(target)
         for index in range(steps):
             t = (index + 1) / steps
-            self._command(start + (target - start) * (t * t * (3 - 2 * t)))
+            self._command(start + (target - start) * (t ** 3 * (10 - 15 * t + 6 * t * t)))
             self._tick()
-        self._hold(36)
+        self._hold(8)
 
     def _hold(self, steps):
         target = self._tip()
@@ -195,16 +198,16 @@ class PegInsertion:
             bounded = np.clip(target, self.LOWER, self.UPPER)
             if not np.allclose(target, bounded):
                 self.feedback = f"{action}: motion clipped at the workspace boundary."
-            self._move(bounded, 120)
+            self._move(bounded, 120 if abs(distance) == .05 else 44)
         else:
             self.finger_target = 0 if action == "close_gripper" else .04
             self._hold(180)
+            self._hold(48)
             self.feedback = (
                 "Both fingers contact the peg." if self._held()
                 else "Fingers closed without a two-finger grasp." if self.finger_target == 0
                 else "Fingers opened in place."
             )
-        self._hold(48)
         self.frames.append(self.render())
         self.steps += 1
         self.success = all(self.checks().values())

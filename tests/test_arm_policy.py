@@ -45,3 +45,38 @@ def test_lost_contact_returns_to_recovery_before_transporting():
     failed = harness.context(observation(height=.14, holding=False, opened=False))
     assert failed["stage"] == "open"
     assert not failed["holding_peg_now"]
+
+
+def test_motion_keeps_the_previous_axis_until_it_is_aligned():
+    harness = ArmHarness()
+    state = observation()
+    state["gripper_xyz_metres"] = [.45, -.10, .35]
+    harness.record("x_plus_1cm")
+    context = harness.context(state)
+    assert context["preferred_motion_axis"] == "X"
+    # X is now within tolerance. A larger Y error should be corrected next,
+    # rather than reversing X to chase an already acceptable position.
+    state["gripper_xyz_metres"][0] = .475
+    context = harness.context(state)
+    assert context["target_minus_current_cm"][0] == -.5
+    assert context["preferred_motion_axis"] == "Y"
+
+
+def test_grasp_subgoal_has_no_motion_axis():
+    harness = ArmHarness()
+    request = harness.request(observation(height=.085), {}, [], "fixture")
+    # Alignment must first be reached at transport height.
+    assert request["state"]["preferred_motion_axis"] == "Z"
+    harness.context(observation())
+    request = harness.request(observation(height=.085), {}, [], "fixture")
+    assert request["state"]["phase"] == "grasp"
+    assert request["state"]["preferred_motion_axis"] is None
+
+
+def test_tolerance_boundary_advances_instead_of_stalling_without_an_axis():
+    state = observation()
+    state["gripper_xyz_metres"][0] = .4755
+    context = ArmHarness().context(state)
+    assert context["stage"] == "descend"
+    assert context["target_minus_current_cm"][0] == -.55
+    assert context["preferred_motion_axis"] == "Z"

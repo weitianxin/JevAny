@@ -1,0 +1,62 @@
+{
+  "format": "JevAny Playground v1; 1120x900; 25fps; 1.5x",
+  "cases": [
+    {
+      "case": "doom",
+      "size": [
+        1120,
+        900
+      ],
+      "duration_ms": 2120,
+      "samples": 53,
+      "decisions": 18,
+      "controller": "model",
+      "success": true,
+      "clip": {
+        "x": 96,
+        "y": 359,
+        "width": 1248,
+        "height": 1003
+      },
+      "bytes": 9384644
+    },
+    {
+      "case": "crafter",
+      "size": [
+        1120,
+        900
+      ],
+      "duration_ms": 14320,
+      "samples": 23,
+      "decisions": 22,
+      "controller": "model",
+      "success": true,
+      "clip": {
+        "x": 96,
+        "y": 359,
+        "width": 1248,
+        "height": 1003
+      },
+      "bytes": 2867249
+    },
+    {
+      "case": "arm",
+      "size": [
+        1120,
+        900
+      ],
+      "duration_ms": 14520,
+      "samples": 363,
+      "decisions": 48,
+      "controller": "model",
+      "success": true,
+      "clip": {
+        "x": 96,
+        "y": 359,
+        "width": 1248,
+        "height": 1003
+      },
+      "bytes": 5555624
+    }
+  ]
+}

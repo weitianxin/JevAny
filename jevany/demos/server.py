@@ -85,6 +85,8 @@ class DemoApplication:
             "actions": {key: self.env.ACTION_LOOKUP[key] for key in self.env.get_all_actions()},
             "step": len(self.trace), "done": self.env.done, "success": self.env.success,
             "feedback": self.env.feedback,
+            "frame_duration_ms": getattr(self.env, "frame_duration_ms", 65),
+            "step_pause_ms": getattr(self.env, "step_pause_ms", 950),
         }
 
     def step(self, revision: int, *, action: str | None = None,
