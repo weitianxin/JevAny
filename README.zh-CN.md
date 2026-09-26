@@ -60,15 +60,13 @@ source .venv/bin/activate
 
 ### 训练数据
 
-训练数据沿用推理时的 `state` 和 `questions`，并为每个问题增加 `label`。可选的软标签用于描述答案的概率分布。
+训练数据沿用推理时的 `state` 和 `questions`，并为每个问题增加 `label`。
 
 | 数据 | 提供的内容 | 使用入口 |
 |---|---|---|
-| 随包入门数据 | 24 条合成训练记录和 8 条开发记录；文本输入，包含选择、二分类和评分问题 | `jevany data init --out data/starter` |
-| 公开数据构建器 | 文本、图片和视频决策数据，来源包括 HelpSteer3、ScienceQA、A-OKVQA 和 VideoFeedback | `jevany data build-sft --help` · `jevany data build-rlcr --help` |
+| 随包入门数据 | 用于熟悉训练流程的小型合成数据集 | `jevany data init --out data/starter` |
+| 公开数据构建器 | 文本、图片和视频决策数据 | [数据构建指南](docs/TRAINING.md#data-beyond-the-starter) |
 | 自己的数据 | 按统一 JSONL 格式添加标签的请求 | [格式与示例](docs/DATA.md) |
-
-入门数据用于跑通流程。构建更大的数据集时，构建器会下载和转换上游数据，并记录来源版本、许可证和各分区的记录数。[数据构建指南](docs/TRAINING.md#data-beyond-the-starter) 提供了一个小规模纯文本构建示例。
 
 训练前先准备并校验入门数据：
 
@@ -79,14 +77,14 @@ jevany data validate data/starter/train.jsonl
 
 ### SFT
 
-监督微调让 Jev 模型学习带标签的决策。入门 recipe 使用 `Qwen/Qwen3.5-0.8B` 和 CUDA GPU，将 checkpoint 写入 `runs/my-jev`：
+监督微调让 Jev 模型学习带标签的决策。在 CUDA GPU 上运行入门 recipe：
 
 ```bash
 jevany train --config recipes/sft.toml --dry-run
 jevany train --config recipes/sft.toml
 ```
 
-训练更新 LoRA adapter、决策头和新增决策 token 的 embedding，原有基座权重保持冻结。使用自己的数据时，添加 `--data data/my-domain.jsonl --out runs/domain-jev`。微调已发布的 Jev 模型可使用 [`recipes/finetune.toml`](recipes/finetune.toml)。
+Checkpoint 保存到 `runs/my-jev`。使用自己的数据时，添加 `--data data/my-domain.jsonl --out runs/domain-jev`。微调已发布的 Jev 模型可使用 [`recipes/finetune.toml`](recipes/finetune.toml)。
 
 ### RLCR
 
@@ -96,30 +94,9 @@ RLCR（Reinforcement Learning with Calibration Rewards）在 SFT 后继续训练
 jevany train --config recipes/rlcr.toml
 ```
 
-该 recipe 从 `runs/my-jev` 加载模型，输出到 `runs/my-jev-rlcr`。修改 recipe 时，基座和 adapter 设置需与 SFT checkpoint 一致。RLCR 仍处于实验阶段，选择 checkpoint 前应在留出数据上比较准确率和校准效果。详见[训练目标](docs/ALGORITHM.md#rlcr)和[已发布模型的评测](#评测)。
+该 recipe 从 `runs/my-jev` 继续训练，保存到 `runs/my-jev-rlcr`。RLCR 仍在开发完善中，详见[训练目标](docs/ALGORITHM.md#rlcr)。
 
-### 支持的基座
-
-同一训练器支持以下五个系列的官方基座：
-
-| 系列 | 官方基座 |
-|---|---|
-| Qwen | `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.5-0.8B` |
-| Llama | `meta-llama/Llama-3.1-8B-Instruct`, `meta-llama/Llama-3.2-11B-Vision-Instruct` |
-| Gemma | `google/gemma-4-31B-it` |
-| Mistral | `mistralai/Devstral-Small-2-24B-Instruct-2512`, `mistralai/Ministral-3-14B-Instruct-2512-BF16` |
-| Phi | `microsoft/Phi-4-reasoning-vision-15B` |
-
-使用同一训练器切换基座：
-
-```bash
-jevany train --config recipes/sft.toml \
-  --base meta-llama/Llama-3.1-8B-Instruct --out runs/llama-jev
-```
-
-Meta 权重需要已获授权的 Hugging Face 账号。原生视觉模型设置 `multimodal = true` 后可训练图片，并按模型能力支持视频。
-
-可在本地 GPU 上训练，或用 `torchrun` 启动多卡训练；DDP 在每块 GPU 上保留完整基座。[训练指南](docs/TRAINING.md) 列出了各模型配置、多模态用法和自定义 adapter 接口。
+训练支持 Qwen、Llama、Gemma、Mistral、Phi 的官方基座，并按模型能力支持图片和视频训练。模型选择和本地 GPU 用法见[训练指南](docs/TRAINING.md)。
 
 ## 预训练模型
 

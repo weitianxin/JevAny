@@ -60,15 +60,13 @@ The client-only installation does not install PyTorch. For image/video training,
 
 ### Training Data
 
-Training uses the same `state` and `questions` as inference, with a `label` added to each question. Optional soft targets describe a distribution over answers.
+Training uses the same `state` and `questions` as inference, with a `label` added to each question.
 
 | Data | What is available | Start here |
 |---|---|---|
-| Included starter | 24 synthetic training records and 8 development records; text inputs with choice, binary and score questions | `jevany data init --out data/starter` |
-| Public-source builders | Text, image and video decisions, including HelpSteer3, ScienceQA, A-OKVQA and VideoFeedback | `jevany data build-sft --help` · `jevany data build-rlcr --help` |
+| Included starter | Small synthetic dataset for learning the workflow | `jevany data init --out data/starter` |
+| Public-source builders | Text, image and video decision data | [Data-building guide](docs/TRAINING.md#data-beyond-the-starter) |
 | Your own data | Labelled requests in the shared JSONL format | [Format and examples](docs/DATA.md) |
-
-The starter is for learning the workflow. For larger datasets, the builders download and convert upstream data and record source versions, licenses and split counts. See the [data-building guide](docs/TRAINING.md#data-beyond-the-starter) for a small text-only build.
 
 Prepare and validate the starter before training:
 
@@ -79,14 +77,14 @@ jevany data validate data/starter/train.jsonl
 
 ### SFT
 
-Supervised fine-tuning fits a Jev model to labelled decisions. The starter recipe uses `Qwen/Qwen3.5-0.8B` on a CUDA GPU and writes the checkpoint to `runs/my-jev`:
+Supervised fine-tuning fits a Jev model to labelled decisions. Run the starter recipe on a CUDA GPU:
 
 ```bash
 jevany train --config recipes/sft.toml --dry-run
 jevany train --config recipes/sft.toml
 ```
 
-Training updates LoRA adapters, the decision head and any added decision-token embeddings; the original base weights stay frozen. To use your own data, add `--data data/my-domain.jsonl --out runs/domain-jev`. To adapt a released Jev model, use [`recipes/finetune.toml`](recipes/finetune.toml).
+The checkpoint is saved to `runs/my-jev`. To use your own data, add `--data data/my-domain.jsonl --out runs/domain-jev`. To adapt a released Jev model, use [`recipes/finetune.toml`](recipes/finetune.toml).
 
 ### RLCR
 
@@ -96,30 +94,9 @@ Reinforcement Learning with Calibration Rewards continues SFT with a reward base
 jevany train --config recipes/rlcr.toml
 ```
 
-This recipe loads `runs/my-jev` and writes `runs/my-jev-rlcr`. Keep the base and adapter settings consistent with the SFT checkpoint when changing the recipe. RLCR is experimental; compare accuracy and calibration on held-out data before choosing a checkpoint. See the [training objective](docs/ALGORITHM.md#rlcr) and [released-model evaluation](#evaluation).
+This recipe continues training from `runs/my-jev` and saves to `runs/my-jev-rlcr`. RLCR is under active development; see the [training objective](docs/ALGORITHM.md#rlcr).
 
-### Supported Backbones
-
-These official backbones share the same trainer:
-
-| Family | Official bases |
-|---|---|
-| Qwen | `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.5-0.8B` |
-| Llama | `meta-llama/Llama-3.1-8B-Instruct`, `meta-llama/Llama-3.2-11B-Vision-Instruct` |
-| Gemma | `google/gemma-4-31B-it` |
-| Mistral | `mistralai/Devstral-Small-2-24B-Instruct-2512`, `mistralai/Ministral-3-14B-Instruct-2512-BF16` |
-| Phi | `microsoft/Phi-4-reasoning-vision-15B` |
-
-Select a different base with the same trainer:
-
-```bash
-jevany train --config recipes/sft.toml \
-  --base meta-llama/Llama-3.1-8B-Instruct --out runs/llama-jev
-```
-
-Meta weights require approved Hugging Face access. Set `multimodal = true` for native vision training; image and video support follows the selected base.
-
-Train on local GPUs or with `torchrun`; DDP keeps a full base on each GPU. The [training guide](docs/TRAINING.md) covers model settings, native media and custom adapters.
+The trainer supports official Qwen, Llama, Gemma, Mistral and Phi bases, with image and video training where supported. See the [training guide](docs/TRAINING.md) for model choices and local GPU setup.
 
 ## Pretrained Models
 
