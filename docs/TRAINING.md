@@ -234,6 +234,8 @@ initialized from the base embedding mean and trained automatically, including
 when the base has spare vocabulary rows. Other embedding rows stay frozen.
 Checkpoints save the tokenizer and learned token rows along with LoRA and the
 pointer head. Loading restores that tokenizer before constructing the model.
+Gemma E4B also has a frozen per-layer token table. New rows in that table use its
+original mean embedding on both initial training and checkpoint reload.
 Older Qwen checkpoints continue to use their original delimiters and metadata
 defaults.
 
@@ -324,8 +326,8 @@ or resource-provider SDK.
 ### Short compatibility checks
 
 The offline tests use real, tiny Transformers architectures for the selected
-families, plus a GPT-2 fixture for the generic custom-backbone contract. They cover sliding-window and recurrent
-layers, MoE forwards, LoRA selection and gradients, added-token embeddings,
+families, plus a GPT-2 fixture for the generic custom-backbone contract. They
+cover sliding-window and recurrent layers, MoE forwards, LoRA selection and gradients, added-token embeddings,
 branch isolation, supported cache reuse, native media, checkpoint reload, and
 SFT-to-RLCR continuation:
 
@@ -337,6 +339,7 @@ python -m pytest tests/test_multimodal_backbones.py tests/test_serving.py tests/
 To check pretrained weights without completing a training run:
 
 ```bash
+python -m pip install -e '.[dev]'
 python -m scripts.smoke_backbone \
   --base Qwen/Qwen3.5-0.8B --steps 12 --out runs/smoke-qwen
 
@@ -354,8 +357,8 @@ scales; its default head learning rate is `1e-4`.
 The script runs the actual trainer, measures uncalibrated NLL before and during
 training, reloads the checkpoint, and checks predictions through both the Python
 runtime and the FastAPI application. The HTTP checks exercise health, model
-description, repeated typed requests, and rejection of invalid requests. It checks prefix-cache
-parity where supported and explicit rejection elsewhere.
+description, repeated typed requests, and rejection of invalid requests. It checks
+prefix-cache parity where supported and explicit rejection elsewhere.
 It writes `smoke.json`, per-rank GPU identity, and the trainer's evaluation
 history. A passing run requires finite adapter weights, updated LoRA weights,
 lower final NLL, and successful prediction checks. Its small evaluation probe

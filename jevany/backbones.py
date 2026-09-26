@@ -91,9 +91,17 @@ def prepare_embeddings(model: PreTrainedModel, tokenizer: PreTrainedTokenizerBas
     if ids:
         with torch.no_grad():
             initial = embedding.weight.mean(dim=0)
+            # Gemma E4B also looks up token IDs in a frozen per-layer table.
+            # Its new rows are not in PEFT's main-embedding adapter, so rebuild
+            # them deterministically whenever the checkpoint loads its base.
+            per_layer = bool(getattr(model.config, "hidden_size_per_layer_input", 0))
+            per_layer_initial = (model.get_per_layer_input_embeddings().weight.mean(dim=0)
+                                 if per_layer else None)
             if size > embedding.num_embeddings:
                 model.resize_token_embeddings(size, mean_resizing=False)
             model.get_input_embeddings().weight[ids] = initial
+            if per_layer:
+                model.get_per_layer_input_embeddings().weight[ids] = per_layer_initial
     return ids
 
 

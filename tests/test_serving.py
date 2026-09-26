@@ -345,7 +345,8 @@ def test_local_decide_cli_and_remote_option_rejection(checkpoint, request_body, 
         main(["decide", str(source), "--prefix-cache-size", "0"])
 
 
-@pytest.mark.parametrize("family", ["qwen", "llama", "gemma4", "gemma4_unified", "mistral3", "muse", "glm"])
+@pytest.mark.parametrize("family", ["qwen", "llama", "gemma4", "gemma4_per_layer",
+                                  "gemma4_unified", "mistral3", "muse", "glm"])
 def test_native_media_checkpoint_python_http_parity(tmp_path, family, monkeypatch):
     from PIL import Image
     from jevany import serve

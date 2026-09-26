@@ -12,7 +12,8 @@ from jevany.checkpoint import Checkpoint, Meta, write_meta
 from jevany.model import DecisionModel, load_preprocessor
 
 
-FAMILIES = ["qwen", "llama", "gemma4", "gemma4_unified", "mistral3", "devstral", "muse", "glm"]
+FAMILIES = ["qwen", "llama", "gemma4", "gemma4_per_layer", "gemma4_unified",
+            "mistral3", "devstral", "muse", "glm"]
 
 
 @pytest.fixture(autouse=True)
@@ -26,11 +27,11 @@ def single_thread():
 def make_vision_base(path, family):
     special = {
         "image_token": "<|image_pad|>" if family == "qwen" else "<image>",
-        "audio_token": "<audio>", "video_token": "<|video|>" if family in ("gemma4", "gemma4_unified") else "<|video_pad|>",
+        "audio_token": "<audio>", "video_token": "<|video|>" if family.startswith("gemma4") else "<|video_pad|>",
         "vision_start_token": "<|vision_start|>", "vision_end_token": "<|vision_end|>",
         "boi_token": "<start_of_image>", "eoi_token": "<end_of_image>",
     }
-    if family in ("gemma4", "gemma4_unified"):
+    if family in ("gemma4", "gemma4_per_layer", "gemma4_unified"):
         special.update(boa_token="<start_of_audio>", eoa_token="<end_of_audio>")
     if family == "muse":
         special.update(image_token="<|patch|>", video_token="<|video|>",
@@ -80,10 +81,12 @@ def make_vision_base(path, family):
             image_processor=hf.MllamaImageProcessor(size={"height": 28, "width": 28}, max_image_tiles=1),
             tokenizer=tok,
         )
-    elif family == "gemma4":
+    elif family in ("gemma4", "gemma4_per_layer"):
         config = hf.Gemma4Config(
             text_config={**common, "head_dim": 8, "global_head_dim": 8,
-                         "hidden_size_per_layer_input": 0, "num_kv_shared_layers": 0,
+                         "hidden_size_per_layer_input": 4 if family == "gemma4_per_layer" else 0,
+                         "vocab_size_per_layer_input": len(tok),
+                         "num_kv_shared_layers": 0,
                          "sliding_window": 16, "layer_types": ["sliding_attention", "full_attention"],
                          "rope_parameters": {"sliding_attention": {"rope_type": "default", "rope_theta": 10000},
                                              "full_attention": {"rope_type": "default", "rope_theta": 10000}}},
@@ -181,7 +184,8 @@ def record(image, **changes):
     return result
 
 
-@pytest.mark.parametrize("family", ["gemma4", "gemma4_unified", "mistral3", "devstral", "muse", "glm"])
+@pytest.mark.parametrize("family", ["gemma4", "gemma4_per_layer", "gemma4_unified",
+                                  "mistral3", "devstral", "muse", "glm"])
 @pytest.mark.parametrize("attn", ["eager", "sdpa"])
 def test_current_vision_base_text_training(tmp_path, family, attn):
     base = tmp_path / "base"
@@ -197,7 +201,7 @@ def test_current_vision_base_text_training(tmp_path, family, attn):
                for name, value in model.named_parameters())
 
 
-@pytest.mark.parametrize("family", ["gemma4", "gemma4_unified", "muse", "glm"])
+@pytest.mark.parametrize("family", ["gemma4", "gemma4_per_layer", "gemma4_unified", "muse", "glm"])
 def test_native_video(tmp_path, family):
     import av
     base = tmp_path / "base"
@@ -288,7 +292,7 @@ def test_native_media_train_and_reload(tmp_path, family, attn):
     assert torch.isfinite(model.probs(model.encode(processor, multiple))[0]).all()
     with pytest.raises(ValueError, match="exactly one"):
         model.encode(processor, record(image, questions=record(image)["questions"] * 2))
-    if family not in ("qwen", "gemma4", "gemma4_unified", "muse", "glm"):
+    if family not in ("qwen", "gemma4", "gemma4_per_layer", "gemma4_unified", "muse", "glm"):
         with pytest.raises(ValueError, match="does not support"):
             model.encode(processor, record(image, media=[{"type": "video", "uri": str(image)}]))
     with pytest.raises(ValueError, match="prefix caching does not support media"):
@@ -310,6 +314,7 @@ def test_non_native_base_rejected(tmp_path):
 @pytest.mark.parametrize("family,adapter,precision", [
     ("mistral3", "custom_vision:CustomVision", "fp32"), ("muse", "auto", "fp32"), ("muse", "auto", "bf16"),
     ("glm", "auto", "bf16"), ("gemma4_unified", "auto", "bf16"),
+    ("gemma4_per_layer", "auto", "bf16"),
 ])
 def test_vision_adapter_sft_to_rlcr(tmp_path, monkeypatch, family, adapter, precision):
     import json
@@ -338,7 +343,8 @@ def test_vision_adapter_sft_to_rlcr(tmp_path, monkeypatch, family, adapter, prec
     first = main(args + ["--out", str(tmp_path / "sft")])
     final = main(args + ["--out", str(tmp_path / "rlcr"), "--init-from", str(first), "--rlcr"])
     ck = Checkpoint(final)
-    expected = {"muse": "muse_vision", "glm": "glm_vision", "gemma4_unified": "gemma4_vision"}
+    expected = {"muse": "muse_vision", "glm": "glm_vision", "gemma4_unified": "gemma4_vision",
+                "gemma4_per_layer": "gemma4_vision"}
     assert ck.meta.backbone_adapter == (expected[family] if adapter == "auto" else adapter)
     processor, model = ck.load("cpu")
     assert model.lm.dtype == (torch.bfloat16 if precision == "bf16" else torch.float32)
