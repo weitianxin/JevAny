@@ -18,6 +18,7 @@ import webbrowser
 from jevany.api import validate_response
 from jevany.client import DecisionClient, JevClient
 from . import CASES, DemoEnvironment, make_environment
+from .context import decision_request
 
 ROOT = Path(__file__).parent
 
@@ -96,21 +97,7 @@ class DemoApplication:
         if model:
             if self.client is None:
                 raise ValueError("restart with --base-url http://127.0.0.1:8008 --text-only to connect a model")
-            request = {
-                "model": self.client.model_id,
-                "state": {
-                    "goal": CASES[self.case]["goal"], "observation": before,
-                    "recent_actions": [{"action": entry["action"], "feedback": entry["feedback"]}
-                                       for entry in self.trace[-8:]],
-                },
-                "questions": {"action": {
-                    "type": "choice",
-                    "instructions": "Choose the next available action using the current view, measurements, "
-                                    "and recent feedback. Actions execute exactly as described; the environment "
-                                    "is paused while you choose. Do not finish before the goal is achieved.",
-                    "criteria": actions,
-                }},
-            }
+            request = decision_request(self.case, self.client.model_id, before, actions, self.trace)
             if self.images:
                 request["media"] = [{"type": "image", "uri": frame_uri(self.env.render())}]
             response = validate_response(request, self.client(request))

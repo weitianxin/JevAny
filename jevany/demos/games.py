@@ -40,6 +40,9 @@ class Crafter:
         self.names = list(self.env.action_names)
         self.steps, self.done, self.success = 0, False, False
         self.feedback = "Collect wood from a tree with Interact, then build your tools."
+        self.origin = self.env._player.pos.copy()
+        self.seen_resources = {}
+        self.last_action_effect = None
         self.frames = []
         return self.observe()
 
@@ -58,12 +61,28 @@ class Crafter:
                 material, obj = self.env._world[position]
                 row.append(type(obj).__name__.lower() if obj is not None else material)
             cells.append(row)
+        position = [int(v) for v in player.pos - self.origin]
+        for row, tiles in enumerate(cells):
+            for column, tile in enumerate(tiles):
+                coordinate = (position[0] + column - 4, position[1] + row - 3)
+                if tile in ("tree", "stone", "table", "water"):
+                    self.seen_resources[coordinate] = (tile, self.steps)
+                else:
+                    self.seen_resources.pop(coordinate, None)
+        facing = [int(v) for v in player.facing]
         return {
             "inventory": dict(player.inventory),
             "achievements": dict(player.achievements),
-            "facing_xy": [int(v) for v in player.facing],
+            "position_xy": position,
+            "facing_xy": facing,
+            "front_tile": cells[3 + facing[1]][4 + facing[0]],
             "visible_grid": cells,
             "grid_orientation": "Rows run north to south, columns west to east; player is at row 3, column 4.",
+            "known_resources": [
+                {"tile": tile, "position_xy": list(coordinate), "last_seen_turn": turn}
+                for coordinate, (tile, turn) in self.seen_resources.items()
+            ],
+            "last_action_effect": self.last_action_effect,
             "turn": self.steps, "feedback": self.feedback,
         }
 
@@ -73,15 +92,35 @@ class Crafter:
     def step(self, action: str) -> tuple[dict, float, bool, dict]:
         if action not in self.get_all_actions():
             raise ValueError(f"unavailable Crafter action: {action!r}")
-        before = self.env._player.achievements.copy()
+        before = self.observe()
         _, reward, terminal, info = self.env.step(self.names.index(action))
         self.steps += 1
-        unlocked = [key for key, value in info["achievements"].items() if value > before[key]]
+        unlocked = [key for key, value in info["achievements"].items()
+                    if value > before["achievements"][key]]
         goals = ("collect_wood", "place_table", "make_wood_pickaxe", "collect_stone")
         self.success = all(info["achievements"][key] > 0 for key in goals) and info["inventory"]["health"] > 0
         self.done = bool(terminal or self.success)
-        self.feedback = ("Unlocked: " + ", ".join(unlocked).replace("_", " ") if unlocked
-                         else f"{action.replace('_', ' ').capitalize()} completed.")
+        movement = [int(v) - start for v, start in
+                    zip(self.env._player.pos - self.origin, before["position_xy"])]
+        changes = {key: value - before["inventory"][key]
+                   for key, value in info["inventory"].items()
+                   if value != before["inventory"][key]}
+        self.last_action_effect = {
+            "action": action, "front_tile_before": before["front_tile"],
+            "movement_xy": movement, "inventory_changes": changes, "unlocked": unlocked,
+        }
+        effects = []
+        if any(movement):
+            effects.append(f"moved ({movement[0]:+d}, {movement[1]:+d})")
+        elif action.startswith("move_"):
+            effects.append("faced that direction but did not move")
+        if changes:
+            effects.append(", ".join(f"{key} {value:+d}" for key, value in changes.items()))
+        if unlocked:
+            effects.append("achieved " + ", ".join(unlocked))
+        if not effects:
+            effects.append("no change to position, inventory, or achievements")
+        self.feedback = f"{action} facing {before['front_tile']}: " + "; ".join(effects) + "."
         if self.done:
             self.feedback = ("Stone collected with a crafted pickaxe." if self.success else
                              "Episode ended before the crafting goal was completed.")
