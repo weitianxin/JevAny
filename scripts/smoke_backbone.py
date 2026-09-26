@@ -119,7 +119,7 @@ def prepare_fixture(directory: Path, media: str | None = None, mixed_text: bool 
                 row["state"] = f"The sample is {color}."
             rows.append(row)
     write_jsonl(directory / "train.jsonl", rows)
-    probe = load_records(directory / "train.jsonl")[:4]
+    probe = load_records(directory / "train.jsonl")
     files = {}
     for split in ("calibration", "development"):
         path = directory / f"{split}.jsonl"
@@ -262,6 +262,7 @@ def main(argv: list[str] | None = None) -> None:
         "trained_delimiter_embeddings": model.special_embeddings, "steps": args.steps,
         "learning_rate": args.lr, "head_learning_rate": args.head_lr,
         "world_size": world_size, "losses": losses, "adapter_tensors_finite": finite,
+        "evaluation_records": len(records),
         "lora_updated": lora_updated, "checkpoint_probability_max_delta": maximum_delta,
         "objective": "rlcr" if args.rlcr else "sft", "serving": serving,
         "prefix_cache_probability_max_delta": cache_delta,

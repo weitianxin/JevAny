@@ -4,9 +4,20 @@ import json
 import pytest
 import torch
 
-from scripts.smoke_backbone import main
+from scripts.smoke_backbone import main, prepare_fixture
 from test_backbones import make_base
 from test_multimodal_backbones import make_vision_base
+
+
+def test_mixed_fixture_evaluates_media_and_text_rows(tmp_path):
+    fixture = tmp_path / "fixture"
+    prepare_fixture(fixture, "image", mixed_text=True)
+    training = (fixture / "train.jsonl").read_text().splitlines()
+    for split in ("calibration", "development"):
+        rows = [json.loads(line) for line in (fixture / f"{split}.jsonl").read_text().splitlines()]
+        assert len(rows) == len(training) == 8
+        assert sum(bool(row.get("media")) for row in rows) == 6
+        assert sum(not row.get("media") for row in rows) == 2
 
 
 @pytest.mark.parametrize("family", ["llama", "gemma4_unified"])
