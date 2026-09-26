@@ -209,7 +209,9 @@ jevany demo --base-url http://127.0.0.1:8008 --text-only
 
 ## Supported Model Families
 
-![支持的模型 family、series 与 checkpoint 尺寸](docs/supported-model-families.svg)
+![支持的 26 个模型，涵盖 Qwen、Gemma、Muse、Mistral、GLM、Nemotron 和 Llama](docs/supported-model-families.svg)
+
+[模型 ID、支持的输入与运行要求](docs/TRAINING.md#backbone-support)。
 
 ## 文档与贡献
 

@@ -15,3 +15,5 @@ The Phi-4 vision conversion helper adapts configuration and weight-name mappings
 The native Phi-4 Reasoning Vision adapter follows Microsoft's [published model layout and image preprocessing](https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/tree/c3e4fac79ddace21976ced56fbf1564b8bd8c89f), released under MIT. Its weights are downloaded separately from Microsoft.
 
 The README teaser uses Lucide icons. The [source records](docs/icons/sources.json) and [license notices](docs/icons/LICENSE) accompany the editable SVG.
+
+The supported-model cards use logos from [Lobe Icons](https://github.com/lobehub/lobe-icons) under MIT. Their [source records](docs/model-logos/sources.json) and [license](docs/model-logos/LICENSE) accompany the SVG. Model and publisher marks belong to their respective owners.

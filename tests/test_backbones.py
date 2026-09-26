@@ -8,8 +8,8 @@ from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from transformers import (
     AutoModelForCausalLM, Gemma4TextConfig, Glm4MoeLiteConfig, GPT2Config,
-    LlamaConfig, MistralConfig, NemotronHConfig, Qwen3MoeConfig, Qwen3_5MoeTextConfig,
-    PreTrainedTokenizerFast, Qwen3Config, Qwen3_5TextConfig,
+    LlamaConfig, MistralConfig, NemotronHConfig, Qwen3_5MoeTextConfig,
+    PreTrainedTokenizerFast, Qwen3_5TextConfig,
 )
 
 from jevany.backbones import DECISION_TOKENS, LEGACY_TOKENS, decision_tokens, prepare_tokenizer
@@ -44,7 +44,6 @@ def make_base(path, family, *, legacy=False):
                   num_hidden_layers=2, num_attention_heads=4, num_key_value_heads=2,
                   max_position_embeddings=512, pad_token_id=1, eos_token_id=2, bos_token_id=2)
     configurations = {
-        "qwen": lambda: Qwen3Config(**common, head_dim=8),
         "qwen35": lambda: Qwen3_5TextConfig(
             **common, head_dim=8, layer_types=["linear_attention", "full_attention"],
             linear_num_key_heads=2, linear_num_value_heads=2,
@@ -70,11 +69,9 @@ def make_base(path, family, *, legacy=False):
             use_mamba_kernels=False,
         ),
         # Added decision tokens fit in the padded vocabulary without a resize.
-        "qwen_moe": lambda: Qwen3MoeConfig(**{**common, "vocab_size": len(tokenizer) + 8},
-                                           head_dim=8, num_experts=4,
-                                           num_experts_per_tok=2, moe_intermediate_size=16),
         "qwen35_moe": lambda: Qwen3_5MoeTextConfig(
-            **common, head_dim=8, layer_types=["linear_attention", "full_attention"],
+            **{**common, "vocab_size": len(tokenizer) + 8},
+            head_dim=8, layer_types=["linear_attention", "full_attention"],
             linear_num_key_heads=2, linear_num_value_heads=2, linear_key_head_dim=8, linear_value_head_dim=8,
             num_experts=4, num_experts_per_tok=2, moe_intermediate_size=16, shared_expert_intermediate_size=32,
         ),
@@ -92,7 +89,7 @@ RECORD = {"state": "state " * 20, "questions": [
 ]}
 
 
-@pytest.mark.parametrize("family", ["qwen", "qwen35", "llama", "gemma", "mistral", "qwen_moe", "qwen35_moe", "gpt2",
+@pytest.mark.parametrize("family", ["qwen35", "llama", "gemma", "mistral", "qwen35_moe", "gpt2",
                                   "glm", "nemotron"])
 def test_train_tokens_lora_isolation_cache_and_reload(tmp_path, family):
     torch.manual_seed(17)
@@ -199,7 +196,7 @@ def test_moe_lora_projection_coverage(tmp_path, family, preset, attn):
 
 def test_legacy_tokens_and_checkpoint_stay_compatible(tmp_path):
     base = tmp_path / "base"
-    make_base(base, "qwen", legacy=True)
+    make_base(base, "qwen35", legacy=True)
     tokenizer = load_tokenizer(base)
     assert decision_tokens(tokenizer) == LEGACY_TOKENS
     model = DecisionModel(base, tokenizer, "cpu", lora=2, head_dim=8)

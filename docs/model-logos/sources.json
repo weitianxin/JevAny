@@ -1,0 +1,24 @@
+{
+  "project": "Lobe Icons",
+  "repository": "https://github.com/lobehub/lobe-icons",
+  "revision": "329f378cbd1a88f45b60cd096b9111ce16f3ea39",
+  "sources": {
+    "qwen-color.svg": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/packages/static-svg/icons/qwen-color.svg",
+    "gemma-color.svg": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/packages/static-svg/icons/gemma-color.svg",
+    "meta-color.svg": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/packages/static-svg/icons/meta-color.svg",
+    "mistral-color.svg": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/packages/static-svg/icons/mistral-color.svg",
+    "zai.svg": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/packages/static-svg/icons/zai.svg",
+    "nvidia-color.svg": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/packages/static-svg/icons/nvidia-color.svg",
+    "LICENSE": "https://raw.githubusercontent.com/lobehub/lobe-icons/329f378cbd1a88f45b60cd096b9111ce16f3ea39/LICENSE"
+  },
+  "families": {
+    "Qwen": "qwen-color.svg",
+    "Gemma": "gemma-color.svg",
+    "Muse": "meta-color.svg",
+    "Mistral": "mistral-color.svg",
+    "GLM": "zai.svg",
+    "Nemotron": "nvidia-color.svg",
+    "Llama": "meta-color.svg"
+  },
+  "modifications": "Original logo geometry and colors retained. The figure sets display dimensions and prefixes SVG IDs to avoid collisions. Muse and Llama use the Meta publisher logo; GLM uses Z.ai; Nemotron uses NVIDIA."
+}

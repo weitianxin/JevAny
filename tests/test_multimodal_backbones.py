@@ -12,7 +12,7 @@ from jevany.checkpoint import Checkpoint, Meta, write_meta
 from jevany.model import DecisionModel, load_preprocessor
 
 
-FAMILIES = ["qwen", "llama", "gemma4", "gemma4_per_layer", "gemma4_unified",
+FAMILIES = ["qwen35", "qwen35_moe", "llama", "gemma4", "gemma4_per_layer", "gemma4_unified",
             "mistral3", "devstral", "muse", "glm"]
 
 
@@ -26,7 +26,7 @@ def single_thread():
 
 def make_vision_base(path, family):
     special = {
-        "image_token": "<|image_pad|>" if family == "qwen" else "<image>",
+        "image_token": "<|image_pad|>" if family.startswith("qwen35") else "<image>",
         "audio_token": "<audio>", "video_token": "<|video|>" if family.startswith("gemma4") else "<|video_pad|>",
         "vision_start_token": "<|vision_start|>", "vision_end_token": "<|vision_end|>",
         "boi_token": "<start_of_image>", "eoi_token": "<end_of_image>",
@@ -53,20 +53,32 @@ def make_vision_base(path, family):
     common = dict(vocab_size=len(tok), hidden_size=32, intermediate_size=64, num_hidden_layers=2,
                   num_attention_heads=4, num_key_value_heads=2, max_position_embeddings=2048,
                   pad_token_id=1, eos_token_id=2, bos_token_id=3)
-    if family == "qwen":
-        config = hf.Qwen3VLConfig(
-            text_config={**common, "head_dim": 8, "rope_parameters": {
-                "rope_type": "default", "mrope_section": [1, 1, 2], "mrope_interleaved": True}},
+    if family in ("qwen35", "qwen35_moe"):
+        config_class = hf.Qwen3_5MoeConfig if family == "qwen35_moe" else hf.Qwen3_5Config
+        text_config = {
+            **common, "head_dim": 8, "layer_types": ["linear_attention", "full_attention"],
+            "linear_num_key_heads": 2, "linear_num_value_heads": 2,
+            "linear_key_head_dim": 8, "linear_value_head_dim": 8,
+            "rope_parameters": {"rope_type": "default", "partial_rotary_factor": 1.0,
+                                "mrope_section": [1, 1, 2], "mrope_interleaved": True},
+        }
+        if family == "qwen35_moe":
+            text_config.update(num_experts=4, num_experts_per_tok=2, moe_intermediate_size=16,
+                               shared_expert_intermediate_size=32)
+        config = config_class(
+            text_config=text_config,
             vision_config=dict(depth=1, hidden_size=32, intermediate_size=64, num_heads=4,
-                               patch_size=14, temporal_patch_size=2, spatial_merge_size=2,
-                               out_hidden_size=32, deepstack_visual_indexes=[]),
+                               patch_size=16, temporal_patch_size=2, spatial_merge_size=2,
+                               out_hidden_size=32, num_position_embeddings=16),
             image_token_id=tok.image_token_id, video_token_id=tok.video_token_id,
             vision_start_token_id=tok.vision_start_token_id, vision_end_token_id=tok.vision_end_token_id,
         )
+        # Qwen 3.5/3.6/3.8 share Transformers' Qwen3VL processor.
         processor = hf.Qwen3VLProcessor(
-            image_processor=hf.Qwen2VLImageProcessor(size={"shortest_edge": 28 * 28, "longest_edge": 56 * 56}),
+            image_processor=hf.Qwen2VLImageProcessor(
+                patch_size=16, size={"shortest_edge": 32 * 32, "longest_edge": 64 * 64}),
             tokenizer=tok, video_processor=hf.Qwen3VLVideoProcessor(
-                size={"shortest_edge": 28 * 28, "longest_edge": 56 * 56}),
+                patch_size=16, size={"shortest_edge": 32 * 32, "longest_edge": 64 * 64}),
         )
     elif family == "llama":
         config = hf.MllamaConfig(
@@ -184,7 +196,7 @@ def record(image, **changes):
     return result
 
 
-@pytest.mark.parametrize("family", ["gemma4", "gemma4_per_layer", "gemma4_unified",
+@pytest.mark.parametrize("family", ["qwen35", "qwen35_moe", "gemma4", "gemma4_per_layer", "gemma4_unified",
                                   "mistral3", "devstral", "muse", "glm"])
 @pytest.mark.parametrize("attn", ["eager", "sdpa"])
 def test_current_vision_base_text_training(tmp_path, family, attn):
@@ -201,7 +213,7 @@ def test_current_vision_base_text_training(tmp_path, family, attn):
                for name, value in model.named_parameters())
 
 
-@pytest.mark.parametrize("family", ["gemma4", "gemma4_per_layer", "gemma4_unified", "muse", "glm"])
+@pytest.mark.parametrize("family", ["qwen35", "qwen35_moe", "gemma4", "gemma4_per_layer", "gemma4_unified", "muse", "glm"])
 def test_native_video(tmp_path, family):
     import av
     base = tmp_path / "base"
@@ -292,7 +304,7 @@ def test_native_media_train_and_reload(tmp_path, family, attn):
     assert torch.isfinite(model.probs(model.encode(processor, multiple))[0]).all()
     with pytest.raises(ValueError, match="exactly one"):
         model.encode(processor, record(image, questions=record(image)["questions"] * 2))
-    if family not in ("qwen", "gemma4", "gemma4_per_layer", "gemma4_unified", "muse", "glm"):
+    if family not in ("qwen35", "qwen35_moe", "gemma4", "gemma4_per_layer", "gemma4_unified", "muse", "glm"):
         with pytest.raises(ValueError, match="does not support"):
             model.encode(processor, record(image, media=[{"type": "video", "uri": str(image)}]))
     with pytest.raises(ValueError, match="prefix caching does not support media"):
@@ -303,8 +315,10 @@ def test_native_media_train_and_reload(tmp_path, family, attn):
                           multimodal=True, option_isolation=True)
 
 
-def test_non_native_base_rejected(tmp_path):
-    hf.LlamaConfig().save_pretrained(tmp_path)
+@pytest.mark.parametrize("model_type", ["llama", "qwen3_vl", "qwen3_vl_moe", "qwen2_5_vl"])
+def test_non_native_base_rejected(tmp_path, model_type):
+    import json
+    (tmp_path / "config.json").write_text(json.dumps({"model_type": model_type, "vision_config": {}}))
     with pytest.raises(ValueError, match="no built-in media adapter"):
         get_backbone_adapter("auto", multimodal=True, source=tmp_path)
     with pytest.raises(ValueError, match="source is required"):
@@ -312,6 +326,7 @@ def test_non_native_base_rejected(tmp_path):
 
 
 @pytest.mark.parametrize("family,adapter,precision", [
+    ("qwen35", "auto", "bf16"), ("qwen35_moe", "auto", "bf16"),
     ("mistral3", "custom_vision:CustomVision", "fp32"), ("muse", "auto", "fp32"), ("muse", "auto", "bf16"),
     ("glm", "auto", "bf16"), ("gemma4_unified", "auto", "bf16"),
     ("gemma4_per_layer", "auto", "bf16"),
@@ -343,7 +358,8 @@ def test_vision_adapter_sft_to_rlcr(tmp_path, monkeypatch, family, adapter, prec
     first = main(args + ["--out", str(tmp_path / "sft")])
     final = main(args + ["--out", str(tmp_path / "rlcr"), "--init-from", str(first), "--rlcr"])
     ck = Checkpoint(final)
-    expected = {"muse": "muse_vision", "glm": "glm_vision", "gemma4_unified": "gemma4_vision",
+    expected = {"qwen35": "qwen_vl", "qwen35_moe": "qwen_vl",
+                "muse": "muse_vision", "glm": "glm_vision", "gemma4_unified": "gemma4_vision",
                 "gemma4_per_layer": "gemma4_vision"}
     assert ck.meta.backbone_adapter == (expected[family] if adapter == "auto" else adapter)
     processor, model = ck.load("cpu")

@@ -74,7 +74,7 @@ def assert_answers_close(actual, expected):
                 assert answer["legend"] == reference["legend"]
 
 
-@pytest.mark.parametrize("family", ["qwen", "qwen35", "qwen_moe", "qwen35_moe", "llama", "gemma", "mistral", "glm", "nemotron", "gpt2"])
+@pytest.mark.parametrize("family", ["qwen35", "qwen35_moe", "llama", "gemma", "mistral", "glm", "nemotron", "gpt2"])
 def test_checkpoint_python_http_and_prefix_parity(tmp_path, family, request_body):
     checkpoint = make_checkpoint(tmp_path, family)
     local = JevModel.from_pretrained(
@@ -345,7 +345,7 @@ def test_local_decide_cli_and_remote_option_rejection(checkpoint, request_body, 
         main(["decide", str(source), "--prefix-cache-size", "0"])
 
 
-@pytest.mark.parametrize("family", ["qwen", "llama", "gemma4", "gemma4_per_layer",
+@pytest.mark.parametrize("family", ["qwen35", "qwen35_moe", "llama", "gemma4", "gemma4_per_layer",
                                   "gemma4_unified", "mistral3", "muse", "glm"])
 def test_native_media_checkpoint_python_http_parity(tmp_path, family, monkeypatch):
     from PIL import Image

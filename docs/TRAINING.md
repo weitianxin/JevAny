@@ -151,20 +151,20 @@ the base component of a Transformers causal language model, adds a pointer head,
 and trains LoRA plus any newly added decision-token embeddings. The same trainer,
 checkpoint format and serving API apply across model families.
 
-The [model catalog](supported-models.json) pins the 37 selected official
+The [model catalog](supported-models.json) pins the 26 selected official
 checkpoints across seven families. It records each repository, revision, series,
 size and native image/video support. Base, Thinking and quantized variants are
 not additional entries in this catalog.
 
-| Family | Selected series | Checkpoints |
+| Family | Selected models | Checkpoints |
 |---|---|---:|
-| Qwen | 3.8, 3.6, 3.5, 3, 3-VL, 3-Coder | 20 |
-| Gemma | 4 (including 12B Unified) | 3 |
-| Muse | Glimmer | 1 |
-| Mistral | Ministral 3, Devstral 2 | 4 |
-| GLM | 4.7 Flash, 4.6V Flash | 2 |
-| Nemotron | 3.5 Lightning, 3 Nano | 3 |
-| Llama | 3.2, 3.1 | 4 |
+| Qwen | Qwen3.8-27B; Qwen3.6-27B; Qwen3.6-35B-A3B; Qwen3.5-0.8B; Qwen3.5-2B; Qwen3.5-4B; Qwen3.5-9B; Qwen3.5-27B; Qwen3.5-35B-A3B | 9 |
+| Gemma | gemma-4-E4B-it; gemma-4-12B-it; gemma-4-31B-it | 3 |
+| Muse | Muse-Glimmer-30B | 1 |
+| Mistral | Ministral-3-3B-Instruct-2512-BF16; Ministral-3-8B-Instruct-2512-BF16; Ministral-3-14B-Instruct-2512-BF16; Devstral-Small-2-24B-Instruct-2512 | 4 |
+| GLM | GLM-4.7-Flash; GLM-4.6V-Flash | 2 |
+| Nemotron | NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16; NVIDIA-Nemotron-3-Nano-4B-BF16; NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 | 3 |
+| Llama | Llama-3.2-1B-Instruct; Llama-3.2-3B-Instruct; Llama-3.2-11B-Vision-Instruct; Llama-3.1-8B-Instruct | 4 |
 
 All families share `BackboneAdapter`, recipe flags, checkpoint loading and the
 serving API. Choose a publisher repository or a local weights directory with
@@ -177,7 +177,7 @@ do not describe the required weight memory. The small starter remains
 `Qwen/Qwen3.5-0.8B`. Gated repositories require the publisher's license acceptance
 and Hugging Face access before downloading; local snapshots need no account.
 
-Phi, Qwen 2.5, Gemma 3/3n, Pixtral and older Mistral/Magistral releases are outside
+Phi, Qwen 2.5/3/3-VL/3-Coder, Gemma 3/3n, Pixtral and older Mistral/Magistral releases are outside
 the maintained scope. The Phi conversion utilities and legacy media adapter names
 have been removed. The generic text adapter and custom adapter interface remain
 available for other architectures, without a compatibility claim.
@@ -265,7 +265,7 @@ loop, LoRA settings and checkpoint loading stay the same:
 
 | Family | Vision base | Adapter | Media |
 |---|---|---|---|
-| Qwen | `Qwen/Qwen3.8-27B`; `Qwen/Qwen3.5-27B` | `qwen_vl` | Images, video |
+| Qwen | All nine Qwen 3.5, 3.6 and 3.8 catalog entries | `qwen_vl` | Images, video |
 | Gemma | Gemma 4 E4B, 12B Unified, 31B IT | `gemma4_vision` | Images, video |
 | Muse | `meta-models/Muse-Glimmer-30B` | `muse_vision` | Images, video |
 | Mistral | Ministral 3 3B/8B/14B, Devstral Small 2 24B | `mistral_vision` | Images |
@@ -325,12 +325,20 @@ or resource-provider SDK.
 
 ### Short compatibility checks
 
-The [pretrained validation record](../results/model-support-v1.json) covers all
-37 catalog checkpoints with 108 passing input/objective checks. It includes
+The [pretrained validation record](../results/model-support-v1.json) includes all
+26 current catalog checkpoints with 80 passing input/objective checks. The
+original 37-checkpoint record is retained as historical evidence, including
+models since removed from the maintained scope. It includes
 revisions, learning rates, precision, reload errors, serving checks and failed
 attempts. Most SFT checks use 12 steps, followed by two RLCR steps. The Gemma 4
 12B video check uses 48 SFT steps, `--dtype fp32`, `--lr 2e-7` and
 `--head-lr 1e-4`, with BF16 frozen weights.
+
+The catalog contract test checks that every maintained checkpoint has matching
+revision, modality, SFT, RLCR, reload and Python/HTTP serving evidence. Media
+checks include mixed text records. These short runs establish compatibility;
+they do not establish task quality, production throughput or every distributed
+topology.
 
 The offline tests use real, tiny Transformers architectures for the selected
 families, plus a GPT-2 fixture for the generic custom-backbone contract. They
@@ -339,7 +347,7 @@ branch isolation, supported cache reuse, native media, checkpoint reload, and
 SFT-to-RLCR continuation:
 
 ```bash
-python -m pytest tests/test_backbones.py -q
+python -m pytest tests/test_model_support.py tests/test_backbones.py -q
 python -m pytest tests/test_multimodal_backbones.py tests/test_serving.py tests/test_smoke_backbone.py -q
 ```
 

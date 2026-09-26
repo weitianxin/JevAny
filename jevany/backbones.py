@@ -150,7 +150,7 @@ class BackboneAdapter:
     def supports_packed(self, config) -> bool:
         layer_types = set(getattr(config, "layer_types", None) or [])
         return (
-            config.model_type in {"qwen3", "llama", "mistral"}
+            config.model_type in {"llama", "mistral"}
             and not layer_types.difference({"full_attention"})
             and not getattr(config, "sliding_window", None)
         )
@@ -214,7 +214,7 @@ class BackboneAdapter:
             context_window=getattr(config, "max_position_embeddings", None),
             prefix_cache=config.model_type in {
                 # Qwen's recurrent 27B path failed BF16 prefix/full-forward parity.
-                "qwen3", "llama", "mistral", "gpt2",
+                "llama", "mistral", "gpt2",
             },
             media_types=tuple(sorted(self.media_types)),
             max_media_questions=1 if self.media_types else None,
@@ -385,11 +385,11 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
         if multimodal and source is not None:
             config, _ = PretrainedConfig.get_config_dict(source, revision=revision)
             model_type = config.get("model_type")
-            types = {"mllama": "llama_vision", "gemma4": "gemma4_vision",
+            types = {"qwen3_5": "qwen_vl", "qwen3_5_moe": "qwen_vl",
+                     "mllama": "llama_vision", "gemma4": "gemma4_vision",
                      "gemma4_unified": "gemma4_vision", "mistral3": "mistral_vision",
                      "muse_glimmer": "muse_vision", "glm4v": "glm_vision"}
-            name = ("qwen_vl" if model_type and model_type.startswith("qwen") and config.get("vision_config")
-                    else types.get(model_type))
+            name = types.get(model_type)
             if name is None:
                 raise ValueError(f"no built-in media adapter for {model_type!r}; "
                                  "provide backbone_adapter='module:Class'")

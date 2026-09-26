@@ -209,7 +209,9 @@ Live model runs currently use text state. Robot control uses the separate `.[rob
 
 ## Supported Model Families
 
-![Supported model families, series and checkpoint sizes](docs/supported-model-families.svg)
+![26 supported models across Qwen, Gemma, Muse, Mistral, GLM, Nemotron and Llama](docs/supported-model-families.svg)
+
+[Model IDs, supported inputs and setup requirements](docs/TRAINING.md#backbone-support).
 
 ## Documentation and Contributing
 
