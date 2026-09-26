@@ -203,16 +203,9 @@ jevany demo --base-url http://127.0.0.1:8008 --text-only
 
 ## 评测
 
-已发布的 v0.2 模型在 1,046 道迁移问题上的结果：
+![JevAny-27B SFT 和 RLCR 在迁移集及公开 benchmark 子集上的准确率；MMStar 和 MVBench 仅有 SFT 结果](docs/evaluation-checkpoints.svg)
 
-| 模型 | 迁移集准确率 |
-|---|---:|
-| JevAny-27B-SFT | 82.41% |
-| JevAny-27B-RLCR | 82.31% |
-
-在这次评测中，RLCR 尚未带来整体迁移收益。[完整评测](docs/EVALUATION.md) 包含模型比较、图像/视频对照实验和测试时适配的负结果。
-
-已验证的训练窗口为 2,048 个 packed tokens。新数据上的校准可能变化，部署前应在自己的留出任务上评估准确率和决策阈值。
+[完整结果与评测设置](docs/EVALUATION.md)。
 
 ## 文档与贡献
 

@@ -14,10 +14,6 @@ RLCR changed transfer accuracy by `-0.10` percentage points against SFT, with 3 
 
 Development accuracy and NLL exclude 100 VideoFeedback questions whose labels are all the same highest score. Those questions did exercise the video path, but a slice with one label cannot show temporal understanding, so we do not report it as a capability score. AI2D and MMMU use native images through the backbone's vision path. The training set also contains native A-OKVQA and ScienceQA images.
 
-<p align="center">
-  <img src="results-v2.svg" alt="JevAny v2 evaluation overview" width="100%">
-</p>
-
 ### Native image and video decisions
 
 We evaluated the released SFT checkpoint with the real media, a neutral blank asset, and media shuffled between questions within each task. We shuffle by unique media group, so questions that share one image or video receive the same replacement. The media sensitivity gate requires full-media accuracy to exceed the stronger control by at least five points, with a positive paired media-group bootstrap interval. Passing the gate shows that the model reads the media; task accuracy is a separate question.

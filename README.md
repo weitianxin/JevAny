@@ -203,16 +203,9 @@ Live model runs currently use text state. Robot control uses the separate `.[rob
 
 ## Evaluation
 
-The released v0.2 models were evaluated on 1,046 transfer questions:
+![JevAny-27B SFT and RLCR accuracy on the transfer suite and public benchmark subsets; MMStar and MVBench have SFT results only](docs/evaluation-checkpoints.svg)
 
-| Model | Transfer accuracy |
-|---|---:|
-| JevAny-27B-SFT | 82.41% |
-| JevAny-27B-RLCR | 82.31% |
-
-RLCR has not shown an overall transfer gain in this evaluation. [Evaluation details](docs/EVALUATION.md) include the full comparison, image/video controls and negative test-time adaptation results.
-
-The validated training window is 2,048 packed tokens. Calibration can change on new data; evaluate accuracy and decision thresholds on your own held-out tasks before deployment.
+[Full results and evaluation protocols](docs/EVALUATION.md).
 
 ## Documentation and Contributing
 
