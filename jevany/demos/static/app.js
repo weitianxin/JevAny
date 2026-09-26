@@ -1,7 +1,11 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const label = name => ({do:"Interact", noop:"Wait"}[name] || name.replaceAll("_", " "));
+const label = name => {
+  const move = /^([xyz])_(plus|minus)_(1|5)cm$/.exec(name);
+  return move ? `${move[1].toUpperCase()} ${move[2] === "plus" ? "+" : "−"}${move[3]} cm` :
+    ({do:"Interact", noop:"Wait"}[name] || name.replaceAll("_", " "));
+};
 let config, current = "doom", mode = "replay", replay, state, index = 0;
 let playing = false, automatic = false, busy = false, generation = 0, loop = 0, actions = {};
 
@@ -77,7 +81,9 @@ function drawActions(decision) {
     if (probabilities && probabilities[key] !== undefined) {
       const bar = element("span", undefined, "bar"); bar.style.width = `${probabilities[key]*100}%`; button.append(bar);
     }
-    button.append(element("span", label(key), "name"));
+    const actionName = element("span", label(key), "name");
+    if (/^[xyz]_(plus|minus)_(1|5)cm$/.test(key)) actionName.style.textTransform = "none";
+    button.append(actionName);
     if (probabilities?.[key] !== undefined) button.append(element("span", `${(probabilities[key]*100).toFixed(1)}%`, "prob"));
     button.onclick = () => liveStep(key);
     return button;
@@ -97,7 +103,7 @@ async function show(snapshot, animate = false) {
   } else if (frames.length) $("scene").src = frames.at(-1);
   if (stamp !== generation) return;
   $("step-count").textContent = `STEP ${state.step} / ${mode === "replay" ? replay.steps.length - 1 : config.cases[current].limit}`;
-  $("feedback").textContent = state.feedback;
+  $("feedback").textContent = [state.decision?.subgoal, state.feedback].filter(Boolean).join(" ");
   $("feedback-label").textContent = state.done ? (state.success ? "GOAL COMPLETED" : "EPISODE ENDED") : "ENVIRONMENT FEEDBACK";
   $("result-dot").className = state.done ? (state.success ? "success" : "failure") : "";
   $("state-json").textContent = JSON.stringify(observation, null, 2);
@@ -161,8 +167,8 @@ async function changeMode(next) {
     controls(); return;
   }
   if (mode === "model" && !config.model) {
-    setupMessage("Start a JevAny model server, then connect the playground to it.",
-      "jevany demo --base-url http://127.0.0.1:8008 --text-only");
+    setupMessage("Start the model server with JEVANY_MEDIA_ROOT=/tmp/jevany-media, then connect the playground.",
+      "jevany demo --base-url http://127.0.0.1:8008 --media-root /tmp/jevany-media");
     controls(); return;
   }
   await newRun();

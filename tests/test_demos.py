@@ -195,7 +195,7 @@ def test_native_environment_reset_step_and_invalid_action(case):
         assert env.observe() == before
         image = env.render()
         assert image.ndim == 3 and image.shape[2] == 3
-        action = {"doom": "forward", "crafter": "move_right", "arm": "approach"}[case]
+        action = {"doom": "forward", "crafter": "move_right", "arm": "x_plus_1cm"}[case]
         observation, reward, done, info = env.step(action)
         assert observation != before and isinstance(done, bool)
         json.dumps(observation)
@@ -209,15 +209,73 @@ def test_peg_insertion_requires_contact_alignment_and_release():
     pytest.importorskip("pybullet")
     env = make_environment("arm", seed=17)
     try:
-        for action in ("approach", "grasp", "lift", "cyan_socket", "seat", "release", "finish"):
-            env.step(action)
-        assert env.done and not env.success
-        env.reset(seed=17)
-        for action in ("approach", "lower", "grasp", "lift", "cyan_socket", "seat", "release"):
-            env.step(action)
+        before = env.observe()
+        env.step("close_gripper")
+        assert not env.success and not env.observe()["object_between_both_fingers"]
+        assert env.observe()["gripper_xyz_metres"] == pytest.approx(before["gripper_xyz_metres"], abs=.002)
+        with pytest.raises(ValueError, match="unavailable"):
+            env.step("cyan_socket")
+        replay = json.loads((ROOT / "recordings/arm/replay.json").read_text())
+        env.reset(seed=replay["seed"])
+        for step in replay["steps"][1:]:
+            env.step(step["decision"]["action"])
         assert env.success and all(env.checks().values())
     finally:
         env.close()
+
+
+@pytest.mark.demo
+@pytest.mark.parametrize("axis", "xyz")
+@pytest.mark.parametrize("direction,sign", [("plus", 1), ("minus", -1)])
+def test_arm_translation_changes_only_the_commanded_axis(axis, direction, sign):
+    pytest.importorskip("pybullet")
+    env = make_environment("arm", seed=17)
+    try:
+        before = env.observe()
+        after, _, _, _ = env.step(f"{axis}_{direction}_1cm")
+        expected = list(before["gripper_xyz_metres"])
+        expected["xyz".index(axis)] += sign * .01
+        assert after["gripper_xyz_metres"] == pytest.approx(expected, abs=.002)
+        assert after["gripper_open"] == before["gripper_open"]
+    finally:
+        env.close()
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_shared_camera_file_is_removed_after_inference(app, tmp_path, monkeypatch, fail):
+    np = pytest.importorskip("numpy")
+    Image = pytest.importorskip("PIL.Image")
+    from pathlib import Path
+    from jevany.api import SystemOneRequest
+    serve = pytest.importorskip("jevany.serve")
+    monkeypatch.setattr(serve, "MEDIA_ROOT", str(tmp_path))
+
+    class Model:
+        model_id = "test-model"
+
+        def __call__(self, request):
+            prepared = serve.prepare(SystemOneRequest.model_validate(request))
+            self.path = Path(prepared.media[0].uri)
+            assert self.path.is_relative_to(tmp_path)
+            with Image.open(self.path) as image:
+                assert image.size == (16, 12)
+            if fail:
+                raise RuntimeError("test inference failure")
+            return {"answers": {"action": {"type": "choice", "choice": "right",
+                    "confidence": .8, "probabilities": {"right": .8, "left": .2}}}}
+
+    app.client = Model()
+    app.media_root = tmp_path
+    start = app.start("arm", 17)
+    app.env.render = lambda: np.zeros((12, 16, 3), dtype=np.uint8)
+    if fail:
+        with pytest.raises(RuntimeError, match="test inference failure"):
+            app.step(start["revision"], model=True)
+        assert app.env.position == 0 and app.trace == []
+    else:
+        app.step(start["revision"], model=True)
+        assert app.env.position == 1 and len(app.trace) == 1
+    assert not app.client.path.exists() and list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.demo

@@ -8,21 +8,32 @@ import pybullet
 import pybullet_data
 from pybullet_utils.bullet_client import BulletClient
 
+from .arm_policy import ArmHarness
+
 
 class PegInsertion:
     """Move joint motors and evaluate contact, insertion depth, and release."""
 
-    ACTION_LOOKUP = {
-        "approach": "Move above the green peg at safe height, keeping the finger opening.",
-        "lower": "Descend at the current x-y position to the peg's grasp height.",
-        "grasp": "Close the fingers in place; requires alignment at grasp height.",
-        "lift": "Lift vertically to safe transport height, retaining the finger command.",
-        "cyan_socket": "Move above the cyan socket at safe transport height.",
-        "red_socket": "Move above the red socket at safe transport height.",
-        "seat": "Lower to the mouth of the socket at the current x-y position.",
-        "release": "Open the fingers, retract upward, and let the peg settle.",
-        "finish": "Stop moving and evaluate the current physical result.",
+    DELTAS = {
+        f"{axis}_{direction}_{centimetres}cm": (index, sign * centimetres / 100)
+        for index, axis in enumerate("xyz")
+        for direction, sign in (("plus", 1), ("minus", -1))
+        for centimetres in (5, 1)
     }
+    ACTION_LOOKUP = {
+        action: (
+            f"Move the gripper {abs(delta) * 100:g} cm along world "
+            f"{'+' if delta > 0 else '-'}{'XYZ'[axis]}; keep the other two "
+            "coordinates and finger opening unchanged."
+        )
+        for action, (axis, delta) in DELTAS.items()
+    } | {
+        "close_gripper": "Close both fingers in place. No translation or automatic alignment.",
+        "open_gripper": "Open both fingers in place. No translation or automatic retraction.",
+    }
+    LOWER = np.array([.20, -.40, .045])
+    UPPER = np.array([.75, .40, .50])
+    LIMIT = 120
 
     def __init__(self, seed: int = 17):
         self.p = None
@@ -80,6 +91,7 @@ class PegInsertion:
         self.frames, self.ticks = [], 0
         self.recording, self.ever_held = False, False
         self.steps, self.done, self.success = 0, False, False
+        self.harness = ArmHarness()
         self.feedback = "Ready. Close the fingers only after aligning at grasp height."
         self._move([.36, -.02, .4], 240)
         self._hold(120)
@@ -155,7 +167,18 @@ class PegInsertion:
             "aligned_above_peg": bool(np.linalg.norm(tip[:2] - pos[:2]) < .035),
             "gripper_height_above_peg_metres": round(float(tip[2] - pos[2]), 4),
             "checks": self.checks(), "feedback": self.feedback,
+            "cartesian_controls": {
+                "coordinate_frame": "world XYZ in metres; +Z is up, -Z is down",
+                "translation_steps_metres": [.05, .01],
+                "workspace_lower_xyz_metres": self.LOWER.tolist(),
+                "workspace_upper_xyz_metres": self.UPPER.tolist(),
+                "remaining_decisions": self.LIMIT - self.steps,
+            },
         }
+
+    def decision_request(self, model: str, history: list[dict[str, Any]]) -> dict[str, Any]:
+        """Give Jev a measured subgoal while retaining all primitive choices."""
+        return self.harness.request(self.observe(), self.ACTION_LOOKUP, history, model)
 
     def get_all_actions(self) -> list[str]:
         return [] if self.done else list(self.ACTION_LOOKUP)
@@ -164,36 +187,34 @@ class PegInsertion:
         if action not in self.get_all_actions():
             raise ValueError(f"unavailable arm action: {action!r}")
         self.frames = []
-        self.feedback = f"{action.replace('_', ' ').capitalize()} executed."
-        if action == "approach":
-            self._move([*self._position()[:2], .29])
-        elif action == "lower":
-            self._move([*self._tip()[:2], self._position()[2] + .003], 180)
-        elif action == "grasp":
-            self.finger_target = 0
-            self._hold(180)
-            self.feedback = "Both fingers contact the peg." if self._held() else "No peg grasped; check alignment and height."
-        elif action == "lift":
-            self._move([*self._tip()[:2], .31], 180)
-        elif action in self.destinations:
-            self._move([*self.destinations[action][:2], .31], 240)
-        elif action == "seat":
-            self._move([*self._tip()[:2], .14], 180)
-        elif action == "release":
-            self.finger_target = .04
-            self._hold(144)
-            self._move([*self._tip()[:2], .35], 180)
-            self._hold(180)
+        self.feedback = f"{action} executed."
+        if action in self.DELTAS:
+            axis, distance = self.DELTAS[action]
+            target = self._tip().copy()
+            target[axis] += distance
+            bounded = np.clip(target, self.LOWER, self.UPPER)
+            if not np.allclose(target, bounded):
+                self.feedback = f"{action}: motion clipped at the workspace boundary."
+            self._move(bounded, 120)
         else:
-            self.done = True
-            self._hold(60)
+            self.finger_target = 0 if action == "close_gripper" else .04
+            self._hold(180)
+            self.feedback = (
+                "Both fingers contact the peg." if self._held()
+                else "Fingers closed without a two-finger grasp." if self.finger_target == 0
+                else "Fingers opened in place."
+            )
         self._hold(48)
         self.frames.append(self.render())
         self.steps += 1
         self.success = all(self.checks().values())
-        self.done = bool(self.done or self.success or self.steps >= 24)
+        self.done = bool(self.success or self.steps >= self.LIMIT)
         if self.done:
-            self.feedback = "Peg seated upright in the cyan socket and released." if self.success else "Insertion checks did not all pass."
+            self.feedback += (
+                " Peg seated upright in cyan socket and released."
+                if self.success else " Decision limit reached; insertion checks failed."
+            )
+        self.harness.record(action)
         return self.observe(), float(self.success), self.done, {"success": self.success}
 
     def render(self):

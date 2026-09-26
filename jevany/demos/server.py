@@ -1,6 +1,7 @@
 """Serve packaged replays and optional CPU environments on the loopback interface."""
 import argparse
 import base64
+from contextlib import nullcontext
 import importlib.util
 import io
 import json
@@ -10,6 +11,7 @@ from pathlib import Path
 import sys
 import threading
 import time
+from tempfile import TemporaryDirectory
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 from urllib.parse import unquote, urlsplit
@@ -35,19 +37,24 @@ class DemoApplication:
     """One local interactive run; concurrent requests cannot change its state."""
 
     def __init__(self, client: DecisionClient | None = None, *, images: bool = True,
-                 factory: Callable[[str, int], DemoEnvironment] = make_environment):
+                 factory: Callable[[str, int], DemoEnvironment] = make_environment,
+                 media_root: str | Path | None = None):
         self.client, self.images, self.factory = client, images, factory
         self.lock = threading.Lock()
         self.env, self.case = None, None
         self.revision = 0
         self.trace = []
         self.snapshot = None
+        self.media_root = Path(media_root).resolve() if media_root is not None else None
+        if self.media_root is not None:
+            self.media_root.mkdir(parents=True, exist_ok=True)
 
     def config(self) -> dict[str, Any]:
         return {
             "cases": CASES,
             "model": self.client.model_id if self.client else None,
             "images": self.images,
+            "media_transport": "shared-files" if self.media_root is not None else "inline",
             "installed": {key: all(importlib.util.find_spec(name) is not None
                                    for name in (meta["package"], "PIL", "numpy"))
                           for key, meta in CASES.items()},
@@ -96,11 +103,29 @@ class DemoApplication:
         started = time.monotonic()
         if model:
             if self.client is None:
-                raise ValueError("restart with --base-url http://127.0.0.1:8008 --text-only to connect a model")
+                raise ValueError("restart with --base-url http://127.0.0.1:8008 to connect a model")
             request = decision_request(self.case, self.client.model_id, before, actions, self.trace)
-            if self.images:
-                request["media"] = [{"type": "image", "uri": frame_uri(self.env.render())}]
-            response = validate_response(request, self.client(request))
+            builder = getattr(self.env, "decision_request", None)
+            if builder is not None:
+                history = [{
+                    "action": entry["action"], "feedback": entry["feedback"],
+                    "holding_peg_now": entry["next_observation"]["object_between_both_fingers"],
+                } for entry in self.trace[-3:]]
+                request = builder(self.client.model_id, history)
+            storage = (TemporaryDirectory(prefix="jevany-frame-", dir=self.media_root)
+                       if self.images and self.media_root is not None else nullcontext())
+            with storage as directory:
+                if self.images:
+                    image = self.env.render()
+                    if directory is None:
+                        uri = frame_uri(image)
+                    else:
+                        from PIL import Image
+                        path = Path(directory) / "observation.png"
+                        Image.fromarray(image).save(path)
+                        uri = str(path)
+                    request["media"] = [{"type": "image", "uri": uri}]
+                response = validate_response(request, self.client(request))
             answer = response["answers"]["action"]
             action, probabilities = answer["choice"], answer["probabilities"]
         if not isinstance(action, str) or action not in actions:
@@ -112,6 +137,7 @@ class DemoApplication:
             "probabilities": probabilities, "observation": before, "next_observation": after,
             "reward": reward, "done": done, "success": info["success"],
             "feedback": self.env.feedback, "seconds": round(time.monotonic() - started, 3),
+            "subgoal": request["state"].get("current_subgoal") if model else None,
         }
         self.trace.append(decision)
         frames = [frame_uri(image) for image in (self.env.frames or [self.env.render()])]
@@ -206,12 +232,15 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--model", default="jevany-latest", help="model identity sent to the server")
     parser.add_argument("--timeout", type=float, default=120, help="model request timeout in seconds")
     parser.add_argument("--text-only", action="store_true", help="send measured state without an image")
+    parser.add_argument("--media-root", help="write request images under this shared JEVANY_MEDIA_ROOT directory")
     parser.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
     args = parser.parse_args(argv)
     if not 0 <= args.port <= 65535:
         parser.error("port must be between 0 and 65535")
+    if args.text_only and args.media_root:
+        parser.error("--media-root cannot be combined with --text-only")
     client = JevClient(args.base_url, timeout=args.timeout, model=args.model) if args.base_url else None
-    app = DemoApplication(client, images=not args.text_only)
+    app = DemoApplication(client, images=not args.text_only, media_root=args.media_root)
     try:
         server = make_server(app, args.port)
     except OSError as error:

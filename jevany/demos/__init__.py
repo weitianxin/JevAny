@@ -38,11 +38,11 @@ CASES = {
     "arm": {
         "title": "Robot peg insertion",
         "category": "ROBOTICS",
-        "description": "Grasp a peg, align it with the cyan socket, and release it.",
+        "description": "Move a gripper along XYZ, grasp a peg, and release it in the cyan socket.",
         "goal": "Lift the green peg, align it with the cyan socket, lower it, and release it upright inside the socket.",
         "package": "pybullet",
         "extra": "robotics",
-        "limit": 24,
+        "limit": 120,
     },
 }
 

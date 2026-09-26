@@ -21,11 +21,11 @@ The playground has three modes:
 |---|---|---|
 | **Replay** | Packaged frames and action records, with pause, step and seek controls | Base installation |
 | **Play yourself** | Your button presses execute native environment actions on CPU | The environment's optional extra |
-| **Run model** | JevAny receives measured state and recent actions, chooses an action, and displays its probabilities | Optional extra and a running JevAny server |
+| **Run model** | JevAny receives the camera image, measured state and recent actions, chooses an action, and displays its probabilities | Optional extra and a running JevAny server |
 
 The two game previews are **scripted environment tours**, not JevAny gameplay.
-The robot preview is an existing selected successful JevAny-27B-SFT recording;
-its original option probabilities are retained. Neither is a success-rate
+The robot preview is a successful JevAny-27B-SFT run with primitive Cartesian
+controls and a subgoal harness; its original option probabilities are retained. Neither is a success-rate
 benchmark. Fresh model runs keep the model's actual choices, including failures.
 
 ## Play locally or connect your model
@@ -40,10 +40,18 @@ jevany demo
 Choose **Play yourself** and click the action controls. No inference server is
 needed. Change the seed and start a new run to change the initial world.
 
-For model decisions, [start a JevAny server](../README.md#http-server), then:
+For multimodal decisions, start the model server with a shared image directory:
 
 ```bash
-jevany demo --base-url http://127.0.0.1:8008 --text-only
+mkdir -p /tmp/jevany-media
+JEVANY_MEDIA_ROOT=/tmp/jevany-media jevany serve \
+  --checkpoint tianxinwei/JevAny-27B-SFT --device cuda --dtype bf16
+```
+
+In a second terminal on the same host:
+
+```bash
+jevany demo --base-url http://127.0.0.1:8008 --media-root /tmp/jevany-media
 ```
 
 Choose **Run model**, then **One decision** or **Run automatically**. Use
@@ -53,9 +61,11 @@ waiting for the model. Each action then executes a bounded amount of simulation.
 The browser shows the environment's result and the returned probability for
 every candidate, without replacing a failed choice with a scripted action.
 
-Use `--text-only` with the bundled HTTP server. It accepts images only as local
-files under `JEVANY_MEDIA_ROOT`; the playground's inline image transport is not
-connected to that file policy. Images remain visible in the browser.
+The demo writes each camera image under `--media-root` while inference runs,
+then removes the file. The model server must see that directory at the same
+path. A compatible server accepting inline images can omit `--media-root`.
+Use `--text-only` to send measurements without images; images remain visible
+in the browser. See the [server setup](../README.md#http-server) for prerequisites.
 Use `--model MODEL_ID` to set the request's model identity and `--timeout 300`
 if your server needs longer than the default 120 seconds per request.
 Hardware requirements belong to the model server; the playground itself runs
@@ -115,15 +125,21 @@ preview demonstrates the crafting sequence.
 
 This task adapts JevAny's existing Franka Panda
 [peg-insertion case](../docs/CASES.md#robotics-assembly-and-laboratory-automation).
-The nine controls move joint motors, close or open the fingers, and position the
-gripper above either socket. Actual PyBullet contact and gravity determine
-whether the peg is grasped, carried and inserted; the model does not set an
-object's position directly.
+The 14 controls move the gripper along ±X, ±Y and ±Z in 1 cm or 5 cm increments,
+or close and open its fingers in place. PyBullet contact and gravity determine
+whether the peg is grasped, carried and inserted.
+
+A deterministic harness supplies the current pick-and-place subgoal, target
+coordinates, signed position error and current grasp feedback. Jev receives
+these measurements with the camera image and chooses every primitive action
+from the full set. This example tests action selection with supplied subgoals;
+the model does not have to discover the task plan.
 
 Success requires a prior two-finger grasp, alignment with the cyan socket,
 correct insertion depth, an upright peg, released fingers and a settled object.
-Closing the gripper above the peg or choosing the wrong socket fails these
-checks. Runs have a 24-decision limit.
+An empty grasp or a peg left outside the socket fails these checks. Runs have
+a 120-decision limit. See [the harness and recorded results](../docs/ROBOTICS.md)
+for its stages, recovery behavior and evaluation conditions.
 
 ![Accelerated local browser replay of the Franka peg-insertion task with recorded JevAny-27B-SFT probabilities](../docs/demos/playground-arm.gif)
 
@@ -148,7 +164,8 @@ finally:
 Environments implement `reset`, `step`, `get_all_actions`, `render` and `close`,
 and provide `ACTION_LOOKUP` descriptions. They can also be used with
 [`jevany.agent.run_episode`](../jevany/agent.py), whose default request contains
-structured state only, as do the live browser runs described above.
+structured state only. The browser adds camera images and uses the arm's
+`decision_request(model, history)` method to supply its measured subgoals.
 
 The viewer serves packaged HTML, CSS, JavaScript and frames without a frontend
 build or CDN. To regenerate the **scripted game previews** with the game extra
