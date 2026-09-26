@@ -69,7 +69,7 @@ from jevany.training import train
 checkpoint = train("recipes/sft.toml", output_dir="runs/python-jev")
 ```
 
-All original research arguments remain available through `jevany train --help`
+All trainer arguments are available through `jevany train --help`
 and `python -m jevany.train`. Both `--head_dim` and `--head-dim` spellings work.
 
 ## Data beyond the starter
@@ -100,7 +100,7 @@ jevany train --config recipes/sft.toml \
 
 This command writes only a training split; bring a separate evaluation set.
 Training from `--suite` additionally requires the base revision to be pinned
-by the suite or by `--base-revision`. Full data fields, licenses and the historical
+by the suite or by `--base-revision`. Full data fields, licenses and the
 release mixtures are documented in [DATA.md](DATA.md).
 
 ## Multiple GPUs and hosts
@@ -123,9 +123,8 @@ Check these logs against the scheduler allocation; visibility alone does not
 prove that every reserved GPU is active.
 
 This launcher delegates allocation to your workstation or scheduler. It does
-not create cloud resources. Historical release commands remain in
-[`train_sft.sh`](../scripts/train_sft.sh) and
-[`train_rlcr.sh`](../scripts/train_rlcr.sh); they require the original frozen suites.
+not create cloud resources. Select SFT or RLCR with the same
+[`recipes`](#recipes-and-overrides) used for a single GPU.
 
 ## Evaluation and checkpoints
 
@@ -374,9 +373,9 @@ test, not an accuracy benchmark.
 
 The [official-source GPU checks](../results/official-backbone-smoke-v1.json)
 record the exact publisher, revision, model size, GPU allocation, optimizer steps,
-loss trajectory and checkpoint checks. All five families have passing checks,
-including Qwen 27B, Gemma 31B and Devstral 24B. The report keeps failed attempts
-alongside their successful retests.
+loss trajectory and checkpoint checks. Passing checks cover Qwen, Gemma,
+Mistral, Llama and Phi, including Qwen 27B, Gemma 31B and Devstral 24B.
+The report keeps failed attempts alongside their successful retests.
 
 For native media, the same smoke script generates its own image or video files:
 
@@ -390,15 +389,9 @@ Use `--media video` for a video-capable base, or run the same module under
 `torchrun`. The media check also requires predictions to change when the media
 changes while the question and state stay fixed.
 
-Historical [text](../results/backbone-smoke-v1.json) and
-[media](../results/multimodal-backbone-smoke-v1.json) reports remain available for
-older checkpoints. Their Llama/Gemma mirror runs are not official-source evidence.
-
-The PyTorch 2.6 / CUDA 12.6 container used for the GPU checks required explicit
-`TORCH_NCCL_USE_COMM_NONBLOCKING=0`: a standalone collective probe returned
-incorrect gather/reduce values with the variable unset, and correct values plus
-averaged gradients with it set to `0`. [`infra/train.sh`](../infra/train.sh) sets
-this default before starting workers and preserves an explicit override.
+For PyTorch 2.6 / CUDA 12.6, use `TORCH_NCCL_USE_COMM_NONBLOCKING=0`.
+[`infra/train.sh`](../infra/train.sh) sets this default before starting workers
+and preserves an explicit override.
 PyTorch 2.6 uses DDP's standard initial parameter synchronization; newer versions
 with `init_sync` support can avoid broadcasting the frozen base.
 

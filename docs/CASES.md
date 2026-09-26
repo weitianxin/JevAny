@@ -65,6 +65,6 @@ These are selected successful examples from repeated attempts; failed attempts r
 
 The [decision record](demos/case-showcase.json) holds every attempt behind these cases: each candidate distribution, the supplied text state, the selected action and the resulting state. Original observation images and complete physics trajectories stay in the local recording library.
 
-The tiles labeled as 3D replays reconstruct recorded state and motion, so they are not the model's own observations, and geometry added for presentation takes no part in the physical checks. The interface cases use real browser recordings. These are controlled examples of the integrations, so read them as illustrations; measured accuracy is in [the benchmark evaluations](../README.md#results).
+The tiles labeled as 3D replays reconstruct recorded state and motion, so they are not the model's own observations, and geometry added for presentation takes no part in the physical checks. The interface cases use real browser recordings. These are controlled examples of the integrations, so read them as illustrations; measured accuracy is in [the benchmark evaluations](EVALUATION.md).
 
 [Back to the README](../README.md)

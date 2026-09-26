@@ -1055,7 +1055,6 @@
   "limitations": [
     "Audio is outside the current request/training format; the selected Gemma 31B checkpoint has no audio encoder.",
     "The report preserves intermediate loss fluctuations; final loss reduction is the smoke criterion.",
-    "Historical mirror results remain in earlier reports and are not upgraded to official validation.",
     "Prefix caching is enabled only for validated FP32 backbones. BF16/FP16 models and Qwen3.5/3.8 recurrent text backbones use full-forward inference. Older runs record the cache behavior at their tested source version; absent prefix_cache_supported fields are retained as null."
   ],
   "resolved_failures": [

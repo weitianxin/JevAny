@@ -58,8 +58,7 @@ Each question is isolated from siblings during inference.
 The default model selector is `jevany-latest`, an alias for the one loaded
 checkpoint. Its reported model ID is also accepted. Unknown selectors raise
 `ValueError` locally and return HTTP 422. Responses always identify the loaded
-model. This replaces the earlier behavior that silently ignored request model
-names; callers serving a custom checkpoint should omit `model`, use the alias,
+model. Callers serving a custom checkpoint should omit `model`, use the alias,
 or send the ID reported by `GET /v1/models`.
 
 `JevModel.describe()` and `GET /v1/models` expose the resolved backbone adapter,

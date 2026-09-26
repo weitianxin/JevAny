@@ -137,7 +137,7 @@ The selected RLCR mixture contains exactly 40,000 records and 46,044 questions:
 
 The mixture includes 5,000 HelpSteer3 rows, 6,000 eight-option QASC rows, 4,000 AQuA-RAT rows, 4,000 MedMCQA rows, and broad replay to limit drift. It has zero normalized-text-hash overlap with the `transfer-v9` evaluation panel.
 
-The selected VideoFeedback `real` configuration is single-class in this conversion: every one of its five score dimensions maps to level 3. Those rows exercise the native video data and model path but do not form a meaningful accuracy benchmark. Release headline development metrics exclude the 100-question VideoFeedback slice. A label-balanced temporal benchmark is required before claiming video understanding.
+The selected VideoFeedback `real` configuration is single-class in this conversion: every one of its five score dimensions maps to level 3. Those rows exercise the native video data and model path but do not form a meaningful accuracy benchmark. Release headline development metrics exclude the 100-question VideoFeedback slice. Video capability is evaluated separately on [MVBench with blank and shuffled-media controls](EVALUATION.md#native-image-and-video-decisions).
 
 The repository publishes mixture builders, not redistributed third-party datasets. Review each upstream license before downloading, training, or redistributing converted records. Build SFT data with [`scripts/build_v2_data.py`](../scripts/build_v2_data.py) and RL data with [`scripts/build_v2_rlcr_mix.py`](../scripts/build_v2_rlcr_mix.py).
 

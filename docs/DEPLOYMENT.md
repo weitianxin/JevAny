@@ -85,9 +85,9 @@ curl http://127.0.0.1:8008/v1/models
 
 The model name in responses identifies the configured deployment, even when the
 request uses an alias. Omit `model` or send `jevany-latest` to select the loaded
-checkpoint; its exact reported ID is also accepted. Other IDs now return HTTP
-422 rather than being silently ignored. This is a single-model server, and the
-request cannot load another checkpoint. Missing checkpoints fail startup.
+checkpoint; its exact reported ID is also accepted. Other IDs return HTTP 422.
+This is a single-model server, and the request cannot load another checkpoint.
+Missing checkpoints fail startup.
 
 The server binds to loopback and has no authentication. Use `--host 0.0.0.0`
 only inside a deployment with suitable network access controls; terminate
@@ -197,9 +197,9 @@ the Hugging Face cache and set `HF_HUB_OFFLINE=1`. `JEVANY_BASE_LOAD_PATH` can p
 to a local base mirror while retaining the checkpoint's canonical provenance.
 
 The runtime loads one full backbone on one device. The released 27B model needs
-about 54 GB for BF16 base tensors alone, plus adapter and runtime memory; prior
-showcase inference used A100 80 GB GPUs. CPU/MPS are available for backbones that
-fit, including smaller models you train. Quantization and model sharding are
+about 54 GB for BF16 base tensors alone, plus adapter and runtime memory.
+CPU/MPS are available for backbones that fit, including smaller models you train.
+Quantization and model sharding are
 not implemented. BF16-trained checkpoints retain their recorded loading behavior.
 
 ## Native media and limits
