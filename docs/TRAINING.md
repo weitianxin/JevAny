@@ -151,36 +151,36 @@ the base component of a Transformers causal language model, adds a pointer head,
 and trains LoRA plus any newly added decision-token embeddings. The same trainer,
 checkpoint format and serving API apply across model families.
 
-Current model choices use the publishers' own repositories (checked 2026-09-26):
+The [model catalog](supported-models.json) pins the 37 selected official
+checkpoints across seven families. It records each repository, revision, series,
+size and native image/video support. Base, Thinking and quantized variants are
+not additional entries in this catalog.
 
-| Family | Official base | Size | Native media |
-|---|---|---|---|
-| Qwen | `Qwen/Qwen3.8-27B` | 27B | Images, video |
-| Gemma | `google/gemma-4-31B-it` | 31B | Images, video |
-| Muse | `meta-models/Muse-Glimmer-30B` | 30B | Images, video |
-| Mistral / Magistral | `mistralai/Magistral-Small-2509`; `mistralai/Devstral-Small-2-24B-Instruct-2512` | 24B | Images |
-| GLM | `zai-org/GLM-4.7-Flash` | 30B total / about 3B active | None |
-| Nemotron | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` | 30B total / about 3B active | None |
+| Family | Selected series | Checkpoints |
+|---|---|---:|
+| Qwen | 3.8, 3.6, 3.5, 3, 3-VL, 3-Coder | 20 |
+| Gemma | 4 (including 12B Unified) | 3 |
+| Muse | Glimmer | 1 |
+| Mistral | Ministral 3, Devstral 2 | 4 |
+| GLM | 4.7 Flash, 4.6V Flash | 2 |
+| Nemotron | 3.5 Lightning, 3 Nano | 3 |
+| Llama | 3.2, 3.1 | 4 |
 
-These six families share `BackboneAdapter`, the same recipe flags, and the same
-checkpoint loader. Choose a publisher repository or a local weights directory
-with `--base`; there is no separate family-specific trainer. GLM and Nemotron
-use the text adapter. Muse uses the text adapter for text-only training and
-`muse_vision` when `--multimodal` is set. Native adapter selection reads
+All families share `BackboneAdapter`, recipe flags, checkpoint loading and the
+serving API. Choose a publisher repository or a local weights directory with
+`--base`; there is no family-specific trainer. Native media selection reads
 `config.json`, so local snapshots work without depending on repository names.
+Gemma 4 Unified and GLM 4.6V use their native Transformers models and processors.
 
 Every GPU holds the full base, including all MoE experts; active parameter counts
 do not describe the required weight memory. The small starter remains
-`Qwen/Qwen3.5-0.8B`. Existing Llama, Phi, Gemma 3, Pixtral and Ministral adapters
-remain available for smaller runs and existing checkpoints.
+`Qwen/Qwen3.5-0.8B`. Gated repositories require the publisher's license acceptance
+and Hugging Face access before downloading; local snapshots need no account.
 
-The official configurations above have been checked against the native
-Transformers interfaces. Offline tests exercise small random instances of these
-architectures; they do not establish full-size GPU compatibility or task quality.
-Earlier full-weight checks for Qwen, Gemma, Mistral, Llama and Phi are recorded in
-the [official-source report](../results/official-backbone-smoke-v1.json).
-Muse, GLM and Nemotron still need full-weight GPU checks. Gated repositories
-require the publisher's license acceptance and Hugging Face access.
+Phi, Qwen 2.5, Gemma 3/3n, Pixtral and older Mistral/Magistral releases are outside
+the maintained scope. The Phi conversion utilities and legacy media adapter names
+have been removed. The generic text adapter and custom adapter interface remain
+available for other architectures, without a compatibility claim.
 
 The released JevAny adapters identify `Qwen/Qwen3.8-27B` in their release manifest
 and adapter configuration. Its Transformers architecture is `qwen3_5`.
@@ -214,7 +214,7 @@ states. Serving selects full-forward inference automatically; unsupported direct
 prefix-cache calls fail explicitly.
 
 `attn` includes GLM's low-rank query/key/value projections, Nemotron's Mamba
-input projection, and fused projections such as Phi's `qkv_proj`. A fused QKV layer
+input projection, and fused QKV projections. A fused QKV layer
 cannot apply the `qv` preset to Q and V independently; use `attn`, `all`, or explicit
 module names. Explicit names are checked against the loaded model, so a misspelled
 target does not silently produce a partial adapter.
@@ -264,11 +264,11 @@ loop, LoRA settings and checkpoint loading stay the same:
 | Family | Vision base | Adapter | Media |
 |---|---|---|---|
 | Qwen | `Qwen/Qwen3.8-27B`; `Qwen/Qwen3.5-27B` | `qwen_vl` | Images, video |
-| Gemma | `google/gemma-4-31B-it` | `gemma4_vision` | Images, video |
+| Gemma | Gemma 4 E4B, 12B Unified, 31B IT | `gemma4_vision` | Images, video |
 | Muse | `meta-models/Muse-Glimmer-30B` | `muse_vision` | Images, video |
-| Mistral / Magistral | Official Magistral Small / Devstral Small 2 above | `mistral_vision` | Images |
-| Llama (existing support) | `meta-llama/Llama-3.2-11B-Vision-Instruct` | `llama_vision` | Images |
-| Phi | `microsoft/Phi-4-reasoning-vision-15B` | `phi_reasoning_vision` | Images |
+| Mistral | Ministral 3 3B/8B/14B, Devstral Small 2 24B | `mistral_vision` | Images |
+| Llama | `meta-llama/Llama-3.2-11B-Vision-Instruct` | `llama_vision` | Images |
+| GLM | `zai-org/GLM-4.6V-Flash` | `glm_vision` | Images, video |
 
 `auto` selects from the base's configuration. A text-only variant does not gain
 vision support by setting the flag. Unsupported media types fail with an error.
@@ -303,21 +303,10 @@ processor and selected adapter, so serving and subsequent training use the same
 encoding. Text-only and image records can share a run; DDP accounts for Llama's
 cross-attention parameters being unused on text-only records.
 
-Phi-4 Reasoning Vision loads the official weights directly into native Phi3,
-SigLIP2 and projector components. The adapter preserves the source image patch
-budget and penultimate vision features, validates all weight names, and saves its
-processor with the checkpoint. No Hub Python code or separate conversion is needed.
-Select `--multimodal` for this base even when a run contains only text records,
-so the native Phi loader is used.
-
 Devstral's official FP8 weights are dequantized for BF16 LoRA training, including
 on A100 GPUs. Ministral's listed release already contains BF16 weights. Both use
 the upstream tokenizer regex correction. The text adapter can extract a language
 decoder from a composite vision base for text-only training.
-
-Older Gemma 3, Pixtral and Phi-4 Multimodal adapters remain loadable. The original
-`phi4mm` release still requires [`scripts.convert_phi4_vision`](../scripts/convert_phi4_vision.py);
-it is separate from the current 15B Reasoning Vision model.
 
 For another native vision architecture, subclass `VisionAdapter` from
 `jevany.backbones`. Set `media_types` and `language_model_path`; override
@@ -334,15 +323,15 @@ or resource-provider SDK.
 
 ### Short compatibility checks
 
-The offline tests use real, tiny Transformers architectures for the six selected
-families and the existing adapters. They cover sliding-window and recurrent
+The offline tests use real, tiny Transformers architectures for the selected
+families, plus a GPT-2 fixture for the generic custom-backbone contract. They cover sliding-window and recurrent
 layers, MoE forwards, LoRA selection and gradients, added-token embeddings,
 branch isolation, supported cache reuse, native media, checkpoint reload, and
 SFT-to-RLCR continuation:
 
 ```bash
 python -m pytest tests/test_backbones.py -q
-python -m pytest tests/test_multimodal_backbones.py -q
+python -m pytest tests/test_multimodal_backbones.py tests/test_serving.py tests/test_smoke_backbone.py -q
 ```
 
 To check pretrained weights without completing a training run:
@@ -363,7 +352,9 @@ the official `--base` and `--revision` in the checkpoint.
 The smoke script exposes `--lr` and `--head-lr` for bases with different gradient
 scales; its default head learning rate is `1e-4`.
 The script runs the actual trainer, measures uncalibrated NLL before and during
-training, reloads the checkpoint, and checks predictions. It checks prefix-cache
+training, reloads the checkpoint, and checks predictions through both the Python
+runtime and the FastAPI application. The HTTP checks exercise health, model
+description, repeated typed requests, and rejection of invalid requests. It checks prefix-cache
 parity where supported and explicit rejection elsewhere.
 It writes `smoke.json`, per-rank GPU identity, and the trainer's evaluation
 history. A passing run requires finite adapter weights, updated LoRA weights,
@@ -371,11 +362,15 @@ lower final NLL, and successful prediction checks. Its small evaluation probe
 intentionally reuses training examples; this is an optimization and compatibility
 test, not an accuracy benchmark.
 
-The [official-source GPU checks](../results/official-backbone-smoke-v1.json)
-record the exact publisher, revision, model size, GPU allocation, optimizer steps,
-loss trajectory and checkpoint checks. Passing checks cover Qwen, Gemma,
-Mistral, Llama and Phi, including Qwen 27B, Gemma 31B and Devstral 24B.
-The report keeps failed attempts alongside their successful retests.
+To check RLCR continuation and serving from the resulting checkpoint:
+
+```bash
+python -m scripts.smoke_backbone --base Qwen/Qwen3.5-0.8B \
+  --init-from runs/smoke-qwen/checkpoint --rlcr --steps 2 --out runs/smoke-qwen-rlcr
+```
+
+RLCR must update the saved LoRA tensors and retain finite losses and predictions.
+Its combined reward objective does not require the supervised NLL to decrease.
 
 For native media, the same smoke script generates its own image or video files:
 

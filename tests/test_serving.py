@@ -74,7 +74,7 @@ def assert_answers_close(actual, expected):
                 assert answer["legend"] == reference["legend"]
 
 
-@pytest.mark.parametrize("family", ["qwen", "llama", "gemma", "mistral", "phi", "gpt2"])
+@pytest.mark.parametrize("family", ["qwen", "qwen35", "qwen_moe", "qwen35_moe", "llama", "gemma", "mistral", "glm", "nemotron", "gpt2"])
 def test_checkpoint_python_http_and_prefix_parity(tmp_path, family, request_body):
     checkpoint = make_checkpoint(tmp_path, family)
     local = JevModel.from_pretrained(
@@ -92,8 +92,9 @@ def test_checkpoint_python_http_and_prefix_parity(tmp_path, family, request_body
         assert list(first["answers"][key]["probabilities"].values()) == pytest.approx(
             expected_probabilities[index].tolist(), abs=2e-6)
     assert first["answers"]["noul"]["noul"] == round(expected_probabilities[1][1].item(), 2)
-    assert local.describe()["prefix_cache"]["hits"] == 1
-    assert local.describe()["prefix_cache"]["misses"] == 1
+    cache_enabled = int(local.runtime.model.inference_capabilities.prefix_cache)
+    assert local.describe()["prefix_cache"]["hits"] == cache_enabled
+    assert local.describe()["prefix_cache"]["misses"] == cache_enabled
     application = create_app(model=local)
     with TestClient(application) as http:
         assert application.state.server is local.runtime
@@ -107,7 +108,7 @@ def test_checkpoint_python_http_and_prefix_parity(tmp_path, family, request_body
         assert description["capabilities"]["context_window"] == 512
         assert description["capabilities"]["media_types"] == []
         assert description["limits"]["branch_tokens"] == 512
-        assert description["prefix_cache"]["hits"] == 2
+        assert description["prefix_cache"]["hits"] == 2 * cache_enabled
         assert description["branch_mode"] == local.runtime.model.branch_mode
         assert http.get("/health").status_code == 200
     # An injected model remains usable after the HTTP app shuts down.
@@ -344,7 +345,7 @@ def test_local_decide_cli_and_remote_option_rejection(checkpoint, request_body, 
         main(["decide", str(source), "--prefix-cache-size", "0"])
 
 
-@pytest.mark.parametrize("family", ["qwen", "llama", "gemma", "pixtral", "phi"])
+@pytest.mark.parametrize("family", ["qwen", "llama", "gemma4", "gemma4_unified", "mistral3", "muse", "glm"])
 def test_native_media_checkpoint_python_http_parity(tmp_path, family, monkeypatch):
     from PIL import Image
     from jevany import serve

@@ -249,8 +249,9 @@ reordering, plus cropping for packed branches. Unknown text architectures use
 independent rows and uncached inference by default. A model with a different
 context layout should report its usable window explicitly.
 
-The offline serving tests cover Qwen, Llama, Gemma, Mistral, Phi and GPT-2 text
-checkpoints; Qwen, Llama, Gemma, Pixtral and Phi vision checkpoints; and a custom
+The offline serving tests cover the seven maintained families, including recurrent
+and MoE text models, Gemma 4 Unified and GLM native vision checkpoints, plus a
+GPT-2 fixture for the generic adapter contract and a custom
 adapter without cache support. They use tiny real architectures and native
 processors to check Python/HTTP parity, media, cache behavior, limits and
 lifecycle handling. They do not establish full-size model quality or GPU capacity.

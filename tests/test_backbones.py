@@ -7,8 +7,8 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from transformers import (
-    AutoModelForCausalLM, Gemma3TextConfig, Glm4MoeLiteConfig, GPT2Config,
-    LlamaConfig, MistralConfig, NemotronHConfig, Phi3Config,
+    AutoModelForCausalLM, Gemma4TextConfig, Glm4MoeLiteConfig, GPT2Config,
+    LlamaConfig, MistralConfig, NemotronHConfig, Qwen3MoeConfig, Qwen3_5MoeTextConfig,
     PreTrainedTokenizerFast, Qwen3Config, Qwen3_5TextConfig,
 )
 
@@ -51,8 +51,11 @@ def make_base(path, family, *, legacy=False):
             linear_key_head_dim=8, linear_value_head_dim=8,
         ),
         "llama": lambda: LlamaConfig(**common),
-        "gemma": lambda: Gemma3TextConfig(**common, head_dim=8, query_pre_attn_scalar=8,
-                                         sliding_window=16, layer_types=["sliding_attention", "full_attention"]),
+        "gemma": lambda: Gemma4TextConfig(**common, head_dim=8, global_head_dim=8,
+                                         hidden_size_per_layer_input=0, num_kv_shared_layers=0,
+                                         sliding_window=16, layer_types=["sliding_attention", "full_attention"],
+                                         rope_parameters={k: {"rope_type": "default", "rope_theta": 10000}
+                                                          for k in ("sliding_attention", "full_attention")}),
         "mistral": lambda: MistralConfig(**common, sliding_window=16),
         "glm": lambda: Glm4MoeLiteConfig(
             **{**common, "num_key_value_heads": 4}, moe_intermediate_size=16,
@@ -66,9 +69,15 @@ def make_base(path, family, *, legacy=False):
             moe_intermediate_size=16, moe_shared_expert_intermediate_size=32,
             use_mamba_kernels=False,
         ),
-        # Padded vocab exercises newly added tokens that do not require a resize.
-        "phi": lambda: Phi3Config(**{**common, "vocab_size": len(tokenizer) + 8},
-                                  original_max_position_embeddings=512),
+        # Added decision tokens fit in the padded vocabulary without a resize.
+        "qwen_moe": lambda: Qwen3MoeConfig(**{**common, "vocab_size": len(tokenizer) + 8},
+                                           head_dim=8, num_experts=4,
+                                           num_experts_per_tok=2, moe_intermediate_size=16),
+        "qwen35_moe": lambda: Qwen3_5MoeTextConfig(
+            **common, head_dim=8, layer_types=["linear_attention", "full_attention"],
+            linear_num_key_heads=2, linear_num_value_heads=2, linear_key_head_dim=8, linear_value_head_dim=8,
+            num_experts=4, num_experts_per_tok=2, moe_intermediate_size=16, shared_expert_intermediate_size=32,
+        ),
         "gpt2": lambda: GPT2Config(vocab_size=len(tokenizer), n_embd=32, n_layer=2, n_head=4,
                                    n_positions=512, pad_token_id=1, eos_token_id=2, bos_token_id=2),
     }
@@ -83,7 +92,7 @@ RECORD = {"state": "state " * 20, "questions": [
 ]}
 
 
-@pytest.mark.parametrize("family", ["qwen", "qwen35", "llama", "gemma", "mistral", "phi", "gpt2",
+@pytest.mark.parametrize("family", ["qwen", "qwen35", "llama", "gemma", "mistral", "qwen_moe", "qwen35_moe", "gpt2",
                                   "glm", "nemotron"])
 def test_train_tokens_lora_isolation_cache_and_reload(tmp_path, family):
     torch.manual_seed(17)
@@ -252,20 +261,20 @@ def test_invalid_tokenizer_and_adapter_configuration(tmp_path):
     with pytest.raises(ValueError, match="schema"):
         prepare_tokenizer(tokenizer)
     base = tmp_path / "base"
-    make_base(base, "phi")
+    make_base(base, "gpt2")
     tok = load_tokenizer(base)
     with pytest.raises(ValueError, match="no matching layers"):
         DecisionModel(base, tok, "cpu", lora=2, lora_targets="qv")
     with pytest.raises(ValueError, match="do not name linear layers"):
-        DecisionModel(base, tok, "cpu", lora=2, lora_target_modules="qkv_proj,missing")
+        DecisionModel(base, tok, "cpu", lora=2, lora_target_modules="c_attn,missing")
     with pytest.raises(ValueError, match="backbone_adapter"):
         DecisionModel(base, tok, "cpu", lora=2, backbone_adapter="missing")
     with pytest.raises(ValueError, match="subclass"):
         DecisionModel(base, tok, "cpu", lora=2, backbone_adapter="builtins:object")
     with pytest.raises(ValueError, match="subclass"):
         DecisionModel(base, tok, "cpu", lora=2, backbone_adapter="builtins:breakpoint")
-    model = DecisionModel(base, tok, "cpu", lora=2, lora_targets="attn")
-    assert any("qkv_proj.lora_A" in name for name, _ in model.named_parameters())
+    model = DecisionModel(base, tok, "cpu", lora=2, lora_targets="all")
+    assert any("c_attn.lora_A" in name for name, _ in model.named_parameters())
 
 
 def test_saved_token_ids_are_checked_before_loading_adapter_weights(tmp_path):

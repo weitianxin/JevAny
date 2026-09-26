@@ -142,7 +142,7 @@ class BackboneAdapter:
     def supports_packed(self, config) -> bool:
         layer_types = set(getattr(config, "layer_types", None) or [])
         return (
-            config.model_type in {"qwen2", "qwen3", "llama", "mistral", "phi3", "gemma", "gemma2", "gemma3_text"}
+            config.model_type in {"qwen3", "llama", "mistral"}
             and not layer_types.difference({"full_attention"})
             and not getattr(config, "sliding_window", None)
         )
@@ -206,8 +206,7 @@ class BackboneAdapter:
             context_window=getattr(config, "max_position_embeddings", None),
             prefix_cache=config.model_type in {
                 # Qwen's recurrent 27B path failed BF16 prefix/full-forward parity.
-                "qwen2", "qwen3", "llama", "mistral",
-                "phi3", "gemma", "gemma2", "gemma3_text", "gpt2",
+                "qwen3", "llama", "mistral", "gpt2",
             },
             media_types=tuple(sorted(self.media_types)),
             max_media_questions=1 if self.media_types else None,
@@ -318,10 +317,6 @@ class LlamaVisionAdapter(VisionAdapter):
         return False
 
 
-class GemmaVisionAdapter(VisionAdapter):
-    name = "gemma_vision"
-
-
 class Gemma4VisionAdapter(VisionAdapter):
     name = "gemma4_vision"
     media_types = frozenset({"image", "video"})
@@ -352,32 +347,25 @@ class MuseVisionAdapter(VisionAdapter):
         )
 
 
-class PixtralVisionAdapter(VisionAdapter):
-    name = "pixtral"
-
-
 class MistralVisionAdapter(VisionAdapter):
     name = "mistral_vision"
 
 
-class PhiVisionAdapter(VisionAdapter):
-    name = "phi_vision"
-    language_model_path = ""
+class GLMVisionAdapter(VisionAdapter):
+    name = "glm_vision"
+    media_types = frozenset({"image", "video"})
 
-    def lora_modules(self, model: nn.Module, preset: str, explicit: str = "") -> str | list[str]:
-        targets = super().lora_modules(model, preset, explicit)
-        decoder = [name for name, module in model.named_modules()
-                   if name.startswith("layers.") and isinstance(module, nn.Linear)]
-        if explicit:
-            missing = [target for target in targets
-                       if not any(name == target or name.endswith("." + target) for name in decoder)]
-            if missing:
-                raise ValueError(f"phi_vision LoRA targets must name language decoder layers: {missing}")
-            return [name for name in decoder if any(name == target or name.endswith("." + target) for target in targets)]
-        targets = [name for name in targets if name.startswith("layers.")]
-        if not targets:
-            raise ValueError(f"lora_targets={preset!r} has no Phi decoder layers; use 'all' or 'attn'")
-        return targets
+    def process_media(self, processor, media: list[dict], text: str):
+        prefix, images, videos = [], [], []
+        for item in media:
+            kind = item["type"]
+            token = processor.image_token if kind == "image" else processor.video_token
+            prefix.append(f"<|begin_of_{kind}|>{token}<|end_of_{kind}|>")
+            (images if kind == "image" else videos).append(item["uri"])
+        return processor(
+            text=["".join(prefix) + text], images=images or None, videos=videos or None,
+            return_tensors="pt", videos_kwargs={"num_frames": 8, "fps": None, "return_metadata": True},
+        )
 
 
 def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
@@ -389,13 +377,9 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
         if multimodal and source is not None:
             config, _ = PretrainedConfig.get_config_dict(source, revision=revision)
             model_type = config.get("model_type")
-            if model_type == "phi4mm":
-                raise ValueError("Phi-4's original weights need native conversion first; run "
-                                 "python -m scripts.convert_phi4_vision --source <base> --revision <commit> --out <directory>, "
-                                 "then train with --base <directory> --multimodal")
-            types = {"mllama": "llama_vision", "gemma3": "gemma_vision", "gemma4": "gemma4_vision",
-                     "llava": "pixtral", "mistral3": "mistral_vision", "phi4_multimodal": "phi_vision",
-                     "phi4-siglip": "phi_reasoning_vision", "muse_glimmer": "muse_vision"}
+            types = {"mllama": "llama_vision", "gemma4": "gemma4_vision",
+                     "gemma4_unified": "gemma4_vision", "mistral3": "mistral_vision",
+                     "muse_glimmer": "muse_vision", "glm4v": "glm_vision"}
             name = ("qwen_vl" if model_type and model_type.startswith("qwen") and config.get("vision_config")
                     else types.get(model_type))
             if name is None:
@@ -403,20 +387,17 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
                                  "provide backbone_adapter='module:Class'")
         else:
             name = "text"
-    if name == "phi_reasoning_vision":
-        from .phi_vision import PhiReasoningVisionAdapter
-        return PhiReasoningVisionAdapter()
     builtins = {"text": BackboneAdapter, "qwen_vl": QwenVisionAdapter,
-                "llama_vision": LlamaVisionAdapter, "gemma_vision": GemmaVisionAdapter,
+                "llama_vision": LlamaVisionAdapter, "glm_vision": GLMVisionAdapter,
                 "gemma4_vision": Gemma4VisionAdapter, "mistral_vision": MistralVisionAdapter,
-                "muse_vision": MuseVisionAdapter, "pixtral": PixtralVisionAdapter, "phi_vision": PhiVisionAdapter}
+                "muse_vision": MuseVisionAdapter}
     if name in builtins:
         if multimodal and name == "text":
             raise ValueError("backbone_adapter='text' cannot be used with multimodal=true")
         return builtins[name]()
     module, separator, attribute = name.partition(":")
     if not separator or not module or not attribute:
-        raise ValueError(f"backbone_adapter must be auto, {', '.join(builtins)}, phi_reasoning_vision, or module:Class")
+        raise ValueError(f"backbone_adapter must be auto, {', '.join(builtins)}, or module:Class")
     adapter_class = getattr(importlib.import_module(module), attribute)
     if not isinstance(adapter_class, type) or not issubclass(adapter_class, BackboneAdapter):
         raise ValueError(f"{name} must subclass jevany.backbones.BackboneAdapter")
