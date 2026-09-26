@@ -5,22 +5,24 @@ import copy, math, os, re
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import AutoModel, AutoModelForCausalLM, AutoProcessor, AutoTokenizer, DynamicCache
+from .backbones import (
+    LEGACY_TOKENS, decision_tokens, get_backbone_adapter, prepare_embeddings, prepare_tokenizer,
+)
 
 # Reuse existing rarely-used Qwen special tokens as delimiters (state, q, opt, /opt, decide) so no
 # embedding rows need to be added/trained; LoRA adapts their meaning.
-SPECIAL = ["<|fim_prefix|>", "<|fim_middle|>", "<|box_start|>", "<|box_end|>", "<|fim_suffix|>"]
+SPECIAL = LEGACY_TOKENS
 # training context: state tokens, tokens per question branch, and the whole packed record. Frozen suites are admitted with
 # this rule (jevany.suite) and training applies it to records built on the fly, so train and eval see the same population.
 MAX_STATE, MAX_BRANCH, MAX_PACKED = 1024, 2048, 2048
 
 
 def load_tokenizer(name, revision=None):
-    return AutoTokenizer.from_pretrained(name, revision=revision)
+    return get_backbone_adapter("text").load_preprocessor(name, revision)
 
 
-def load_preprocessor(name, revision=None, multimodal=False):
-    return AutoProcessor.from_pretrained(name, revision=revision) if multimodal else load_tokenizer(name, revision)
+def load_preprocessor(name, revision=None, multimodal=False, backbone_adapter="auto"):
+    return get_backbone_adapter(backbone_adapter, multimodal=multimodal).load_preprocessor(name, revision)
 
 
 def tokenizer_of(preprocessor):
@@ -57,9 +59,10 @@ def encode(tok, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH, strict=False, o
     state_tokens = user_tokens(tok, rec["state"])
     if strict and len(state_tokens) + 1 > max_state:
         raise ValueError(f"state exceeds {max_state} tokens: {len(state_tokens) + 1}")
-    S = [tok.convert_tokens_to_ids(SPECIAL[0])] + state_tokens[: max_state - 1]
+    special = decision_tokens(tok)
+    S = [tok.convert_tokens_to_ids(special[0])] + state_tokens[: max_state - 1]
     ids, seg, pos, opt = list(S), [0] * len(S), list(range(len(S))), [OPT_NONE] * len(S)
-    q_id, o_id, c_id, d_id = (tok.convert_tokens_to_ids(t) for t in SPECIAL[1:])
+    q_id, o_id, c_id, d_id = (tok.convert_tokens_to_ids(t) for t in special[1:])
     decide_idx, opt_idx = [], []
     for k, q in enumerate(rec["questions"], start=1):
         instr = [q_id] + user_tokens(tok, q["instr"])
@@ -100,12 +103,13 @@ def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH
             videos.append(item["uri"])
         else:
             raise ValueError(f"unsupported media type: {item['type']}")
-    parts = prefix + [SPECIAL[0], safe_text(rec["state"])]
+    special = decision_tokens(processor.tokenizer)
+    parts = prefix + [special[0], safe_text(rec["state"])]
     for question in rec["questions"]:
-        parts.extend((SPECIAL[1], safe_text(question["instr"])))
+        parts.extend((special[1], safe_text(question["instr"])))
         for option in question["options"]:
-            parts.extend((SPECIAL[2], safe_text(option), SPECIAL[3]))
-        parts.append(SPECIAL[4])
+            parts.extend((special[2], safe_text(option), special[3]))
+        parts.append(special[4])
     processor_kwargs = {"return_tensors": "pt"}
     if images:
         # Keep the combined visual budget roughly constant for multi-image questions.
@@ -124,7 +128,7 @@ def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH
     batch = processor(text=["".join(parts)], images=images or None, videos=videos or None, **processor_kwargs)
     ids = batch["input_ids"][0].tolist()
     tok = processor.tokenizer
-    q_id, close_id, decide_id = (tok.convert_tokens_to_ids(SPECIAL[index]) for index in (1, 3, 4))
+    q_id, close_id, decide_id = (tok.convert_tokens_to_ids(special[index]) for index in (1, 3, 4))
     question_starts = [index for index, token in enumerate(ids) if token == q_id]
     decide_idx = [index for index, token in enumerate(ids) if token == decide_id]
     if len(question_starts) != len(rec["questions"]) or len(decide_idx) != len(rec["questions"]):
@@ -229,46 +233,47 @@ class PointerHead(nn.Module):
 
 class DecisionModel(nn.Module):
     def __init__(self, name, tok, device, lora=None, revision=None, attn=None, head_dim=256, option_isolation=False,
-                 special_embeddings=False, lora_targets="all", dtype=torch.float32, multimodal=False):
+                 special_embeddings=False, lora_targets="all", dtype=torch.float32, multimodal=False,
+                 backbone_adapter="auto", branch_mode="auto", lora_target_modules=""):
         super().__init__()
         tokenizer = tokenizer_of(tok)
-        vocabulary = tokenizer.get_vocab()
-        if any(token not in vocabulary for token in SPECIAL):
-            raise ValueError(
-                "base tokenizer lacks JevAny's decision delimiters; use a supported Qwen tokenizer "
-                "or implement a tokenizer/backbone adapter before training this architecture"
-            )
+        prepare_tokenizer(tokenizer)
+        self.adapter = get_backbone_adapter(backbone_adapter, multimodal=multimodal)
         # backbone only (no vocab head): we never generate text.
         # eager on MPS/CPU (known-good with our float 4D mask); SDPA on CUDA (accepts arbitrary additive masks).
         attn = attn or ("sdpa" if str(device).startswith("cuda") else "eager")
         # Use fp32 for exact evaluation or bf16 to reduce accelerator memory.
         self.multimodal = multimodal
-        self.mm = AutoModel.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn) if multimodal else None
-        self.lm = self.mm.language_model if self.mm is not None else AutoModelForCausalLM.from_pretrained(
-            name, revision=revision, dtype=dtype, attn_implementation=attn
-        ).model
-        if self.mm is not None:
-            self.mm.visual.requires_grad_(False)
+        self.lm, self.mm = self.adapter.load_model(name, revision=revision, dtype=dtype, attn=attn)
+        added_token_ids = prepare_embeddings(self.lm, tokenizer)
+        for module in self.adapter.frozen_modules(self.mm):
+            module.requires_grad_(False)
         self.pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
-        # hybrid backbones (Qwen3.5: Gated DeltaNet layers, recurrent) cannot honour the block-causal mask, so every
-        # question runs as its own causal row continuing from the state (rows_of). Attention-only backbones keep the
-        # packed form; parity is covered by the weight-backed tests.
+        # Recurrent, sliding-window and unrecognized backbones use independent
+        # causal rows. Only adapters with validated mask support use packed input.
         cfg = self.lm.config
         self.hybrid = "linear_attention" in set(getattr(cfg, "layer_types", None) or [])
-        if self.hybrid and option_isolation: raise ValueError("option_isolation needs the packed mask; not available on hybrid backbones")
+        if branch_mode not in ("auto", "packed", "rows"):
+            raise ValueError("branch_mode must be auto, packed, or rows")
+        packed = self.adapter.supports_packed(cfg)
+        self.branch_mode = ("packed" if packed else "rows") if branch_mode == "auto" else branch_mode
+        if self.branch_mode == "packed" and not packed:
+            raise ValueError("this backbone adapter does not support packed masks; use branch_mode='rows'")
+        if self.branch_mode == "rows" and option_isolation:
+            raise ValueError("option_isolation requires a backbone with packed-mask support")
         self.option_isolation = option_isolation
+        self.special_embeddings = bool(special_embeddings or added_token_ids)
         if lora:
             from peft import LoraConfig, get_peft_model
-            extra = {"trainable_token_indices": {"embed_tokens": [tokenizer.convert_tokens_to_ids(t) for t in SPECIAL]}} if special_embeddings else {}
-            targets = {"all": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-                       "dense": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],   # "all" minus the DeltaNet projections on hybrids (retention ablation)
-                       "attn": ["q_proj", "k_proj", "v_proj", "o_proj"], "qv": ["q_proj", "v_proj"]}[lora_targets]
-            if self.hybrid and lora_targets in ("all", "attn"):
-                # Gated DeltaNet projections (transformers 5 names, verified on Qwen3_5TextModel); the mixer's out_proj too
-                targets = targets + ["in_proj_qkv", "in_proj_z", "in_proj_a", "in_proj_b", "out_proj"]
+            embedding = self.lm.get_input_embeddings()
+            embedding_name = next(name for name, module in self.lm.named_modules() if module is embedding)
+            extra = {"trainable_token_indices": {embedding_name: [
+                tokenizer.convert_tokens_to_ids(t) for t in decision_tokens(tokenizer)
+            ]}} if self.special_embeddings else {}
+            targets = self.adapter.lora_modules(self.lm, lora_targets, lora_target_modules)
             cfg = LoraConfig(task_type="FEATURE_EXTRACTION", r=lora, lora_alpha=2 * lora, lora_dropout=0.05, target_modules=targets, **extra)
             self.set_language_model(get_peft_model(self.lm, cfg))
-        self.head = PointerHead(self.lm.config.hidden_size, dp=head_dim)
+        self.head = PointerHead(self.lm.get_input_embeddings().weight.shape[1], dp=head_dim)
         self.device = device
         self.to(device)
 
@@ -277,18 +282,18 @@ class DecisionModel(nn.Module):
         if rec.get("media"):
             if not self.multimodal:
                 raise ValueError("checkpoint does not support media")
-            return encode_multimodal(tok, rec, **kw)
+            return self.adapter.encode_media(tok, rec, **kw)
         return encode(tokenizer_of(tok), rec, option_isolation=self.option_isolation, **kw)
 
     def set_language_model(self, language_model):
         self.lm = language_model
         if self.mm is not None:
-            self.mm.language_model = language_model
+            self.adapter.attach_language_model(self.mm, language_model)
 
     def train(self, mode=True):
         super().train(mode)
-        if self.mm is not None:
-            self.mm.visual.eval()
+        for module in self.adapter.frozen_modules(self.mm):
+            module.eval()
         return self
 
     def hidden(self, enc):
@@ -353,11 +358,10 @@ class DecisionModel(nn.Module):
         return self._readout(hidden, enc)
 
     def forward_batch(self, encs):
-        """List (per record) of lists (per question) of logits, from one padded forward pass. Hybrid backbones take the
-        row form; attention-only ones use the packed block-causal mask."""
+        """Per-record, per-question logits using the adapter's selected branch layout."""
         if any(enc.get("multimodal") for enc in encs):
             return [self.forward_multimodal(enc) if enc.get("multimodal") else self.forward_rows_batch([enc])[0] for enc in encs]
-        if self.hybrid: return self.forward_rows_batch(encs)
+        if self.branch_mode == "rows": return self.forward_rows_batch(encs)
         hs = self.hidden_batch(encs)
         return [self._readout(hs[b], e) for b, e in enumerate(encs)]
 
@@ -370,7 +374,7 @@ class DecisionModel(nn.Module):
     # never sees the branches (causal), so the state's hidden states and KV are identical with or without the branches.
 
     def _branch_rows_from_prefix(self, enc, cache):
-        """Hybrid serving: replicate the cached state once per question and run the branches as causal rows (exactly the
+        """Row-based serving: replicate the cached state once per question and run the branches as causal rows (exactly the
         forward_rows_batch layout, minus the recomputed state). Works on a copy: the caller's prefix stays pristine."""
         S, Sp, rows = rows_of(enc); Q = len(rows)
         cache = copy.deepcopy(cache); cache.reorder_cache(torch.zeros(Q, dtype=torch.long, device=self.device))
@@ -385,7 +389,7 @@ class DecisionModel(nn.Module):
         Ls = enc["seg"].count(0)
         ids = torch.tensor([enc["ids"][:Ls]], device=self.device); pos = torch.tensor([enc["pos"][:Ls]], device=self.device)
         # the cache must know the layer types (hybrid backbones keep recurrent + conv states per DeltaNet layer)
-        out = self.lm(input_ids=ids, position_ids=pos, past_key_values=DynamicCache(config=self.lm.config), use_cache=True)
+        out = self.lm(input_ids=ids, position_ids=pos, past_key_values=self.adapter.new_cache(self.lm), use_cache=True)
         return Ls, out.past_key_values, out.last_hidden_state[0].float()
 
     @torch.no_grad()
@@ -393,7 +397,7 @@ class DecisionModel(nn.Module):
         """One full pass that also returns the state prefix (KV cropped to the state, state hidden states): a cache miss
         costs a single forward pass, not two."""
         Ls = enc["seg"].count(0)
-        if self.hybrid:
+        if self.branch_mode == "rows":
             # recurrent layers cannot be cropped back to the state, so a hybrid miss is a state pass (kept as the prefix)
             # plus the branch rows
             Ls, cache, h_state = self.prefix(enc)
@@ -401,7 +405,7 @@ class DecisionModel(nn.Module):
         ids = torch.tensor([enc["ids"]], device=self.device); pos = torch.tensor([enc["pos"]], device=self.device)
         dt = next(self.lm.parameters()).dtype
         mask = branch_mask_batch([enc["seg"]], self.device, dtype=dt, opts=[enc["opt"]] if enc.get("option_isolation") else None)
-        out = self.lm(input_ids=ids, position_ids=pos, attention_mask=mask, past_key_values=DynamicCache(config=self.lm.config), use_cache=True)
+        out = self.lm(input_ids=ids, position_ids=pos, attention_mask=mask, past_key_values=self.adapter.new_cache(self.lm), use_cache=True)
         h = out.last_hidden_state[0].float()
         out.past_key_values.crop(-(len(enc["ids"]) - Ls))     # keep the state only (negative = drop that many trailing tokens; positive form deprecated in transformers 5)
         return [F.softmax(z, -1).cpu() for z in self._readout(h, enc)], (Ls, out.past_key_values, h[:Ls].clone())
@@ -412,7 +416,7 @@ class DecisionModel(nn.Module):
         back to the state afterwards so it can be reused."""
         Ls, cache, h_state = prefix
         if enc["seg"].count(0) != Ls: raise ValueError("prefix does not match this record's state")
-        if self.hybrid:
+        if self.branch_mode == "rows":
             return self._branch_rows_from_prefix(enc, cache)
         ids = torch.tensor([enc["ids"][Ls:]], device=self.device); pos = torch.tensor([enc["pos"][Ls:]], device=self.device)
         dt = next(self.lm.parameters()).dtype

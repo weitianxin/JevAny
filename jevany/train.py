@@ -8,7 +8,7 @@ fly from the public sources, or your own JSONL), with the pointer head trained f
 
 Batch size is small (variable-length records with custom masks) and gradients are accumulated over --accum micro-batches.
 """
-import argparse, contextlib, json, math, os, random, resource, sys, time
+import argparse, contextlib, inspect, json, math, os, random, resource, sys, time
 from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -231,6 +231,21 @@ class DistributedBatchForward(torch.nn.Module):
         return self.model.forward_batch(encodings)
 
 
+def distributed_model(model: torch.nn.Module, device_index: int | None) -> DistributedDataParallel:
+    """Wrap batched inference for DDP, including the supported PyTorch 2.6 API."""
+    kwargs = {"broadcast_buffers": False}
+    if device_index is not None:
+        kwargs.update(device_ids=[device_index], output_device=device_index)
+    if "init_sync" in inspect.signature(DistributedDataParallel).parameters:
+        # Newer PyTorch can avoid broadcasting the identical frozen base.
+        for parameter in model.parameters():
+            if parameter.requires_grad:
+                dist.broadcast(parameter.data, src=0)
+        kwargs["init_sync"] = False
+    # PyTorch 2.6 uses the normal initial synchronization of the whole model.
+    return DistributedDataParallel(DistributedBatchForward(model), **kwargs)
+
+
 def batch_loss(model, a, batch, dev, autocast, distributed_forward=None, rlcr_sigma=None):
     """Return the summed SFT or RLCR objective and its logging terms."""
     terms = Counter()
@@ -272,6 +287,11 @@ def parse_args(argv=None):
     ap.add_argument("--config", help="flat TOML recipe; CLI flags override recipe values")
     ap.add_argument("--dry-run", action="store_true", help="validate configuration and labelled data without loading weights")
     ap.add_argument("--base", default="Qwen/Qwen3.8-27B")
+    ap.add_argument("--backbone_adapter", default="auto", help="auto, text, qwen_vl, or an installed module:Class")
+    ap.add_argument("--branch_mode", choices=["auto", "packed", "rows"], default="auto",
+                    help="auto uses packed masks where supported and independent causal rows elsewhere")
+    ap.add_argument("--lora_target_modules", default="",
+                    help="comma-separated linear module names; overrides the lora_targets preset")
     ap.add_argument("--base_load_path", default="",
                     help="optional node-local mirror used for weight I/O while checkpoint provenance keeps --base")
     ap.add_argument("--epochs", type=int, default=1)
@@ -294,7 +314,8 @@ def parse_args(argv=None):
                                                                                         "(torch._grouped_mm wants bf16); LoRA and head stay fp32 (peft upcasts adapters). The checkpoint records it and is loaded the same way.")
     ap.add_argument("--checkpointing", type=int, choices=[0, 1], default=0)
     ap.add_argument("--option_isolation", type=int, choices=[0, 1], default=0, help="option spans are isolated sub-branches with shared positions (exact permutation invariance)")
-    ap.add_argument("--special_embeddings", type=int, choices=[0, 1], default=0, help="also train the embeddings of the 5 delimiter tokens")
+    ap.add_argument("--special_embeddings", type=int, choices=[0, 1], default=0,
+                    help="also train existing delimiter embeddings; newly added delimiters are always trained")
     ap.add_argument("--multimodal", action="store_true", help="load the Qwen vision tower and accept image or video media entries")
     ap.add_argument("--max_state", type=int, default=MAX_STATE, help="maximum state tokens admitted for training")
     ap.add_argument("--max_branch", type=int, default=MAX_BRANCH, help="maximum tokens in one state-plus-question branch")
@@ -564,12 +585,19 @@ def main(argv=None):
     if a.base_load_path and not Path(a.base_load_path).is_dir():
         raise ValueError(f"base load path does not exist: {a.base_load_path}")
     load_revision = None if a.base_load_path else revision
-    tok = load_preprocessor(model_source, revision=load_revision, multimodal=a.multimodal)
+    initial_checkpoint = Checkpoint(a.init_from) if a.init_from else None
+    saved_tokenizer = initial_checkpoint is not None and initial_checkpoint.meta.tokenizer_saved
+    if saved_tokenizer and not initial_checkpoint.file("tokenizer_config.json").is_file():
+        raise ValueError(f"{initial_checkpoint.path}: missing saved tokenizer_config.json")
+    tok = load_preprocessor(initial_checkpoint.path if saved_tokenizer else model_source,
+                            revision=None if saved_tokenizer else load_revision, multimodal=a.multimodal,
+                            backbone_adapter=a.backbone_adapter)
     model = DecisionModel(model_source, tok, dev, lora=a.lora, revision=load_revision,
                           head_dim=a.head_dim, lora_targets=a.lora_targets,
                           option_isolation=bool(a.option_isolation), special_embeddings=bool(a.special_embeddings),
                           dtype=torch.bfloat16 if a.weights_dtype == "bf16" else torch.float32,
-                          multimodal=a.multimodal)
+                          multimodal=a.multimodal, backbone_adapter=a.backbone_adapter,
+                          branch_mode=a.branch_mode, lora_target_modules=a.lora_target_modules)
     for adapter_config in getattr(model.lm, "peft_config", {}).values():
         adapter_config.base_model_name_or_path = a.base
     if a.checkpointing:
@@ -578,12 +606,13 @@ def main(argv=None):
     # what this run will save as head.pt; also the architecture a warm start must match
     meta = Meta(base=a.base, base_revision=revision, lora=a.lora, head_dim=a.head_dim,
                 option_isolation=bool(a.option_isolation),
-                special_embeddings=bool(a.special_embeddings), multimodal=a.multimodal,
+                special_embeddings=model.special_embeddings, multimodal=a.multimodal,
+                backbone_adapter=a.backbone_adapter, branch_mode=model.branch_mode, tokenizer_saved=True,
                 weights_dtype=a.weights_dtype, holdout=holdout)
     init_source = None
     if a.init_from:
         # Start from an already trained adapter and pointer head for the RLCR or domain-adaptation stage.
-        init_source = Checkpoint(a.init_from).warm_start(model, meta)
+        init_source = initial_checkpoint.warm_start(model, meta)
         if main_process:
             print(f"delta: warm start from {init_source['resolved']}: {init_source['adapter_tensors']} adapter tensors and the pointer head loaded", flush=True)
     if main_process:
@@ -618,12 +647,7 @@ def main(argv=None):
     distributed_forward = None
     if distributed:
         device_index = torch.cuda.current_device()
-        # The base is immutable and pinned, so synchronize the 22M trainable parameters without broadcasting the 70 GB
-        # frozen backbone. DDP synchronizes their gradients from the first forward onward.
-        for parameter in model.trainable_parameters():
-            dist.broadcast(parameter.data, src=0)
-        distributed_forward = DistributedDataParallel(DistributedBatchForward(model), device_ids=[device_index],
-                                                       output_device=device_index, broadcast_buffers=False, init_sync=False)
+        distributed_forward = distributed_model(model, device_index)
         torch.manual_seed(a.seed + rank)
     eval_suite = a.eval_suite or a.suite
     model.train(); t0 = time.time(); run = Counter(); step_run = Counter(); step = seen = tokens_seen = peak_mem = 0
@@ -639,7 +663,7 @@ def main(argv=None):
         if distributed:
             dist.barrier()
         if main_process:
-            model.lm.save_pretrained(directory)
+            model.lm.save_pretrained(directory, save_embedding_layers=False)
         if main_process:
             checkpoint_meta = replace(meta, head=model.head.state_dict(),
                                       extra={"args": vars(a), "suite_sha256": suite_hash, "init_source": init_source,

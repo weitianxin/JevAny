@@ -36,7 +36,8 @@ def resolve_run(run):
         raise ValueError(f"checkpoint does not exist: {run}; use a local directory or owner/repo[@revision]")
     from huggingface_hub import snapshot_download
     repo, _, revision = str(run).partition("@")
-    return snapshot_download(repo, revision=revision or None, allow_patterns=["*.json", "*.safetensors", "*.pt", "*.txt", "*.jinja"])
+    return snapshot_download(repo, revision=revision or None,
+                             allow_patterns=["*.json", "*.safetensors", "*.pt", "*.txt", "*.jinja", "*.model", "*.tiktoken"])
 
 
 @dataclass
@@ -52,12 +53,16 @@ class Meta:
     option_isolation: bool = False
     special_embeddings: bool = False
     multimodal: bool = False
+    backbone_adapter: str = "auto"
+    branch_mode: str = "auto"
+    tokenizer_saved: bool = False
     weights_dtype: str = "fp32"
     temperature: float = 1.0
     holdout: list = field(default_factory=list)
     extra: dict = field(default_factory=dict)
 
-    KNOWN = ("base", "head", "base_revision", "lora", "head_dim", "option_isolation", "special_embeddings", "multimodal", "weights_dtype", "temperature", "holdout")
+    KNOWN = ("base", "head", "base_revision", "lora", "head_dim", "option_isolation", "special_embeddings",
+             "multimodal", "backbone_adapter", "branch_mode", "tokenizer_saved", "weights_dtype", "temperature", "holdout")
 
     @classmethod
     def from_dict(cls, d):
@@ -133,13 +138,19 @@ class Checkpoint:
             if not Path(opts.base_load_path).is_dir():
                 raise ValueError(f"base load path does not exist: {opts.base_load_path}")
             source, revision = opts.base_load_path, None
-        tok = load_preprocessor(source, revision=revision, multimodal=meta.multimodal)
+        tokenizer_source = self.path if meta.tokenizer_saved else source
+        if meta.tokenizer_saved and not self.file("tokenizer_config.json").is_file():
+            raise ValueError(f"{self.path}: missing saved tokenizer_config.json")
+        tok = load_preprocessor(tokenizer_source, revision=None if meta.tokenizer_saved else revision,
+                                multimodal=meta.multimodal, backbone_adapter=meta.backbone_adapter)
         merge = merge and not self.adapter_config().get("trainable_token_indices")   # token-trained adapters stay unmerged
         lora_targets = meta.extra.get("args", {}).get("lora_targets", "all")
         m = DecisionModel(source, tok, device, lora=meta.lora, revision=revision, head_dim=meta.head_dim,
                           lora_targets=lora_targets, special_embeddings=meta.special_embeddings,
                           option_isolation=meta.option_isolation, dtype=torch.float32 if merge else dtype,
-                          attn=opts.attn, multimodal=meta.multimodal)
+                          attn=opts.attn, multimodal=meta.multimodal,
+                          backbone_adapter=meta.backbone_adapter, branch_mode=meta.branch_mode,
+                          lora_target_modules=meta.extra.get("args", {}).get("lora_target_modules", ""))
         self.warm_start(m, meta)
         if opts.lora_scale != 1:
             for module in m.lm.modules():
@@ -166,8 +177,16 @@ class Checkpoint:
             theirs, mine = getattr(self.meta, name), getattr(ours, name)
             if theirs != mine and not (name == "base_revision" and None in (theirs, mine)):
                 raise ValueError(f"--init_from {self.path}: {name} is {theirs!r} there and {mine!r} here")
+        if self.meta.tokenizer_saved:
+            for name in ("backbone_adapter", "branch_mode"):
+                if getattr(self.meta, name) != getattr(ours, name):
+                    raise ValueError(f"--init_from {self.path}: incompatible {name}")
+        saved_tokens = self.adapter_config().get("trainable_token_indices")
+        current_tokens = model.lm.peft_config["default"].trainable_token_indices
+        if saved_tokens != current_tokens:
+            raise ValueError(f"--init_from {self.path}: trainable token IDs differ from this tokenizer")
         weights = load_peft_weights(self.path, device="cpu")
-        have = set(get_peft_model_state_dict(model.lm))
+        have = set(get_peft_model_state_dict(model.lm, save_embedding_layers=False))
         unexpected, missing = sorted(set(weights) - have), sorted(have - set(weights))
         if unexpected:
             raise ValueError(f"--init_from {self.path} carries {len(unexpected)} adapter tensors this model does not have (e.g. {unexpected[:2]}); check --lora_targets / --lora against its adapter_config.json")

@@ -410,7 +410,7 @@ def test_checkpoint_base_override_only_changes_weight_source(tmp_path, monkeypat
         def eval(self):
             return self
 
-    def preprocessor(source, revision=None, multimodal=False):
+    def preprocessor(source, revision=None, multimodal=False, backbone_adapter="auto"):
         calls.append(("preprocessor", source, revision))
         return object()
 

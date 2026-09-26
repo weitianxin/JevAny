@@ -14,7 +14,7 @@
 
 **训练自己的 Jev，部署到自己的应用中。**
 
-JevAny 是训练和部署 Jev 风格决策模型的开源基础设施（infra）。你可以用自己的决策数据微调开源 Qwen 模型，也可以直接使用我们训练好的 checkpoint。两条路径共用 Python 和 HTTP 接口，输入输出沿用 [Jev API 的格式](docs/API.md)。
+JevAny 是训练和部署 Jev 风格决策模型的开源基础设施（infra）。你可以用自己的决策数据微调开源语言模型，也可以直接使用我们训练好的 checkpoint。两条路径共用 Python 和 HTTP 接口，输入输出沿用 [Jev API 的格式](docs/API.md)。
 
 给模型当前状态、问题和候选答案，它会返回选择及各选项的概率。你的应用可以据此分类消息、选择 SQL 修复方案，或决定智能体的下一步动作。
 
@@ -85,7 +85,7 @@ jev = JevModel.from_pretrained("runs/my-jev", model_name="my-jev")
 
 ## 训练模型
 
-先用随包提供的数据和一个小型 Qwen 基座跑通流程：
+Qwen、Llama、Gemma、Mistral 和 Phi 共用同一套训练接口。先用随包提供的数据和一个小型 Qwen 基座跑通流程：
 
 ```bash
 python -m pip install -e '.[train]'
@@ -102,17 +102,20 @@ jevany serve --checkpoint runs/my-jev --model-name my-jev
 
 入门数据包含 24 条原创合成训练记录和 8 条独立开发记录，每条都有选择、二分类和评分问题。这组数据用于熟悉流程；要训练有用的领域模型，请换成有代表性的业务数据。
 
-SFT recipe 默认使用 `Qwen/Qwen2.5-0.5B` 和 CUDA GPU。修改 TOML 中的 `base`、`data`，或在命令行覆盖即可。训练记录在推理格式的每个问题上增加 `label`；训练器更新 LoRA adapter 和 pointer head，基础模型权重保持冻结。
+SFT recipe 默认使用 `Qwen/Qwen2.5-0.5B` 和 CUDA GPU。修改 TOML 中的 `base`、`data`，或在命令行覆盖即可。训练记录在推理格式的每个问题上增加 `label`；训练器更新 LoRA adapter、pointer head 和新增决策 token 的 embedding，原有基础模型权重保持冻结。
 
 | 下一步 | 命令或说明 |
 |---|---|
 | 使用自己的数据 | `jevany train --config recipes/sft.toml --data data/my-domain.jsonl --out runs/domain-jev` |
+| 更换基座 | `jevany train --config recipes/sft.toml --base microsoft/Phi-4-mini-instruct --out runs/phi-jev` |
 | 微调已发布模型 | [`recipes/finetune.toml`](recipes/finetune.toml) |
 | 构建更大的数据集 | `jevany data build-sft --help` · [来源与格式](docs/DATA.md) |
 | 多 GPU / 多机训练 | [`infra/train.sh`](infra/train.sh) |
 | 实验校准奖励训练 | [`recipes/rlcr.toml`](recipes/rlcr.toml) |
 
-[训练指南](docs/TRAINING.md) 还介绍了 CPU 参数、Python 训练接口、评测、checkpoint 选择和分布式启动。目前训练后端为 PyTorch、Transformers 和 PEFT，支持已适配的 Qwen 基座。DDP 会在每块 GPU 上保留完整模型。
+[训练指南](docs/TRAINING.md) 介绍了基座 adapter、CPU 参数、Python 训练接口、评测和分布式启动。DDP 会在每块 GPU 上保留完整模型。
+
+这五个系列的六个预训练基座均通过了 12 步 GPU 训练和 checkpoint 重载检查，最终 loss 低于初始值。详见[兼容性验证记录](results/backbone-smoke-v1.json)。
 
 ## 运行示例
 

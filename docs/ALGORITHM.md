@@ -4,14 +4,19 @@
 
 JevAny receives a shared state and one or more typed questions. Each question defines its candidate answers explicitly. It does not decode an answer string.
 
-The encoder uses existing Qwen special tokens as delimiters:
+The encoder reuses existing Qwen delimiters where available. Other tokenizers
+receive five decision tokens with trainable embeddings. Both use the same layout:
 
 ```text
 <state> state
 <question> instruction <option> a </option> ... <decide>
 ```
 
-For Qwen3.8's hybrid recurrent backbone, each question is a separate causal row that repeats the state. This prevents one question from changing another question's representation. Attention-only backbones can use the equivalent packed block-causal mask.
+For recurrent backbones such as Qwen3.8, sliding-window backbones, and architectures
+without validated packed-mask support, each question is a separate causal row
+that repeats the state. This prevents one question from changing another
+question's representation. Supported full-attention backbones can use the
+equivalent packed block-causal mask.
 
 Let `h_d` be the hidden state at `<decide>` and `h_i` the hidden state at the end of option `i`. The pointer head computes
 

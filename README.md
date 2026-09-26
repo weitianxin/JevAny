@@ -14,7 +14,7 @@
 
 **Train your own Jev. Deploy it in your own application.**
 
-JevAny is open infra for training and serving Jev-style decision models. Fine-tune an open Qwen backbone on your labelled decisions, or start with our pretrained checkpoint. Both paths use the same Python and HTTP interface, following the [Jev API's request and answer format](docs/API.md).
+JevAny is open infra for training and serving Jev-style decision models. Fine-tune an open language-model backbone on your labelled decisions, or start with our pretrained checkpoint. Both paths use the same Python and HTTP interface, following the [Jev API's request and answer format](docs/API.md).
 
 Give the model a state, a question, and possible answers. It returns a choice and the probability of each option. Your application can route a message, select a query repair, or choose an agent's next action.
 
@@ -85,7 +85,7 @@ You can also send JSON to `POST /v1/systemone`, run `jevany decide examples/requ
 
 ## Train a model
 
-Start with the included data and a small Qwen backbone:
+Train Qwen, Llama, Gemma, Mistral or Phi through the same interface. Start with the included data and a small Qwen backbone:
 
 ```bash
 python -m pip install -e '.[train]'
@@ -102,17 +102,20 @@ jevany serve --checkpoint runs/my-jev --model-name my-jev
 
 The starter contains 24 original synthetic training records and 8 separate development records. Each asks choice, binary and score questions. It is for learning the workflow; train on representative domain data to build a useful model.
 
-The SFT recipe uses `Qwen/Qwen2.5-0.5B` and a CUDA GPU. Change `base` and `data` in the TOML file, or override them on the command line. Labels use the inference format with a `label` added to each question. The trainer fits a LoRA adapter and pointer head; the base weights stay frozen.
+The SFT recipe uses `Qwen/Qwen2.5-0.5B` and a CUDA GPU. Change `base` and `data` in the TOML file, or override them on the command line. Labels use the inference format with a `label` added to each question. The trainer fits a LoRA adapter, pointer head and any added decision-token embeddings; the original base weights stay frozen.
 
 | Next step | Command or guide |
 |---|---|
 | Train on your data | `jevany train --config recipes/sft.toml --data data/my-domain.jsonl --out runs/domain-jev` |
+| Use another backbone | `jevany train --config recipes/sft.toml --base microsoft/Phi-4-mini-instruct --out runs/phi-jev` |
 | Fine-tune our released checkpoint | [`recipes/finetune.toml`](recipes/finetune.toml) |
 | Build larger datasets | `jevany data build-sft --help` · [sources and formats](docs/DATA.md) |
 | Run on multiple GPUs or hosts | [`infra/train.sh`](infra/train.sh) |
 | Experiment with calibration rewards | [`recipes/rlcr.toml`](recipes/rlcr.toml) |
 
-[The training guide](docs/TRAINING.md) covers CPU overrides, Python training, evaluation, checkpoint selection and distributed launch. Training currently uses PyTorch, Transformers and PEFT with supported Qwen backbones. DDP keeps a full model on each GPU.
+[The training guide](docs/TRAINING.md) covers backbone adapters, CPU overrides, Python training, evaluation and distributed launch. DDP keeps a full model on each GPU.
+
+Six pretrained bases across these five families passed 12-step GPU training with lower final loss and successful checkpoint reloads. See the [compatibility test results](results/backbone-smoke-v1.json).
 
 ## Run the examples
 

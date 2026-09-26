@@ -1,0 +1,495 @@
+{
+  "date": "2026-09-26",
+  "scope": "Real pretrained text weights; 12 optimizer steps on a repeated 8-record fixture, with an overlapping 4-record probe. Compatibility and optimization checks only; no generalization claim.",
+  "environment": {
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "torch": "2.6.0+cu126",
+    "transformers": "5.17.0",
+    "peft": "0.21.0",
+    "accelerate": "1.15.0",
+    "ddp_environment": {
+      "TORCH_NCCL_USE_COMM_NONBLOCKING": "0"
+    }
+  },
+  "topology": [
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "distinct_runtime_gpu_bindings": 8,
+      "world_sizes": [
+        1,
+        2
+      ],
+      "unassigned_reserved_gpus": 0
+    },
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "distinct_runtime_gpu_bindings": 8,
+      "world_sizes": [
+        2
+      ],
+      "unassigned_reserved_gpus": 0
+    }
+  ],
+  "weight_sources": {
+    "llama": "Public unquantized unsloth/Llama-3.2-1B mirror of meta-llama/Llama-3.2-1B",
+    "gemma": "Public unquantized unsloth/gemma-3-1b-pt mirror of google/gemma-3-1b-pt"
+  },
+  "runs": [
+    {
+      "base": "unsloth/gemma-3-1b-pt",
+      "base_revision": "34a98bf3eaecc08c699516f625eb5e56e4c5d99d",
+      "model_type": "gemma3_text",
+      "branch_mode": "rows",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        262145,
+        262146,
+        262147,
+        262148,
+        262149
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 1,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.5966571113707124
+        },
+        {
+          "step": 4,
+          "nll": 0.0094693568475005
+        },
+        {
+          "step": 8,
+          "nll": 3.077764316440275e-06
+        },
+        {
+          "step": 12,
+          "nll": 2.3962811169580607e-06
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.1443859061528485e-08,
+      "prefix_cache_probability_max_delta": 5.0067901611328125e-06,
+      "passed": true
+    },
+    {
+      "base": "unsloth/Llama-3.2-1B",
+      "base_revision": "9535bd9b1d1dea6acafbdc4813b728796aeb28da",
+      "model_type": "llama",
+      "branch_mode": "packed",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        128256,
+        128257,
+        128258,
+        128259,
+        128260
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 1,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 1.0715587473784376
+        },
+        {
+          "step": 4,
+          "nll": 0.08924652772735447
+        },
+        {
+          "step": 8,
+          "nll": 0.004920263332496065
+        },
+        {
+          "step": 12,
+          "nll": 0.0005223956249782397
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.472783670690262e-08,
+      "prefix_cache_probability_max_delta": 0.0,
+      "passed": true
+    },
+    {
+      "base": "mistralai/Mistral-7B-v0.3",
+      "base_revision": "caa1feb0e54d415e2df31207e5f4e273e33509b1",
+      "model_type": "mistral",
+      "branch_mode": "packed",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        32768,
+        32769,
+        32770,
+        32771,
+        32772
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 1,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.15775301188214255
+        },
+        {
+          "step": 4,
+          "nll": 2.0364291808373998
+        },
+        {
+          "step": 8,
+          "nll": 9.066770299955233e-06
+        },
+        {
+          "step": 12,
+          "nll": 6.083034574856075e-07
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.570037415163597e-08,
+      "prefix_cache_probability_max_delta": 3.00052533930284e-08,
+      "passed": true
+    },
+    {
+      "base": "microsoft/Phi-4-mini-instruct",
+      "base_revision": "cfbefacb99257ffa30c83adab238a50856ac3083",
+      "model_type": "phi3",
+      "branch_mode": "rows",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        200029,
+        200030,
+        200031,
+        200032,
+        200033
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 1,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.730945199354485
+        },
+        {
+          "step": 4,
+          "nll": 0.32194575230543965
+        },
+        {
+          "step": 8,
+          "nll": 0.058124683678013433
+        },
+        {
+          "step": 12,
+          "nll": 0.036898414648462496
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.863384788806769e-08,
+      "prefix_cache_probability_max_delta": 0.0009675174951553345,
+      "passed": true
+    },
+    {
+      "base": "Qwen/Qwen2.5-0.5B",
+      "base_revision": "060db6499f32faf8b98477b0a26969ef7d8b9987",
+      "model_type": "qwen2",
+      "branch_mode": "packed",
+      "token_schema": "legacy",
+      "decision_token_ids": [
+        151659,
+        151660,
+        151648,
+        151649,
+        151661
+      ],
+      "trained_delimiter_embeddings": false,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 1,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 5.871178280828062
+        },
+        {
+          "step": 4,
+          "nll": 7.341736714045663
+        },
+        {
+          "step": 8,
+          "nll": 3.6354328793558133
+        },
+        {
+          "step": 12,
+          "nll": 3.033444487964733
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 2.838510149150153e-08,
+      "prefix_cache_probability_max_delta": 0.0,
+      "passed": true
+    },
+    {
+      "base": "Qwen/Qwen3-0.6B",
+      "base_revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "model_type": "qwen3",
+      "branch_mode": "packed",
+      "token_schema": "legacy",
+      "decision_token_ids": [
+        151659,
+        151660,
+        151648,
+        151649,
+        151661
+      ],
+      "trained_delimiter_embeddings": false,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 1,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 2.1372951618872964
+        },
+        {
+          "step": 4,
+          "nll": 0.06336887083014882
+        },
+        {
+          "step": 8,
+          "nll": 0.0011962257773746711
+        },
+        {
+          "step": 12,
+          "nll": 0.00044134794705199637
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.844445027936018e-08,
+      "prefix_cache_probability_max_delta": 0.0,
+      "passed": true
+    },
+    {
+      "base": "unsloth/gemma-3-1b-pt",
+      "base_revision": "34a98bf3eaecc08c699516f625eb5e56e4c5d99d",
+      "model_type": "gemma3_text",
+      "branch_mode": "rows",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        262145,
+        262146,
+        262147,
+        262148,
+        262149
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 2,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.5966571113707124
+        },
+        {
+          "step": 4,
+          "nll": 0.005167480354500546
+        },
+        {
+          "step": 8,
+          "nll": 1.9134680450315537e-06
+        },
+        {
+          "step": 12,
+          "nll": 4.245341096352795e-06
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.5611258214783845e-08,
+      "prefix_cache_probability_max_delta": 1.1920928955078125e-05,
+      "passed": true
+    },
+    {
+      "base": "unsloth/Llama-3.2-1B",
+      "base_revision": "9535bd9b1d1dea6acafbdc4813b728796aeb28da",
+      "model_type": "llama",
+      "branch_mode": "packed",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        128256,
+        128257,
+        128258,
+        128259,
+        128260
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 2,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 1.0715587473784376
+        },
+        {
+          "step": 4,
+          "nll": 0.0625427168623656
+        },
+        {
+          "step": 8,
+          "nll": 1.4306828754677907e-05
+        },
+        {
+          "step": 12,
+          "nll": 3.537534660200348e-06
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.918733447796143e-08,
+      "prefix_cache_probability_max_delta": 0.0,
+      "passed": true
+    },
+    {
+      "base": "microsoft/Phi-4-mini-instruct",
+      "base_revision": "cfbefacb99257ffa30c83adab238a50856ac3083",
+      "model_type": "phi3",
+      "branch_mode": "rows",
+      "token_schema": "v1",
+      "decision_token_ids": [
+        200029,
+        200030,
+        200031,
+        200032,
+        200033
+      ],
+      "trained_delimiter_embeddings": true,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 2,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.730945199354485
+        },
+        {
+          "step": 4,
+          "nll": 0.2778983459276351
+        },
+        {
+          "step": 8,
+          "nll": 0.027371133208702547
+        },
+        {
+          "step": 12,
+          "nll": 0.014727407044564196
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 7.40768331120023e-08,
+      "prefix_cache_probability_max_delta": 7.979379734024405e-05,
+      "passed": true
+    },
+    {
+      "base": "Qwen/Qwen2.5-0.5B",
+      "base_revision": "060db6499f32faf8b98477b0a26969ef7d8b9987",
+      "model_type": "qwen2",
+      "branch_mode": "packed",
+      "token_schema": "legacy",
+      "decision_token_ids": [
+        151659,
+        151660,
+        151648,
+        151649,
+        151661
+      ],
+      "trained_delimiter_embeddings": false,
+      "steps": 12,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "world_size": 2,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 5.871178280828062
+        },
+        {
+          "step": 4,
+          "nll": 2.0692034824983776
+        },
+        {
+          "step": 8,
+          "nll": 3.0553260170128405e-05
+        },
+        {
+          "step": 12,
+          "nll": 0.00035378771899664775
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 2.0646891862874384e-08,
+      "prefix_cache_probability_max_delta": 0.0,
+      "passed": true
+    }
+  ],
+  "native_qwen_processor": {
+    "base": "Qwen/Qwen3.8-27B",
+    "processor": "Qwen3VLProcessor",
+    "token_schema": "legacy",
+    "native_image_tokens": 21,
+    "token_and_pixel_parity": true,
+    "save_reload_parity": true
+  },
+  "issues_resolved": [
+    {
+      "issue": "PyTorch 2.6 DDP does not accept init_sync.",
+      "resolution": "Use its standard initialization; retain selective synchronization on versions exposing init_sync."
+    },
+    {
+      "issue": "The initial smoke head learning rate of 1e-3 caused Qwen2.5 loss to rebound.",
+      "resolution": "The recorded runs use head learning rate 1e-4 and LoRA learning rate 2e-4."
+    },
+    {
+      "issue": "In the tested container, default NCCL collectives returned wrong gathered and reduced values, including with P2P disabled.",
+      "resolution": "Explicit TORCH_NCCL_USE_COMM_NONBLOCKING=0 passed gather/reduce and gradient-average checks on two GPU pairs; all four DDP training runs then passed."
+    }
+  ],
+  "cpu_regression": {
+    "passed": 93,
+    "skipped": 2,
+    "deselected": 7,
+    "command": "python -m pytest tests -m 'not server' -q"
+  }
+}
