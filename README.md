@@ -23,20 +23,20 @@ Train and serve Jev-style decision models with JevAny: fine-tune an open languag
 
 | Start here | What JevAny provides |
 |---|---|
-| **[Train a model](#train-a-model)** | Starter data, public-source data builders, SFT/RLCR recipes, and a multi-GPU training launcher |
-| **[Deploy a checkpoint](#deploy-a-checkpoint)** | Released checkpoints, local Python inference, and an HTTP server |
+| **[Training](#training)** | Training data, supported backbones, SFT/RLCR recipes, and a multi-GPU launcher |
+| **[Inference & Serving](#inference--serving)** | Pretrained models, local Python inference, and an HTTP API |
 
-## See it act
+## Demos
 
 Examples built with [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT):
 
 [![JevAny choosing actions across robotics, browser, software, laboratory and mobility tasks](docs/demos/jevany-cases.gif)](docs/CASES.md)
 
-[Explore all 30 cases](docs/CASES.md), with task descriptions and decision records. These are selected successful runs, not a success-rate benchmark. Three scenarios also have [small runnable applications](#run-the-examples) using the public interface.
+[Explore all 30 cases](docs/CASES.md), with task descriptions and decision records. These are selected successful runs, not a success-rate benchmark. To try your own model, run the [examples and test environments](#examples--test-environments).
 
-## Get the code
+## Installation
 
-Python 3.12 or newer is required. Install the extras for the path you choose below.
+Use Python 3.12 or newer. Clone the repository and create an environment:
 
 ```bash
 git clone https://github.com/weitianxin/JevAny.git
@@ -45,114 +45,180 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 ```
 
-## Deploy a checkpoint
+Choose the dependencies for your use case:
 
-The released 27B checkpoint needs a GPU that holds the full BF16 base model plus runtime memory; the showcase used A100 80 GB GPUs. First loading downloads the adapter and its separately distributed base weights. Smaller checkpoints you train use the same interface.
+| Use case | Install |
+|---|---|
+| Call an existing HTTP server | `python -m pip install -e .` |
+| Train a text model | `python -m pip install -e '.[train]'` |
+| Run a text model locally or serve it over HTTP | `python -m pip install -e '.[serve]'` |
+| Run the released 27B models with native media support | `python -m pip install -e '.[serve,multimodal]'` |
+
+The client-only installation does not install PyTorch. For image/video training, use `.[train,multimodal]`. Run the commands below from the repository root; model-specific hardware requirements are listed under [Pretrained Models](#pretrained-models).
+
+## Training
+
+### Training Data
+
+Training uses the same `state` and `questions` as inference, with a `label` added to each question. Optional soft targets describe a distribution over answers.
+
+| Data | What is available | Start here |
+|---|---|---|
+| Included starter | 24 synthetic training records and 8 development records; text inputs with choice, binary and score questions | `jevany data init --out data/starter` |
+| Public-source builders | Text, image and video decisions, including HelpSteer3, ScienceQA, A-OKVQA and VideoFeedback | `jevany data build-sft --help` · `jevany data build-rlcr --help` |
+| Your own data | Labelled requests in the shared JSONL format | [Format and examples](docs/DATA.md) |
+
+The starter is for learning the workflow. For larger datasets, the builders download and convert upstream data and record source versions, licenses and split counts. See the [data-building guide](docs/TRAINING.md#data-beyond-the-starter) for a small text-only build.
+
+Prepare and validate the starter before training:
 
 ```bash
-python -m pip install -e '.[serve,multimodal]'
+jevany data init --out data/starter
+jevany data validate data/starter/train.jsonl
+```
 
+### SFT
+
+Supervised fine-tuning fits a Jev model to labelled decisions. The starter recipe uses `Qwen/Qwen2.5-0.5B` on a CUDA GPU and writes the checkpoint to `runs/my-jev`:
+
+```bash
+jevany train --config recipes/sft.toml --dry-run
+jevany train --config recipes/sft.toml
+```
+
+Training updates LoRA adapters, the decision head and any added decision-token embeddings; the original base weights stay frozen. To use your own data, add `--data data/my-domain.jsonl --out runs/domain-jev`. To adapt a released Jev model, use [`recipes/finetune.toml`](recipes/finetune.toml).
+
+### RLCR
+
+Reinforcement Learning with Calibration Rewards continues SFT with a reward based on both correctness and confidence. After completing the SFT recipe above, run:
+
+```bash
+jevany train --config recipes/rlcr.toml
+```
+
+This recipe loads `runs/my-jev` and writes `runs/my-jev-rlcr`. Keep the base and adapter settings consistent with the SFT checkpoint when changing the recipe. RLCR is experimental; compare accuracy and calibration on held-out data before choosing a checkpoint. See the [training objective](docs/ALGORITHM.md#rlcr) and [released-model evaluation](#evaluation).
+
+### Supported Backbones
+
+These text bases have recorded 12-step SFT, checkpoint reload and inference checks:
+
+| Family | Tested text bases |
+|---|---|
+| Qwen | `Qwen/Qwen2.5-0.5B`, `Qwen/Qwen3-0.6B` |
+| Llama | `unsloth/Llama-3.2-1B` |
+| Gemma | `unsloth/gemma-3-1b-pt` |
+| Mistral | `mistralai/Mistral-7B-v0.3` |
+| Phi | `microsoft/Phi-4-mini-instruct` |
+
+Select a different base with the same trainer:
+
+```bash
+jevany train --config recipes/sft.toml \
+  --base microsoft/Phi-4-mini-instruct --out runs/phi-jev
+```
+
+The [compatibility report](results/backbone-smoke-v1.json) records the tested revisions, Llama/Gemma mirrors and short-run results. These checks establish integration and optimization behavior; task quality needs a separate evaluation.
+
+Native image training supports Qwen VL, Llama Vision, Gemma 3, Pixtral and Phi-4 Multimodal (after conversion); Qwen also supports video. Choose a vision base and set `multimodal = true`. See the [setup instructions](docs/TRAINING.md#native-multimodal-training) and [GPU checks](results/multimodal-backbone-smoke-v1.json).
+
+The [training guide](docs/TRAINING.md) covers custom adapters, CPU overrides and checkpoint selection. For multiple GPUs or hosts, use [`infra/train.sh`](infra/train.sh); DDP keeps a full model on each GPU.
+
+## Pretrained Models
+
+| Model | Intended use |
+|---|---|
+| [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | Default released model |
+| [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | Experimental RLCR continuation |
+
+Both releases are adapters over a 27B vision-capable base, downloaded separately on first load. Their BF16 base tensors require about 54 GB, plus adapter and runtime memory; the showcase used A100 80 GB GPUs. Smaller models you train use the same API with their own hardware requirements.
+
+The runtime loads one full model on one device. [Deployment details](docs/DEPLOYMENT.md#checkpoints-and-hardware) cover hardware, offline loading and revision pinning; [Evaluation](#evaluation) compares the released checkpoints.
+
+## Inference & Serving
+
+### Python API
+
+With an [HTTP server](#http-server) running, send a state and a question with named options. The answer contains the selected option and each option's probability:
+
+```python
+from jevany import Choice, JevClient
+
+state = {"ticket": "I was charged twice. Please help."}
+questions = {
+    "department": Choice(
+        instructions="Which team should handle this?",
+        criteria={"billing": "Payment problems", "shipping": "Delivery problems"},
+    ),
+}
+
+jev = JevClient("http://127.0.0.1:8008")
+result = jev.system_one(state=state, questions=questions)
+answer = result["answers"]["department"]
+print(answer["choice"])
+print(answer["probabilities"])
+```
+
+Use `Noul` for binary questions and `Score` for ordered levels. The [API reference](docs/API.md) describes all three question types and the Jev-compatible request/answer format.
+
+### HTTP Server
+
+For the default released model, install `.[serve,multimodal]` and use hardware that meets the [27B requirements](#pretrained-models):
+
+```bash
 jevany serve --checkpoint tianxinwei/JevAny-27B-SFT \
   --device cuda --dtype bf16 --port 8008
 ```
 
-With the server running, make a decision from Python:
+To serve the smaller model from the SFT example instead:
 
-```python
-from jevany import Choice, JevClient, Noul
-
-jev = JevClient("http://127.0.0.1:8008")
-result = jev.system_one(
-    state={"ticket": "I was charged twice. Please help."},
-    questions={
-        "department": Choice(
-            instructions="Which team should handle this?",
-            criteria={"billing": "Payment problems", "shipping": "Delivery problems"},
-        ),
-        "urgent": Noul(instructions="Does this require urgent review?"),
-    },
-)
-print(result["answers"]["department"]["choice"])
-print(result["answers"]["department"]["probabilities"])
+```bash
+jevany serve --checkpoint runs/my-jev --model-name my-jev --port 8008
 ```
 
-For inference inside your application, load once with `JevModel.from_pretrained(...)` and call the same `system_one` method:
+### In-Process Inference
+
+Load a checkpoint once in your application and reuse `state` and `questions` from the example above:
 
 ```python
 from jevany import JevModel
 
 jev = JevModel.from_pretrained("runs/my-jev", model_name="my-jev")
+result = jev.system_one(state=state, questions=questions)
 ```
 
-You can also send JSON to `POST /v1/systemone`, run `jevany decide examples/request.json`, or point the official TypeSafe SDK at the server. [The deployment guide](docs/DEPLOYMENT.md) covers each option, hardware, offline loading and media inputs. A client-only installation (`pip install -e .`) does not install PyTorch.
+The same request format also works with `POST /v1/systemone`, `jevany decide examples/request.json`, and the official TypeSafe SDK. See the [deployment guide](docs/DEPLOYMENT.md) for each option.
 
-## Train a model
+Native image/video inputs require a compatible vision checkpoint and one question per request. Enable HTTP media inputs explicitly through `JEVANY_MEDIA_ROOT`; see [media setup and limits](docs/DEPLOYMENT.md#native-media-and-limits).
 
-Train Qwen, Llama, Gemma, Mistral or Phi through the same interface. Start with the included data and a small Qwen backbone:
+## Examples & Test Environments
 
-```bash
-python -m pip install -e '.[train]'
+With a server running, use these applications to try a checkpoint on a concrete task:
 
-jevany data init --out data/starter
-jevany data validate data/starter/train.jsonl
-jevany train --config recipes/sft.toml --dry-run
-jevany train --config recipes/sft.toml
+| Task | Environment | Result or success criterion | Run |
+|---|---|---|---|
+| [Inbox triage](examples/inbox.py) | Three local sample messages | Inspect the printed folder and reply decisions | `python -m examples.inbox` |
+| [SQL repair](examples/sql_repair.py) | In-memory SQLite database | Query totals match an independent calculation | `python -m examples.sql_repair` |
+| [Service recovery](examples/service_recovery.py) | Local replica simulator | Serve all 100 requests with current data within 12 decisions | `python -m examples.service_recovery` |
 
-# Serve the checkpoint you just trained.
-python -m pip install -e '.[serve]'
-jevany serve --checkpoint runs/my-jev --model-name my-jev
-```
+SQL repair and service recovery exit with status 1 when their checks fail. Inbox triage prints decisions for manual inspection. Pass `--checkpoint runs/my-jev` to any example to load your model in-process, or `--base-url http://127.0.0.1:8008` to use a server.
 
-The starter contains 24 original synthetic training records and 8 separate development records. Each asks choice, binary and score questions. It is for learning the workflow; train on representative domain data to build a useful model.
+To add an environment, implement `reset`, `step` and `get_all_actions` and run it with `jevany.agent.run_episode`. [Example instructions](examples/README.md) explain the interface; [harness and symbolic integrations](docs/INTEGRATIONS.md) add optional LLM planning.
 
-The SFT recipe uses `Qwen/Qwen2.5-0.5B` and a CUDA GPU. Change `base` and `data` in the TOML file, or override them on the command line. Labels use the inference format with a `label` added to each question. The trainer fits a LoRA adapter, pointer head and any added decision-token embeddings; the original base weights stay frozen.
+## Evaluation
 
-| Next step | Command or guide |
-|---|---|
-| Train on your data | `jevany train --config recipes/sft.toml --data data/my-domain.jsonl --out runs/domain-jev` |
-| Use another backbone | `jevany train --config recipes/sft.toml --base microsoft/Phi-4-mini-instruct --out runs/phi-jev` |
-| Fine-tune our released checkpoint | [`recipes/finetune.toml`](recipes/finetune.toml) |
-| Build larger datasets | `jevany data build-sft --help` · [sources and formats](docs/DATA.md) |
-| Run on multiple GPUs or hosts | [`infra/train.sh`](infra/train.sh) |
-| Experiment with calibration rewards | [`recipes/rlcr.toml`](recipes/rlcr.toml) |
+The released v0.2 models were evaluated on 1,046 transfer questions:
 
-[The training guide](docs/TRAINING.md) covers backbone adapters, CPU overrides, Python training, evaluation and distributed launch. DDP keeps a full model on each GPU.
+| Model | Transfer accuracy |
+|---|---:|
+| JevAny-27B-SFT | 82.41% |
+| JevAny-27B-RLCR | 82.31% |
 
-Six pretrained bases across these five families passed 12-step GPU training with lower final loss and successful checkpoint reloads. See the [compatibility test results](results/backbone-smoke-v1.json).
+RLCR has not shown an overall transfer gain in this evaluation. [Evaluation details](docs/EVALUATION.md) include the full comparison, image/video controls and negative test-time adaptation results.
 
-Native image training supports Qwen VL, Llama Vision, Gemma 3, Pixtral and Phi-4 Multimodal (after conversion); Qwen also supports video. Choose a vision base and set `multimodal = true`. See the [setup instructions](docs/TRAINING.md#native-multimodal-training) and [GPU checks](results/multimodal-backbone-smoke-v1.json).
+The validated training window is 2,048 packed tokens. Calibration can change on new data; evaluate accuracy and decision thresholds on your own held-out tasks before deployment.
 
-## Run the examples
+## Documentation and Contributing
 
-With a server running:
-
-```bash
-python -m examples.inbox
-python -m examples.sql_repair
-python -m examples.service_recovery
-```
-
-| Example | What you can build from it |
-|---|---|
-| [Inbox triage](examples/inbox.py) | Classify messages and decide which need a reply |
-| [SQL repair](examples/sql_repair.py) | Select a query, execute it in SQLite, and check its result |
-| [Service recovery](examples/service_recovery.py) | Run a multi-step agent against a local replica simulator |
-
-Pass `--checkpoint runs/my-jev` to run any example in-process. The SQL and recovery examples report failed checks as failures. [Example instructions](examples/README.md) explain the environments; [harness and symbolic integrations](docs/INTEGRATIONS.md) add optional LLM planning.
-
-## Checkpoints and evidence
-
-| Checkpoint | Role | Transfer accuracy |
-|---|---|---:|
-| [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | Default released model | 82.41% |
-| [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | Experimental RLCR continuation | 82.31% |
-
-These v0.2 measurements cover 1,046 transfer questions. RLCR has not shown an overall transfer gain. [Evaluation details](docs/EVALUATION.md) include the full comparison, image/video controls and negative test-time adaptation results; [ALGORITHM.md](docs/ALGORITHM.md) describes the training objective.
-
-Native images and video require a compatible vision checkpoint and one question per request. HTTP media inputs are enabled explicitly through `JEVANY_MEDIA_ROOT`. The validated training window is 2,048 packed tokens. Calibration can change on new data; evaluate thresholds for your application.
-
-## Documentation and contributing
-
-[Training](docs/TRAINING.md) · [Deployment](docs/DEPLOYMENT.md) · [API compatibility](docs/API.md) · [Data](docs/DATA.md) · [Contributing](CONTRIBUTING.md) · [Research roadmap](ROADMAP.md)
+[Training](docs/TRAINING.md) · [Deployment](docs/DEPLOYMENT.md) · [API compatibility](docs/API.md) · [Data](docs/DATA.md) · [Evaluation](docs/EVALUATION.md) · [Contributing](CONTRIBUTING.md) · [Research roadmap](ROADMAP.md)
 
 JevAny is independent of Jev and TypeSafe and includes no Jev weights or private implementation. It includes infrastructure adapted from [Kev](https://github.com/jaredpalmer/kev); see [NOTICE](NOTICE) and [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Code and starter data are Apache-2.0. Base models and upstream datasets retain their own terms.

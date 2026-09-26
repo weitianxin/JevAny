@@ -23,20 +23,20 @@ JevAny 用于训练和部署 Jev 风格的决策模型：你可以微调开源�
 
 | 从这里开始 | JevAny 提供什么 |
 |---|---|
-| **[训练模型](#训练模型)** | 入门数据、公开数据构建器、SFT / RLCR recipe、多 GPU 训练入口 |
-| **[部署模型](#部署-checkpoint)** | 已发布 checkpoint、本地 Python 推理、HTTP 服务 |
+| **[训练](#训练)** | 训练数据、支持的基座、SFT/RLCR recipe 和多 GPU 训练入口 |
+| **[推理与部署](#推理与部署)** | 预训练模型、本地 Python 推理和 HTTP API |
 
-## 看看它能做什么
+## 演示
 
 以下案例使用 [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT)：
 
 [![JevAny 在机器人、浏览器、软件、实验室和出行任务中选择动作](docs/demos/jevany-cases.gif)](docs/CASES.md)
 
-[查看全部 30 个案例](docs/CASES.md)，了解任务和决策记录。这些是精选成功运行，不代表任务成功率。其中三个场景也提供了[使用统一接口的可运行代码](#运行示例)。
+[查看全部 30 个案例](docs/CASES.md)，了解任务和决策记录。这些是精选成功运行，不代表任务成功率。要测试自己的模型，可以运行[示例与测试环境](#示例与测试环境)。
 
-## 获取代码
+## 安装
 
-需要 Python 3.12 或更新版本。随后按训练或部署需求安装对应依赖。
+使用 Python 3.12 或更新版本。克隆仓库并创建环境：
 
 ```bash
 git clone https://github.com/weitianxin/JevAny.git
@@ -45,114 +45,180 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 ```
 
-## 部署 checkpoint
+按用途选择依赖：
 
-已发布的 27B checkpoint 需要一块能容纳完整 BF16 基础模型和运行时开销的 GPU；展示案例使用 A100 80 GB。首次加载会下载 adapter 及单独分发的基础模型。你自己训练的小模型也使用相同接口。
+| 用途 | 安装命令 |
+|---|---|
+| 调用已有 HTTP 服务 | `python -m pip install -e .` |
+| 训练文本模型 | `python -m pip install -e '.[train]'` |
+| 在本地运行文本模型或启动 HTTP 服务 | `python -m pip install -e '.[serve]'` |
+| 运行支持原生媒体输入的已发布 27B 模型 | `python -m pip install -e '.[serve,multimodal]'` |
+
+只安装客户端不会引入 PyTorch。训练图片/视频模型时，使用 `.[train,multimodal]`。以下命令均在仓库根目录运行；具体模型的硬件要求见[预训练模型](#预训练模型)。
+
+## 训练
+
+### 训练数据
+
+训练数据沿用推理时的 `state` 和 `questions`，并为每个问题增加 `label`。可选的软标签用于描述答案的概率分布。
+
+| 数据 | 提供的内容 | 使用入口 |
+|---|---|---|
+| 随包入门数据 | 24 条合成训练记录和 8 条开发记录；文本输入，包含选择、二分类和评分问题 | `jevany data init --out data/starter` |
+| 公开数据构建器 | 文本、图片和视频决策数据，来源包括 HelpSteer3、ScienceQA、A-OKVQA 和 VideoFeedback | `jevany data build-sft --help` · `jevany data build-rlcr --help` |
+| 自己的数据 | 按统一 JSONL 格式添加标签的请求 | [格式与示例](docs/DATA.md) |
+
+入门数据用于跑通流程。构建更大的数据集时，构建器会下载和转换上游数据，并记录来源版本、许可证和各分区的记录数。[数据构建指南](docs/TRAINING.md#data-beyond-the-starter) 提供了一个小规模纯文本构建示例。
+
+训练前先准备并校验入门数据：
 
 ```bash
-python -m pip install -e '.[serve,multimodal]'
+jevany data init --out data/starter
+jevany data validate data/starter/train.jsonl
+```
 
+### SFT
+
+监督微调让 Jev 模型学习带标签的决策。入门 recipe 使用 `Qwen/Qwen2.5-0.5B` 和 CUDA GPU，将 checkpoint 写入 `runs/my-jev`：
+
+```bash
+jevany train --config recipes/sft.toml --dry-run
+jevany train --config recipes/sft.toml
+```
+
+训练更新 LoRA adapter、决策头和新增决策 token 的 embedding，原有基座权重保持冻结。使用自己的数据时，添加 `--data data/my-domain.jsonl --out runs/domain-jev`。微调已发布的 Jev 模型可使用 [`recipes/finetune.toml`](recipes/finetune.toml)。
+
+### RLCR
+
+RLCR（Reinforcement Learning with Calibration Rewards）在 SFT 后继续训练，奖励同时考虑答案是否正确及其置信度。完成上面的 SFT recipe 后，运行：
+
+```bash
+jevany train --config recipes/rlcr.toml
+```
+
+该 recipe 从 `runs/my-jev` 加载模型，输出到 `runs/my-jev-rlcr`。修改 recipe 时，基座和 adapter 设置需与 SFT checkpoint 一致。RLCR 仍处于实验阶段，选择 checkpoint 前应在留出数据上比较准确率和校准效果。详见[训练目标](docs/ALGORITHM.md#rlcr)和[已发布模型的评测](#评测)。
+
+### 支持的基座
+
+以下文本基座已有 12 步 SFT、checkpoint 重载和推理检查记录：
+
+| 系列 | 已测试的文本基座 |
+|---|---|
+| Qwen | `Qwen/Qwen2.5-0.5B`、`Qwen/Qwen3-0.6B` |
+| Llama | `unsloth/Llama-3.2-1B` |
+| Gemma | `unsloth/gemma-3-1b-pt` |
+| Mistral | `mistralai/Mistral-7B-v0.3` |
+| Phi | `microsoft/Phi-4-mini-instruct` |
+
+使用同一训练器切换基座：
+
+```bash
+jevany train --config recipes/sft.toml \
+  --base microsoft/Phi-4-mini-instruct --out runs/phi-jev
+```
+
+[兼容性记录](results/backbone-smoke-v1.json) 包含测试过的权重版本、Llama/Gemma 镜像和短程训练结果。这些检查验证了模型接入和优化过程，任务效果仍需单独评估。
+
+原生图片训练支持 Qwen VL、Llama Vision、Gemma 3、Pixtral 和转换后的 Phi-4 Multimodal；Qwen 还支持视频。选择视觉基座并设置 `multimodal = true`。参见[接入方式](docs/TRAINING.md#native-multimodal-training)和 [GPU 验证](results/multimodal-backbone-smoke-v1.json)。
+
+[训练指南](docs/TRAINING.md) 介绍了自定义 adapter、CPU 参数和 checkpoint 选择。多 GPU 或多机训练使用 [`infra/train.sh`](infra/train.sh)；DDP 会在每块 GPU 上保留完整模型。
+
+## 预训练模型
+
+| 模型 | 用途 |
+|---|---|
+| [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | 默认发布模型 |
+| [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | RLCR 实验版本 |
+
+两个版本都是基于 27B 视觉基座的 adapter，首次加载会另行下载基座权重。其 BF16 基座张量需要约 54 GB，此外还需 adapter 和运行时内存；展示案例使用 A100 80 GB GPU。自己训练的小模型使用同一 API，硬件需求由各自的基座决定。
+
+运行时在单个设备上加载完整模型。[部署说明](docs/DEPLOYMENT.md#checkpoints-and-hardware) 包含硬件要求、离线加载和版本固定方法；[评测](#评测) 对比了两个已发布 checkpoint。
+
+## 推理与部署
+
+### Python API
+
+[HTTP 服务](#http-服务)启动后，发送状态和带有候选选项的问题。返回值包含选中的选项及各选项的概率：
+
+```python
+from jevany import Choice, JevClient
+
+state = {"ticket": "I was charged twice. Please help."}
+questions = {
+    "department": Choice(
+        instructions="Which team should handle this?",
+        criteria={"billing": "Payment problems", "shipping": "Delivery problems"},
+    ),
+}
+
+jev = JevClient("http://127.0.0.1:8008")
+result = jev.system_one(state=state, questions=questions)
+answer = result["answers"]["department"]
+print(answer["choice"])
+print(answer["probabilities"])
+```
+
+二分类问题使用 `Noul`，有序评分使用 `Score`。[API 文档](docs/API.md) 介绍了三种问题类型及兼容 Jev 的请求/返回格式。
+
+### HTTP 服务
+
+运行默认发布模型时，安装 `.[serve,multimodal]`，并使用满足 [27B 硬件要求](#预训练模型)的设备：
+
+```bash
 jevany serve --checkpoint tianxinwei/JevAny-27B-SFT \
   --device cuda --dtype bf16 --port 8008
 ```
 
-服务启动后，从 Python 发起一次决策：
+部署前面 SFT 示例训练的小模型时，运行：
 
-```python
-from jevany import Choice, JevClient, Noul
-
-jev = JevClient("http://127.0.0.1:8008")
-result = jev.system_one(
-    state={"ticket": "I was charged twice. Please help."},
-    questions={
-        "department": Choice(
-            instructions="Which team should handle this?",
-            criteria={"billing": "Payment problems", "shipping": "Delivery problems"},
-        ),
-        "urgent": Noul(instructions="Does this require urgent review?"),
-    },
-)
-print(result["answers"]["department"]["choice"])
-print(result["answers"]["department"]["probabilities"])
+```bash
+jevany serve --checkpoint runs/my-jev --model-name my-jev --port 8008
 ```
 
-如果希望直接在应用进程中推理，用 `JevModel.from_pretrained(...)` 加载一次，再调用同样的 `system_one` 方法：
+### 进程内推理
+
+在应用中加载一次 checkpoint，复用上例中的 `state` 和 `questions`：
 
 ```python
 from jevany import JevModel
 
 jev = JevModel.from_pretrained("runs/my-jev", model_name="my-jev")
+result = jev.system_one(state=state, questions=questions)
 ```
 
-你也可以向 `POST /v1/systemone` 发送 JSON，运行 `jevany decide examples/request.json`，或让官方 TypeSafe SDK 连接这个服务。[部署指南](docs/DEPLOYMENT.md) 包含完整用法、硬件要求、离线加载和媒体输入说明。只连接已有服务时，`pip install -e .` 不会安装 PyTorch。
+同一请求格式也适用于 `POST /v1/systemone`、`jevany decide examples/request.json` 和官方 TypeSafe SDK。各入口的用法见[部署指南](docs/DEPLOYMENT.md)。
 
-## 训练模型
+原生图片/视频输入需要兼容的视觉 checkpoint，每个请求只支持一个问题。HTTP 媒体输入通过 `JEVANY_MEDIA_ROOT` 显式启用，详见[媒体配置与限制](docs/DEPLOYMENT.md#native-media-and-limits)。
 
-Qwen、Llama、Gemma、Mistral 和 Phi 共用同一套训练接口。先用随包提供的数据和一个小型 Qwen 基座跑通流程：
+## 示例与测试环境
 
-```bash
-python -m pip install -e '.[train]'
+服务启动后，可以用以下应用测试 checkpoint 在具体任务上的表现：
 
-jevany data init --out data/starter
-jevany data validate data/starter/train.jsonl
-jevany train --config recipes/sft.toml --dry-run
-jevany train --config recipes/sft.toml
+| 任务 | 环境 | 输出或成功判定 | 运行命令 |
+|---|---|---|---|
+| [收件箱分类](examples/inbox.py) | 三条本地示例消息 | 人工检查输出的文件夹和回复决策 | `python -m examples.inbox` |
+| [SQL 修复](examples/sql_repair.py) | 内存 SQLite 数据库 | 查询汇总结果与独立计算一致 | `python -m examples.sql_repair` |
+| [服务恢复](examples/service_recovery.py) | 本地副本模拟器 | 在 12 次决策内，让全部 100 个请求返回当前数据 | `python -m examples.service_recovery` |
 
-# 部署刚训练好的 checkpoint。
-python -m pip install -e '.[serve]'
-jevany serve --checkpoint runs/my-jev --model-name my-jev
-```
+SQL 修复和服务恢复检查失败时退出码为 1；收件箱分类打印决策供人工查看。任意示例加上 `--checkpoint runs/my-jev` 即可在进程内加载模型，也可以通过 `--base-url http://127.0.0.1:8008` 连接服务。
 
-入门数据包含 24 条原创合成训练记录和 8 条独立开发记录，每条都有选择、二分类和评分问题。这组数据用于熟悉流程；要训练有用的领域模型，请换成有代表性的业务数据。
+接入自己的环境时，实现 `reset`、`step` 和 `get_all_actions`，再通过 `jevany.agent.run_episode` 运行。[示例说明](examples/README.md) 介绍了接口；[Harness 与符号控制](docs/INTEGRATIONS.md) 提供可选的 LLM 规划层。
 
-SFT recipe 默认使用 `Qwen/Qwen2.5-0.5B` 和 CUDA GPU。修改 TOML 中的 `base`、`data`，或在命令行覆盖即可。训练记录在推理格式的每个问题上增加 `label`；训练器更新 LoRA adapter、pointer head 和新增决策 token 的 embedding，原有基础模型权重保持冻结。
+## 评测
 
-| 下一步 | 命令或说明 |
-|---|---|
-| 使用自己的数据 | `jevany train --config recipes/sft.toml --data data/my-domain.jsonl --out runs/domain-jev` |
-| 更换基座 | `jevany train --config recipes/sft.toml --base microsoft/Phi-4-mini-instruct --out runs/phi-jev` |
-| 微调已发布模型 | [`recipes/finetune.toml`](recipes/finetune.toml) |
-| 构建更大的数据集 | `jevany data build-sft --help` · [来源与格式](docs/DATA.md) |
-| 多 GPU / 多机训练 | [`infra/train.sh`](infra/train.sh) |
-| 实验校准奖励训练 | [`recipes/rlcr.toml`](recipes/rlcr.toml) |
+已发布的 v0.2 模型在 1,046 道迁移问题上的结果：
 
-[训练指南](docs/TRAINING.md) 介绍了基座 adapter、CPU 参数、Python 训练接口、评测和分布式启动。DDP 会在每块 GPU 上保留完整模型。
+| 模型 | 迁移集准确率 |
+|---|---:|
+| JevAny-27B-SFT | 82.41% |
+| JevAny-27B-RLCR | 82.31% |
 
-这五个系列的六个预训练基座均通过了 12 步 GPU 训练和 checkpoint 重载检查，最终 loss 低于初始值。详见[兼容性验证记录](results/backbone-smoke-v1.json)。
+在这次评测中，RLCR 尚未带来整体迁移收益。[完整评测](docs/EVALUATION.md) 包含模型比较、图像/视频对照实验和测试时适配的负结果。
 
-原生图片训练支持 Qwen VL、Llama Vision、Gemma 3、Pixtral 和转换后的 Phi-4 Multimodal；Qwen 还支持视频。选择视觉基座并设置 `multimodal = true`。参见[接入方式](docs/TRAINING.md#native-multimodal-training)和 [GPU 验证](results/multimodal-backbone-smoke-v1.json)。
-
-## 运行示例
-
-服务启动后：
-
-```bash
-python -m examples.inbox
-python -m examples.sql_repair
-python -m examples.service_recovery
-```
-
-| 示例 | 可以据此构建什么 |
-|---|---|
-| [收件箱分类](examples/inbox.py) | 分类消息并判断是否需要回复 |
-| [SQL 修复](examples/sql_repair.py) | 选择查询，在 SQLite 中执行并核对结果 |
-| [服务恢复](examples/service_recovery.py) | 在本地副本模拟器中运行多步智能体 |
-
-给任意示例加上 `--checkpoint runs/my-jev`，即可切换为进程内推理。SQL 和服务恢复示例会如实报告检查失败。[示例说明](examples/README.md) 介绍各自的执行环境；[Harness 与符号控制](docs/INTEGRATIONS.md) 提供可选的 LLM 规划层。
-
-## Checkpoint 与评测
-
-| Checkpoint | 用途 | 迁移集准确率 |
-|---|---|---:|
-| [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | 默认发布模型 | 82.41% |
-| [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | RLCR 实验版本 | 82.31% |
-
-以上 v0.2 结果来自 1,046 道迁移问题，RLCR 尚未带来整体迁移收益。[完整评测](docs/EVALUATION.md) 保留模型比较、图像/视频对照实验和测试时适配的负结果；[算法说明](docs/ALGORITHM.md) 介绍训练目标。
-
-原生图片和视频需要支持视觉的 checkpoint，每个请求只支持一个问题。HTTP 媒体输入通过 `JEVANY_MEDIA_ROOT` 显式启用。已验证的训练窗口为 2,048 个 packed tokens。新数据上的校准可能变化，自动决策阈值需要在自己的任务上评估。
+已验证的训练窗口为 2,048 个 packed tokens。新数据上的校准可能变化，部署前应在自己的留出任务上评估准确率和决策阈值。
 
 ## 文档与贡献
 
-[训练](docs/TRAINING.md) · [部署](docs/DEPLOYMENT.md) · [API 兼容性](docs/API.md) · [数据](docs/DATA.md) · [贡献指南](CONTRIBUTING.md) · [研究路线图](ROADMAP.md)
+[训练](docs/TRAINING.md) · [部署](docs/DEPLOYMENT.md) · [API 兼容性](docs/API.md) · [数据](docs/DATA.md) · [评测](docs/EVALUATION.md) · [贡献指南](CONTRIBUTING.md) · [研究路线图](ROADMAP.md)
 
 JevAny 独立于 Jev 和 TypeSafe，不包含 Jev 权重或私有实现。部分基础设施改编自 [Kev](https://github.com/jaredpalmer/kev)，归属说明见 [NOTICE](NOTICE) 和 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md)。代码和入门数据采用 Apache-2.0；基础模型与上游数据集保留各自条款。
