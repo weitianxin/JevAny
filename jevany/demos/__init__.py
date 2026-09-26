@@ -20,8 +20,8 @@ CASES = {
     "doom": {
         "title": "Doom corridor",
         "category": "3D GAME",
-        "description": "Navigate a hostile corridor with limited health and ammunition.",
-        "goal": "Reach the green armor at the end of the corridor. Stay alive, aim before shooting, and conserve ammunition.",
+        "description": "Clear the final room, then move forward through it.",
+        "goal": "Kill both enemies in the final room: one on the left and one on the right. After both are dead, move forward through the cleared room.",
         "package": "vizdoom",
         "extra": "demo",
         "limit": 160,

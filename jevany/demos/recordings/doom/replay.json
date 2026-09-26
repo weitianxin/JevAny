@@ -2,55 +2,71 @@
   "case": "doom",
   "controller": "model",
   "model": "tianxinwei/JevAny-27B-SFT",
-  "seed": 17,
-  "note": "Seed 17. Recorded checkpoint decisions in the native environment. Each selected action is executed unchanged. The objective is to reach the green armor.",
+  "seed": 65,
+  "note": "Seed 65. Recorded checkpoint decisions in the native environment. Each selected action is executed unchanged. Start in the corridor's final room, kill its left and right enemies, then advance.",
   "images": true,
   "steps": [
     {
       "case": "doom",
       "revision": 1,
-      "seed": 17,
+      "seed": 65,
       "observation": {
         "health": 100.0,
         "ammo2": 52.0,
         "killcount": 0.0,
         "armor": 0.0,
+        "hitcount": 0.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 0.0,
+        "attack_ready": 0.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              316,
-              206,
-              7,
-              6
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              406,
-              172,
-              75,
-              136
-            ]
+              306,
+              213,
+              27,
+              25
+            ],
+            "bearing_degrees": 0.0
           },
           {
             "object": "ShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              162,
-              179,
-              61,
-              131
-            ]
+              437,
+              174,
+              85,
+              164
+            ],
+            "bearing_degrees": -26.565051177077976
+          },
+          {
+            "object": "ChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              115,
+              168,
+              129,
+              167
+            ],
+            "bearing_degrees": 26.565051177077976
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 1,
+        "game_ticks": 14,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 0.0,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
         "decisions": 0,
-        "feedback": "Reach the green armor at the far end of the corridor."
+        "feedback": "Kill the enemy on the left and the enemy on the right, then advance through the room."
       },
       "frames": [
         "/recordings/doom/000.jpg"
@@ -68,60 +84,76 @@
       "step": 0,
       "done": false,
       "success": false,
-      "feedback": "Reach the green armor at the far end of the corridor.",
+      "feedback": "Kill the enemy on the left and the enemy on the right, then advance through the room.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": null
     },
     {
       "case": "doom",
       "revision": 2,
-      "seed": 17,
+      "seed": 65,
       "observation": {
         "health": 100.0,
         "ammo2": 52.0,
         "killcount": 0.0,
         "armor": 0.0,
+        "hitcount": 0.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 7.0312500016370905,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              315,
-              206,
-              8,
-              6
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              406,
-              172,
-              75,
-              137
-            ]
+              345,
+              213,
+              28,
+              25
+            ],
+            "bearing_degrees": -7.0312500016370905
           },
           {
             "object": "ShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              161,
-              179,
-              61,
-              132
-            ]
+              489,
+              169,
+              85,
+              179
+            ],
+            "bearing_degrees": -33.596301178715066
+          },
+          {
+            "object": "ChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              166,
+              170,
+              122,
+              158
+            ],
+            "bearing_degrees": 19.533801175440885
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 9,
+        "game_ticks": 18,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": -7.0312500016370905,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
         "decisions": 1,
-        "feedback": "Forward executed; reward +0.8."
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 7.0 degrees."
       },
       "frames": [
         "/recordings/doom/001.jpg",
-        "/recordings/doom/002.jpg",
-        "/recordings/doom/003.jpg",
-        "/recordings/doom/004.jpg"
+        "/recordings/doom/002.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -136,109 +168,143 @@
       "step": 1,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +0.8.",
+      "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 7.0 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
-        "action": "forward",
+        "action": "turn_left",
         "probabilities": {
-          "forward": 0.49827203154563904,
-          "backward": 0.004843235947191715,
-          "strafe_left": 0.026474999263882637,
-          "strafe_right": 0.05085813254117966,
-          "turn_left": 0.09063965827226639,
-          "turn_right": 0.04574432596564293,
-          "attack": 0.16156041622161865,
-          "wait": 0.1216072216629982
+          "forward": 0.021598342806100845,
+          "backward": 0.004234672524034977,
+          "strafe_left": 0.0049223206005990505,
+          "strafe_right": 0.009820827282965183,
+          "turn_left": 0.5491379499435425,
+          "turn_right": 0.3311948776245117,
+          "attack": 0.026147620752453804,
+          "wait": 0.052943430840969086
         },
         "observation": {
           "health": 100.0,
           "ammo2": 52.0,
           "killcount": 0.0,
           "armor": 0.0,
+          "hitcount": 0.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 0.0,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                316,
-                206,
-                7,
-                6
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                406,
-                172,
-                75,
-                136
-              ]
+                306,
+                213,
+                27,
+                25
+              ],
+              "bearing_degrees": 0.0
             },
             {
               "object": "ShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                162,
-                179,
-                61,
-                131
-              ]
+                437,
+                174,
+                85,
+                164
+              ],
+              "bearing_degrees": -26.565051177077976
+            },
+            {
+              "object": "ChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                115,
+                168,
+                129,
+                167
+              ],
+              "bearing_degrees": 26.565051177077976
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 1,
+          "game_ticks": 14,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 0.0,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
           "decisions": 0,
-          "feedback": "Reach the green armor at the far end of the corridor."
+          "feedback": "Kill the enemy on the left and the enemy on the right, then advance through the room."
         },
         "next_observation": {
           "health": 100.0,
           "ammo2": 52.0,
           "killcount": 0.0,
           "armor": 0.0,
+          "hitcount": 0.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 7.0312500016370905,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                315,
-                206,
-                8,
-                6
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                406,
-                172,
-                75,
-                137
-              ]
+                345,
+                213,
+                28,
+                25
+              ],
+              "bearing_degrees": -7.0312500016370905
             },
             {
               "object": "ShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                161,
-                179,
-                61,
-                132
-              ]
+                489,
+                169,
+                85,
+                179
+              ],
+              "bearing_degrees": -33.596301178715066
+            },
+            {
+              "object": "ChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                166,
+                170,
+                122,
+                158
+              ],
+              "bearing_degrees": 19.533801175440885
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 9,
+          "game_ticks": 18,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -7.0312500016370905,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
           "decisions": 1,
-          "feedback": "Forward executed; reward +0.8."
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 7.0 degrees."
         },
-        "reward": 0.78125,
+        "reward": 0.0,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +0.8.",
-        "seconds": 1.863,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 7.0 degrees.",
+        "seconds": 1.933,
         "subgoal": null,
         "priority": null
       }
@@ -246,48 +312,295 @@
     {
       "case": "doom",
       "revision": 3,
-      "seed": 17,
+      "seed": 65,
       "observation": {
         "health": 100.0,
         "ammo2": 52.0,
         "killcount": 0.0,
         "armor": 0.0,
+        "hitcount": 0.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 19.335937504502,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              315,
-              206,
-              8,
-              5
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              423,
-              161,
-              99,
-              161
-            ]
+              417,
+              218,
+              29,
+              22
+            ],
+            "bearing_degrees": -19.335937504502
           },
           {
             "object": "ShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              124,
-              167,
-              81,
-              158
-            ]
+              598,
+              162,
+              41,
+              215
+            ],
+            "bearing_degrees": -45.900988681579975
+          },
+          {
+            "object": "ChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              238,
+              171,
+              117,
+              151
+            ],
+            "bearing_degrees": 7.229113672575977
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 17,
+        "game_ticks": 22,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": -19.335937504502,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
         "decisions": 2,
-        "feedback": "Forward executed; reward +26.9."
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 19.3 degrees."
+      },
+      "frames": [
+        "/recordings/doom/003.jpg",
+        "/recordings/doom/004.jpg"
+      ],
+      "actions": {
+        "forward": "Move forward for 8 game ticks.",
+        "backward": "Move backward for 8 game ticks.",
+        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
+        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
+        "turn_left": "Turn left for 4 game ticks.",
+        "turn_right": "Turn right for 4 game ticks.",
+        "attack": "Fire for 8 game ticks in the current direction.",
+        "wait": "Wait for 8 game ticks."
+      },
+      "step": 2,
+      "done": false,
+      "success": false,
+      "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 19.3 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
+      "decision": {
+        "controller": "model",
+        "action": "turn_left",
+        "probabilities": {
+          "forward": 0.011722959578037262,
+          "backward": 0.0019413792761042714,
+          "strafe_left": 0.0029453770257532597,
+          "strafe_right": 0.004282260779291391,
+          "turn_left": 0.9073443412780762,
+          "turn_right": 0.03965538367629051,
+          "attack": 0.017039237543940544,
+          "wait": 0.015069137327373028
+        },
+        "observation": {
+          "health": 100.0,
+          "ammo2": 52.0,
+          "killcount": 0.0,
+          "armor": 0.0,
+          "hitcount": 0.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 7.0312500016370905,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                345,
+                213,
+                28,
+                25
+              ],
+              "bearing_degrees": -7.0312500016370905
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                489,
+                169,
+                85,
+                179
+              ],
+              "bearing_degrees": -33.596301178715066
+            },
+            {
+              "object": "ChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                166,
+                170,
+                122,
+                158
+              ],
+              "bearing_degrees": 19.533801175440885
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 18,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -7.0312500016370905,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 1,
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 7.0 degrees."
+        },
+        "next_observation": {
+          "health": 100.0,
+          "ammo2": 52.0,
+          "killcount": 0.0,
+          "armor": 0.0,
+          "hitcount": 0.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 19.335937504502,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                417,
+                218,
+                29,
+                22
+              ],
+              "bearing_degrees": -19.335937504502
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                598,
+                162,
+                41,
+                215
+              ],
+              "bearing_degrees": -45.900988681579975
+            },
+            {
+              "object": "ChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                238,
+                171,
+                117,
+                151
+              ],
+              "bearing_degrees": 7.229113672575977
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 22,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -19.335937504502,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 2,
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 19.3 degrees."
+        },
+        "reward": 0.0,
+        "done": false,
+        "success": false,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 19.3 degrees.",
+        "seconds": 1.72,
+        "subgoal": null,
+        "priority": null
+      }
+    },
+    {
+      "case": "doom",
+      "revision": 4,
+      "seed": 65,
+      "observation": {
+        "health": 100.0,
+        "ammo2": 51.0,
+        "killcount": 1.0,
+        "armor": 0.0,
+        "hitcount": 1.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 19.335937504502,
+        "attack_ready": 0.0,
+        "visible_objects": [
+          {
+            "object": "GreenArmor",
+            "id": 0,
+            "screen_box_xywh": [
+              417,
+              218,
+              29,
+              22
+            ],
+            "bearing_degrees": -19.335937504502
+          },
+          {
+            "object": "ShotgunGuy",
+            "id": 1,
+            "screen_box_xywh": [
+              595,
+              166,
+              44,
+              192
+            ],
+            "bearing_degrees": -45.900988681579975
+          },
+          {
+            "object": "DeadChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              244,
+              185,
+              60,
+              133
+            ],
+            "bearing_degrees": 7.228697357243249
+          },
+          {
+            "object": "Blood",
+            "id": 4,
+            "screen_box_xywh": [
+              305,
+              220,
+              26,
+              28
+            ],
+            "bearing_degrees": 0.00400155646246958
+          }
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "game_ticks": 30,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": -19.335937504502,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
+        "decisions": 3,
+        "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 19.3 degrees."
       },
       "frames": [
         "/recordings/doom/005.jpg",
@@ -305,284 +618,157 @@
         "attack": "Fire for 8 game ticks in the current direction.",
         "wait": "Wait for 8 game ticks."
       },
-      "step": 2,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +26.9.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.6606637835502625,
-          "backward": 0.007066809106618166,
-          "strafe_left": 0.017031420022249222,
-          "strafe_right": 0.0502251461148262,
-          "turn_left": 0.029447859153151512,
-          "turn_right": 0.036385077983140945,
-          "attack": 0.09152589738368988,
-          "wait": 0.10765397548675537
-        },
-        "observation": {
-          "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                315,
-                206,
-                8,
-                6
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                406,
-                172,
-                75,
-                137
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                161,
-                179,
-                61,
-                132
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 9,
-          "decisions": 1,
-          "feedback": "Forward executed; reward +0.8."
-        },
-        "next_observation": {
-          "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                315,
-                206,
-                8,
-                5
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                423,
-                161,
-                99,
-                161
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                124,
-                167,
-                81,
-                158
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 17,
-          "decisions": 2,
-          "feedback": "Forward executed; reward +26.9."
-        },
-        "reward": 26.877532958984375,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +26.9.",
-        "seconds": 1.768,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 4,
-      "seed": 17,
-      "observation": {
-        "health": 100.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              315,
-              208,
-              8,
-              6
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              484,
-              171,
-              155,
-              231
-            ]
-          },
-          {
-            "object": "ShotgunGuy",
-            "screen_box_xywh": [
-              10,
-              180,
-              129,
-              222
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 25,
-        "decisions": 3,
-        "feedback": "Forward executed; reward +48.6."
-      },
-      "frames": [
-        "/recordings/doom/009.jpg",
-        "/recordings/doom/010.jpg",
-        "/recordings/doom/011.jpg",
-        "/recordings/doom/012.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
       "step": 3,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +48.6.",
+      "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 19.3 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
-        "action": "forward",
+        "action": "attack",
         "probabilities": {
-          "forward": 0.6633040904998779,
-          "backward": 0.007223981432616711,
-          "strafe_left": 0.019197791814804077,
-          "strafe_right": 0.05169851705431938,
-          "turn_left": 0.0231942106038332,
-          "turn_right": 0.03103274665772915,
-          "attack": 0.09366551041603088,
-          "wait": 0.11068316549062729
+          "forward": 0.007307561580091715,
+          "backward": 0.0013934260932728648,
+          "strafe_left": 0.002504457253962755,
+          "strafe_right": 0.003821754129603505,
+          "turn_left": 0.17518864572048187,
+          "turn_right": 0.019130025058984756,
+          "attack": 0.7554708123207092,
+          "wait": 0.03518330678343773
         },
         "observation": {
           "health": 100.0,
           "ammo2": 52.0,
           "killcount": 0.0,
           "armor": 0.0,
+          "hitcount": 0.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 19.335937504502,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                315,
-                206,
-                8,
-                5
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                423,
-                161,
-                99,
-                161
-              ]
+                417,
+                218,
+                29,
+                22
+              ],
+              "bearing_degrees": -19.335937504502
             },
             {
               "object": "ShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                124,
-                167,
-                81,
-                158
-              ]
+                598,
+                162,
+                41,
+                215
+              ],
+              "bearing_degrees": -45.900988681579975
+            },
+            {
+              "object": "ChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                238,
+                171,
+                117,
+                151
+              ],
+              "bearing_degrees": 7.229113672575977
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 17,
+          "game_ticks": 22,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -19.335937504502,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
           "decisions": 2,
-          "feedback": "Forward executed; reward +26.9."
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 19.3 degrees."
         },
         "next_observation": {
           "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
           "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 19.335937504502,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                315,
-                208,
-                8,
-                6
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                484,
-                171,
-                155,
-                231
-              ]
+                417,
+                218,
+                29,
+                22
+              ],
+              "bearing_degrees": -19.335937504502
             },
             {
               "object": "ShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                10,
-                180,
-                129,
-                222
-              ]
+                595,
+                166,
+                44,
+                192
+              ],
+              "bearing_degrees": -45.900988681579975
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                244,
+                185,
+                60,
+                133
+              ],
+              "bearing_degrees": 7.228697357243249
+            },
+            {
+              "object": "Blood",
+              "id": 4,
+              "screen_box_xywh": [
+                305,
+                220,
+                26,
+                28
+              ],
+              "bearing_degrees": 0.00400155646246958
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 25,
+          "game_ticks": 30,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -19.335937504502,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
           "decisions": 3,
-          "feedback": "Forward executed; reward +48.6."
+          "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 19.3 degrees."
         },
-        "reward": 48.56329345703125,
+        "reward": 0.0,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +48.6.",
-        "seconds": 1.707,
+        "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 19.3 degrees.",
+        "seconds": 1.559,
         "subgoal": null,
         "priority": null
       }
@@ -590,54 +776,90 @@
     {
       "case": "doom",
       "revision": 5,
-      "seed": 17,
+      "seed": 65,
       "observation": {
         "health": 100.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "ammo2": 51.0,
+        "killcount": 1.0,
         "armor": 0.0,
+        "hitcount": 1.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 12.304687502864908,
+        "attack_ready": 0.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              315,
+              375,
+              213,
+              28,
+              26
+            ],
+            "bearing_degrees": -12.304687502864908
+          },
+          {
+            "object": "ShotgunGuy",
+            "id": 1,
+            "screen_box_xywh": [
+              529,
+              170,
+              99,
+              189
+            ],
+            "bearing_degrees": -38.869738679942884
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              185,
+              203,
+              108,
+              64
+            ],
+            "bearing_degrees": 13.986402648312833
+          },
+          {
+            "object": "DeadChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
               205,
-              9,
-              7
-            ]
+              214,
+              59,
+              105
+            ],
+            "bearing_degrees": 14.25965384949859
           },
           {
-            "object": "ChaingunGuy",
+            "object": "Blood",
+            "id": 4,
             "screen_box_xywh": [
-              351,
-              227,
-              1,
-              3
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              287,
-              198,
-              0,
-              0
-            ]
+              261,
+              266,
+              40,
+              23
+            ],
+            "bearing_degrees": 7.03525155809956
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 33,
+        "game_ticks": 34,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": -12.304687502864908,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
         "decisions": 4,
-        "feedback": "Forward executed; reward +58.4."
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 12.3 degrees."
       },
       "frames": [
-        "/recordings/doom/013.jpg",
-        "/recordings/doom/014.jpg",
-        "/recordings/doom/015.jpg",
-        "/recordings/doom/016.jpg"
+        "/recordings/doom/009.jpg",
+        "/recordings/doom/010.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -652,109 +874,176 @@
       "step": 4,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +58.4.",
+      "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 12.3 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
-        "action": "forward",
+        "action": "turn_right",
         "probabilities": {
-          "forward": 0.6598482131958008,
-          "backward": 0.00674543296918273,
-          "strafe_left": 0.01946954056620598,
-          "strafe_right": 0.05954667553305626,
-          "turn_left": 0.018818212673068047,
-          "turn_right": 0.036895666271448135,
-          "attack": 0.10568033158779144,
-          "wait": 0.09299597144126892
+          "forward": 0.006930675357580185,
+          "backward": 0.0022247866727411747,
+          "strafe_left": 0.0021946225315332413,
+          "strafe_right": 0.009115849621593952,
+          "turn_left": 0.004504880867898464,
+          "turn_right": 0.8889044523239136,
+          "attack": 0.040726758539676666,
+          "wait": 0.045398056507110596
         },
         "observation": {
           "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
           "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 19.335937504502,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                315,
-                208,
-                8,
-                6
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                484,
-                171,
-                155,
-                231
-              ]
+                417,
+                218,
+                29,
+                22
+              ],
+              "bearing_degrees": -19.335937504502
             },
             {
               "object": "ShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                10,
-                180,
-                129,
-                222
-              ]
+                595,
+                166,
+                44,
+                192
+              ],
+              "bearing_degrees": -45.900988681579975
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                244,
+                185,
+                60,
+                133
+              ],
+              "bearing_degrees": 7.228697357243249
+            },
+            {
+              "object": "Blood",
+              "id": 4,
+              "screen_box_xywh": [
+                305,
+                220,
+                26,
+                28
+              ],
+              "bearing_degrees": 0.00400155646246958
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 25,
+          "game_ticks": 30,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -19.335937504502,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
           "decisions": 3,
-          "feedback": "Forward executed; reward +48.6."
+          "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 19.3 degrees."
         },
         "next_observation": {
           "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
           "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 12.304687502864908,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                315,
+                375,
+                213,
+                28,
+                26
+              ],
+              "bearing_degrees": -12.304687502864908
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                529,
+                170,
+                99,
+                189
+              ],
+              "bearing_degrees": -38.869738679942884
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                185,
+                203,
+                108,
+                64
+              ],
+              "bearing_degrees": 13.986402648312833
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
                 205,
-                9,
-                7
-              ]
+                214,
+                59,
+                105
+              ],
+              "bearing_degrees": 14.25965384949859
             },
             {
-              "object": "ChaingunGuy",
+              "object": "Blood",
+              "id": 4,
               "screen_box_xywh": [
-                351,
-                227,
-                1,
-                3
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                287,
-                198,
-                0,
-                0
-              ]
+                261,
+                266,
+                40,
+                23
+              ],
+              "bearing_degrees": 7.03525155809956
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 33,
+          "game_ticks": 34,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -12.304687502864908,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
           "decisions": 4,
-          "feedback": "Forward executed; reward +58.4."
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 12.3 degrees."
         },
-        "reward": 58.429840087890625,
+        "reward": 0.0,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +58.4.",
-        "seconds": 1.742,
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 12.3 degrees.",
+        "seconds": 2.141,
         "subgoal": null,
         "priority": null
       }
@@ -762,48 +1051,856 @@
     {
       "case": "doom",
       "revision": 6,
-      "seed": 17,
+      "seed": 65,
       "observation": {
         "health": 100.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "ammo2": 51.0,
+        "killcount": 1.0,
         "armor": 0.0,
+        "hitcount": 1.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 0.0,
+        "attack_ready": 0.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              314,
-              205,
-              10,
-              9
-            ]
+              306,
+              213,
+              27,
+              25
+            ],
+            "bearing_degrees": 0.0
           },
           {
-            "object": "ChaingunGuy",
+            "object": "ShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              357,
-              197,
-              3,
-              18
-            ]
+              437,
+              174,
+              85,
+              164
+            ],
+            "bearing_degrees": -26.565051177077976
           },
           {
-            "object": "Zombieman",
+            "object": "DeadChaingunGuy",
+            "id": 2,
             "screen_box_xywh": [
-              279,
-              201,
-              4,
-              39
-            ]
+              124,
+              215,
+              63,
+              112
+            ],
+            "bearing_degrees": 26.564132403223823
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              111,
+              138,
+              115,
+              69
+            ],
+            "bearing_degrees": 25.217595685910254
+          },
+          {
+            "object": "Blood",
+            "id": 4,
+            "screen_box_xywh": [
+              187,
+              311,
+              42,
+              24
+            ],
+            "bearing_degrees": 19.33993906096447
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 41,
+        "game_ticks": 38,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 0.0,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
         "decisions": 5,
-        "feedback": "Forward executed; reward +62.9."
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 0.0 degrees."
+      },
+      "frames": [
+        "/recordings/doom/011.jpg",
+        "/recordings/doom/012.jpg"
+      ],
+      "actions": {
+        "forward": "Move forward for 8 game ticks.",
+        "backward": "Move backward for 8 game ticks.",
+        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
+        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
+        "turn_left": "Turn left for 4 game ticks.",
+        "turn_right": "Turn right for 4 game ticks.",
+        "attack": "Fire for 8 game ticks in the current direction.",
+        "wait": "Wait for 8 game ticks."
+      },
+      "step": 5,
+      "done": false,
+      "success": false,
+      "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 0.0 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
+      "decision": {
+        "controller": "model",
+        "action": "turn_right",
+        "probabilities": {
+          "forward": 0.011197895742952824,
+          "backward": 0.00256492686457932,
+          "strafe_left": 0.0026563466526567936,
+          "strafe_right": 0.00818067230284214,
+          "turn_left": 0.013420799747109413,
+          "turn_right": 0.87247234582901,
+          "attack": 0.042288102209568024,
+          "wait": 0.047218821942806244
+        },
+        "observation": {
+          "health": 100.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
+          "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 12.304687502864908,
+          "attack_ready": 0.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                375,
+                213,
+                28,
+                26
+              ],
+              "bearing_degrees": -12.304687502864908
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                529,
+                170,
+                99,
+                189
+              ],
+              "bearing_degrees": -38.869738679942884
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                185,
+                203,
+                108,
+                64
+              ],
+              "bearing_degrees": 13.986402648312833
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                205,
+                214,
+                59,
+                105
+              ],
+              "bearing_degrees": 14.25965384949859
+            },
+            {
+              "object": "Blood",
+              "id": 4,
+              "screen_box_xywh": [
+                261,
+                266,
+                40,
+                23
+              ],
+              "bearing_degrees": 7.03525155809956
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 34,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": -12.304687502864908,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 4,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 12.3 degrees."
+        },
+        "next_observation": {
+          "health": 100.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
+          "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 0.0,
+          "attack_ready": 0.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                306,
+                213,
+                27,
+                25
+              ],
+              "bearing_degrees": 0.0
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                437,
+                174,
+                85,
+                164
+              ],
+              "bearing_degrees": -26.565051177077976
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                124,
+                215,
+                63,
+                112
+              ],
+              "bearing_degrees": 26.564132403223823
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                111,
+                138,
+                115,
+                69
+              ],
+              "bearing_degrees": 25.217595685910254
+            },
+            {
+              "object": "Blood",
+              "id": 4,
+              "screen_box_xywh": [
+                187,
+                311,
+                42,
+                24
+              ],
+              "bearing_degrees": 19.33993906096447
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 38,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 0.0,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 5,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 0.0 degrees."
+        },
+        "reward": 0.0,
+        "done": false,
+        "success": false,
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 0.0 degrees.",
+        "seconds": 1.548,
+        "subgoal": null,
+        "priority": null
+      }
+    },
+    {
+      "case": "doom",
+      "revision": 7,
+      "seed": 65,
+      "observation": {
+        "health": 100.0,
+        "ammo2": 51.0,
+        "killcount": 1.0,
+        "armor": 0.0,
+        "hitcount": 1.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 345.93750008054485,
+        "attack_ready": 1.0,
+        "visible_objects": [
+          {
+            "object": "GreenArmor",
+            "id": 0,
+            "screen_box_xywh": [
+              225,
+              217,
+              29,
+              22
+            ],
+            "bearing_degrees": 14.06249991945515
+          },
+          {
+            "object": "ShotgunGuy",
+            "id": 1,
+            "screen_box_xywh": [
+              354,
+              174,
+              72,
+              152
+            ],
+            "bearing_degrees": -12.502551257622827
+          },
+          {
+            "object": "DeadChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              4,
+              267,
+              76,
+              81
+            ],
+            "bearing_degrees": 40.626474909038905
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              2,
+              107,
+              130,
+              77
+            ],
+            "bearing_degrees": 38.237364425784335
+          }
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "game_ticks": 42,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 14.06249991945515,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
+        "decisions": 6,
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 345.9 degrees."
+      },
+      "frames": [
+        "/recordings/doom/013.jpg",
+        "/recordings/doom/014.jpg"
+      ],
+      "actions": {
+        "forward": "Move forward for 8 game ticks.",
+        "backward": "Move backward for 8 game ticks.",
+        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
+        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
+        "turn_left": "Turn left for 4 game ticks.",
+        "turn_right": "Turn right for 4 game ticks.",
+        "attack": "Fire for 8 game ticks in the current direction.",
+        "wait": "Wait for 8 game ticks."
+      },
+      "step": 6,
+      "done": false,
+      "success": false,
+      "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 345.9 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
+      "decision": {
+        "controller": "model",
+        "action": "turn_right",
+        "probabilities": {
+          "forward": 0.006812079809606075,
+          "backward": 0.0015777366934344172,
+          "strafe_left": 0.0014441505772992969,
+          "strafe_right": 0.004151030443608761,
+          "turn_left": 0.007632281165570021,
+          "turn_right": 0.9251731634140015,
+          "attack": 0.025236230343580246,
+          "wait": 0.027973387390375137
+        },
+        "observation": {
+          "health": 100.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
+          "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 0.0,
+          "attack_ready": 0.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                306,
+                213,
+                27,
+                25
+              ],
+              "bearing_degrees": 0.0
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                437,
+                174,
+                85,
+                164
+              ],
+              "bearing_degrees": -26.565051177077976
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                124,
+                215,
+                63,
+                112
+              ],
+              "bearing_degrees": 26.564132403223823
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                111,
+                138,
+                115,
+                69
+              ],
+              "bearing_degrees": 25.217595685910254
+            },
+            {
+              "object": "Blood",
+              "id": 4,
+              "screen_box_xywh": [
+                187,
+                311,
+                42,
+                24
+              ],
+              "bearing_degrees": 19.33993906096447
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 38,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 0.0,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 5,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 0.0 degrees."
+        },
+        "next_observation": {
+          "health": 100.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
+          "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 345.93750008054485,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                225,
+                217,
+                29,
+                22
+              ],
+              "bearing_degrees": 14.06249991945515
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                354,
+                174,
+                72,
+                152
+              ],
+              "bearing_degrees": -12.502551257622827
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                4,
+                267,
+                76,
+                81
+              ],
+              "bearing_degrees": 40.626474909038905
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                2,
+                107,
+                130,
+                77
+              ],
+              "bearing_degrees": 38.237364425784335
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 42,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 14.06249991945515,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 6,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 345.9 degrees."
+        },
+        "reward": 0.0,
+        "done": false,
+        "success": false,
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 345.9 degrees.",
+        "seconds": 1.552,
+        "subgoal": null,
+        "priority": null
+      }
+    },
+    {
+      "case": "doom",
+      "revision": 8,
+      "seed": 65,
+      "observation": {
+        "health": 100.0,
+        "ammo2": 51.0,
+        "killcount": 1.0,
+        "armor": 0.0,
+        "hitcount": 1.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 331.87500007727067,
+        "attack_ready": 1.0,
+        "visible_objects": [
+          {
+            "object": "GreenArmor",
+            "id": 0,
+            "screen_box_xywh": [
+              133,
+              215,
+              31,
+              28
+            ],
+            "bearing_degrees": 28.12499992272933
+          },
+          {
+            "object": "ShotgunGuy",
+            "id": 1,
+            "screen_box_xywh": [
+              291,
+              174,
+              53,
+              150
+            ],
+            "bearing_degrees": 1.5599487456513543
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              0,
+              149,
+              1,
+              27
+            ],
+            "bearing_degrees": 51.28725440697832
+          }
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "game_ticks": 46,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 28.12499992272933,
+        "enemies_to_kill": 2,
+        "cleared_at_x": null,
+        "decisions": 7,
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 331.9 degrees."
+      },
+      "frames": [
+        "/recordings/doom/015.jpg",
+        "/recordings/doom/016.jpg"
+      ],
+      "actions": {
+        "forward": "Move forward for 8 game ticks.",
+        "backward": "Move backward for 8 game ticks.",
+        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
+        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
+        "turn_left": "Turn left for 4 game ticks.",
+        "turn_right": "Turn right for 4 game ticks.",
+        "attack": "Fire for 8 game ticks in the current direction.",
+        "wait": "Wait for 8 game ticks."
+      },
+      "step": 7,
+      "done": false,
+      "success": false,
+      "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 331.9 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
+      "decision": {
+        "controller": "model",
+        "action": "turn_right",
+        "probabilities": {
+          "forward": 0.010167039930820465,
+          "backward": 0.0019203060073778033,
+          "strafe_left": 0.0021403369028121233,
+          "strafe_right": 0.007757972925901413,
+          "turn_left": 0.03070899471640587,
+          "turn_right": 0.7915112972259521,
+          "attack": 0.11317639797925949,
+          "wait": 0.04261757805943489
+        },
+        "observation": {
+          "health": 100.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
+          "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 345.93750008054485,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                225,
+                217,
+                29,
+                22
+              ],
+              "bearing_degrees": 14.06249991945515
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                354,
+                174,
+                72,
+                152
+              ],
+              "bearing_degrees": -12.502551257622827
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                4,
+                267,
+                76,
+                81
+              ],
+              "bearing_degrees": 40.626474909038905
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                2,
+                107,
+                130,
+                77
+              ],
+              "bearing_degrees": 38.237364425784335
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 42,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 14.06249991945515,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 6,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 345.9 degrees."
+        },
+        "next_observation": {
+          "health": 100.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
+          "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 331.87500007727067,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                133,
+                215,
+                31,
+                28
+              ],
+              "bearing_degrees": 28.12499992272933
+            },
+            {
+              "object": "ShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                291,
+                174,
+                53,
+                150
+              ],
+              "bearing_degrees": 1.5599487456513543
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                0,
+                149,
+                1,
+                27
+              ],
+              "bearing_degrees": 51.28725440697832
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 46,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 28.12499992272933,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 7,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 331.9 degrees."
+        },
+        "reward": 0.0,
+        "done": false,
+        "success": false,
+        "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 331.9 degrees.",
+        "seconds": 2.248,
+        "subgoal": null,
+        "priority": null
+      }
+    },
+    {
+      "case": "doom",
+      "revision": 9,
+      "seed": 65,
+      "observation": {
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
+        "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 331.87500007727067,
+        "attack_ready": 0.0,
+        "visible_objects": [
+          {
+            "object": "GreenArmor",
+            "id": 0,
+            "screen_box_xywh": [
+              133,
+              215,
+              31,
+              28
+            ],
+            "bearing_degrees": 28.12499992272933
+          },
+          {
+            "object": "DeadShotgunGuy",
+            "id": 1,
+            "screen_box_xywh": [
+              274,
+              182,
+              76,
+              140
+            ],
+            "bearing_degrees": 1.5601290615554149
+          },
+          {
+            "object": "Blood",
+            "id": 6,
+            "screen_box_xywh": [
+              299,
+              223,
+              43,
+              25
+            ],
+            "bearing_degrees": 0.033026036817773274
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              0,
+              285,
+              22,
+              31
+            ],
+            "bearing_degrees": 49.37169039260789
+          }
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "game_ticks": 54,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 28.12499992272933,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
+        "decisions": 8,
+        "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 331.9 degrees."
       },
       "frames": [
         "/recordings/doom/017.jpg",
@@ -821,174 +1918,521 @@
         "attack": "Fire for 8 game ticks in the current direction.",
         "wait": "Wait for 8 game ticks."
       },
-      "step": 5,
+      "step": 8,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +62.9.",
+      "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 331.9 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
-        "action": "forward",
+        "action": "attack",
         "probabilities": {
-          "forward": 0.7054487466812134,
-          "backward": 0.0033462615683674812,
-          "strafe_left": 0.008236659690737724,
-          "strafe_right": 0.026125377044081688,
-          "turn_left": 0.004884389694780111,
-          "turn_right": 0.013001583516597748,
-          "attack": 0.15804925560951233,
-          "wait": 0.08090776950120926
+          "forward": 0.01147381030023098,
+          "backward": 0.0017648542998358607,
+          "strafe_left": 0.0019406996434554458,
+          "strafe_right": 0.0051855165511369705,
+          "turn_left": 0.22428175806999207,
+          "turn_right": 0.024179751053452492,
+          "attack": 0.6923404932022095,
+          "wait": 0.038833096623420715
         },
         "observation": {
           "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "ammo2": 51.0,
+          "killcount": 1.0,
           "armor": 0.0,
+          "hitcount": 1.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 331.87500007727067,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                315,
-                205,
-                9,
-                7
-              ]
+                133,
+                215,
+                31,
+                28
+              ],
+              "bearing_degrees": 28.12499992272933
             },
             {
-              "object": "ChaingunGuy",
+              "object": "ShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                351,
-                227,
-                1,
-                3
-              ]
+                291,
+                174,
+                53,
+                150
+              ],
+              "bearing_degrees": 1.5599487456513543
             },
             {
-              "object": "Zombieman",
+              "object": "Chaingun",
+              "id": 5,
               "screen_box_xywh": [
-                287,
-                198,
                 0,
-                0
-              ]
+                149,
+                1,
+                27
+              ],
+              "bearing_degrees": 51.28725440697832
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 33,
-          "decisions": 4,
-          "feedback": "Forward executed; reward +58.4."
+          "game_ticks": 46,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 28.12499992272933,
+          "enemies_to_kill": 2,
+          "cleared_at_x": null,
+          "decisions": 7,
+          "feedback": "turn_right: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 331.9 degrees."
         },
         "next_observation": {
           "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 331.87500007727067,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                314,
-                205,
-                10,
-                9
-              ]
+                133,
+                215,
+                31,
+                28
+              ],
+              "bearing_degrees": 28.12499992272933
             },
             {
-              "object": "ChaingunGuy",
+              "object": "DeadShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                357,
-                197,
-                3,
-                18
-              ]
+                274,
+                182,
+                76,
+                140
+              ],
+              "bearing_degrees": 1.5601290615554149
             },
             {
-              "object": "Zombieman",
+              "object": "Blood",
+              "id": 6,
               "screen_box_xywh": [
-                279,
-                201,
-                4,
-                39
-              ]
+                299,
+                223,
+                43,
+                25
+              ],
+              "bearing_degrees": 0.033026036817773274
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                0,
+                285,
+                22,
+                31
+              ],
+              "bearing_degrees": 49.37169039260789
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 41,
-          "decisions": 5,
-          "feedback": "Forward executed; reward +62.9."
+          "game_ticks": 54,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 28.12499992272933,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 8,
+          "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 331.9 degrees."
         },
-        "reward": 62.91886901855469,
+        "reward": 0.0,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +62.9.",
-        "seconds": 1.737,
+        "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 331.9 degrees.",
+        "seconds": 1.568,
         "subgoal": null,
         "priority": null
       }
     },
     {
       "case": "doom",
-      "revision": 7,
-      "seed": 17,
+      "revision": 10,
+      "seed": 65,
       "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 338.90625007890776,
+        "attack_ready": 0.0,
         "visible_objects": [
           {
-            "object": "BulletPuff",
-            "screen_box_xywh": [
-              366,
-              252,
-              26,
-              29
-            ]
-          },
-          {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              314,
-              208,
-              9,
-              9
-            ]
+              181,
+              214,
+              30,
+              27
+            ],
+            "bearing_degrees": 21.09374992109224
           },
           {
-            "object": "ChaingunGuy",
+            "object": "Shotgun",
+            "id": 7,
             "screen_box_xywh": [
-              361,
-              195,
-              8,
-              53
-            ]
+              304,
+              233,
+              82,
+              33
+            ],
+            "bearing_degrees": -5.316610052584963
           },
           {
-            "object": "Zombieman",
+            "object": "DeadShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              256,
-              194,
-              15,
-              62
-            ]
+              304,
+              219,
+              91,
+              102
+            ],
+            "bearing_degrees": -5.471042804475815
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              0,
+              251,
+              99,
+              77
+            ],
+            "bearing_degrees": 41.6767322567386
+          },
+          {
+            "object": "DeadChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              0,
+              296,
+              26,
+              65
+            ],
+            "bearing_degrees": 47.65734562342925
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 49,
-        "decisions": 6,
-        "feedback": "Forward executed; reward +69.7."
+        "game_ticks": 58,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 21.09374992109224,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
+        "decisions": 9,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 338.9 degrees."
       },
       "frames": [
         "/recordings/doom/021.jpg",
-        "/recordings/doom/022.jpg",
+        "/recordings/doom/022.jpg"
+      ],
+      "actions": {
+        "forward": "Move forward for 8 game ticks.",
+        "backward": "Move backward for 8 game ticks.",
+        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
+        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
+        "turn_left": "Turn left for 4 game ticks.",
+        "turn_right": "Turn right for 4 game ticks.",
+        "attack": "Fire for 8 game ticks in the current direction.",
+        "wait": "Wait for 8 game ticks."
+      },
+      "step": 9,
+      "done": false,
+      "success": false,
+      "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 338.9 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
+      "decision": {
+        "controller": "model",
+        "action": "turn_left",
+        "probabilities": {
+          "forward": 0.20871582627296448,
+          "backward": 0.0033250832930207253,
+          "strafe_left": 0.004636730533093214,
+          "strafe_right": 0.010152403265237808,
+          "turn_left": 0.6795501112937927,
+          "turn_right": 0.03839067369699478,
+          "attack": 0.009592505171895027,
+          "wait": 0.045636676251888275
+        },
+        "observation": {
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
+          "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 331.87500007727067,
+          "attack_ready": 0.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                133,
+                215,
+                31,
+                28
+              ],
+              "bearing_degrees": 28.12499992272933
+            },
+            {
+              "object": "DeadShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                274,
+                182,
+                76,
+                140
+              ],
+              "bearing_degrees": 1.5601290615554149
+            },
+            {
+              "object": "Blood",
+              "id": 6,
+              "screen_box_xywh": [
+                299,
+                223,
+                43,
+                25
+              ],
+              "bearing_degrees": 0.033026036817773274
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                0,
+                285,
+                22,
+                31
+              ],
+              "bearing_degrees": 49.37169039260789
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 54,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 28.12499992272933,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 8,
+          "feedback": "attack: ammo -1, hits +1, kills +1; position (896.0, 0.0), heading 331.9 degrees."
+        },
+        "next_observation": {
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
+          "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 338.90625007890776,
+          "attack_ready": 0.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                181,
+                214,
+                30,
+                27
+              ],
+              "bearing_degrees": 21.09374992109224
+            },
+            {
+              "object": "Shotgun",
+              "id": 7,
+              "screen_box_xywh": [
+                304,
+                233,
+                82,
+                33
+              ],
+              "bearing_degrees": -5.316610052584963
+            },
+            {
+              "object": "DeadShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                304,
+                219,
+                91,
+                102
+              ],
+              "bearing_degrees": -5.471042804475815
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                0,
+                251,
+                99,
+                77
+              ],
+              "bearing_degrees": 41.6767322567386
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                0,
+                296,
+                26,
+                65
+              ],
+              "bearing_degrees": 47.65734562342925
+            }
+          ],
+          "image_size": [
+            640,
+            480
+          ],
+          "game_ticks": 58,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 21.09374992109224,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 9,
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 338.9 degrees."
+        },
+        "reward": 0.0,
+        "done": false,
+        "success": false,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 338.9 degrees.",
+        "seconds": 1.617,
+        "subgoal": null,
+        "priority": null
+      }
+    },
+    {
+      "case": "doom",
+      "revision": 11,
+      "seed": 65,
+      "observation": {
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
+        "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 896.0,
+        "position_y": 0.0,
+        "angle": 351.21093758177267,
+        "attack_ready": 0.0,
+        "visible_objects": [
+          {
+            "object": "GreenArmor",
+            "id": 0,
+            "screen_box_xywh": [
+              256,
+              213,
+              28,
+              25
+            ],
+            "bearing_degrees": 8.789062418227331
+          },
+          {
+            "object": "DeadShotgunGuy",
+            "id": 1,
+            "screen_box_xywh": [
+              375,
+              220,
+              94,
+              106
+            ],
+            "bearing_degrees": -17.775747913714724
+          },
+          {
+            "object": "Shotgun",
+            "id": 7,
+            "screen_box_xywh": [
+              370,
+              164,
+              85,
+              34
+            ],
+            "bearing_degrees": -17.011559064594508
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              88,
+              243,
+              109,
+              66
+            ],
+            "bearing_degrees": 28.932244797067256
+          },
+          {
+            "object": "DeadChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              48,
+              280,
+              92,
+              59
+            ],
+            "bearing_degrees": 35.35265812056434
+          }
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "game_ticks": 62,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 8.789062418227331,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
+        "decisions": 10,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 351.2 degrees."
+      },
+      "frames": [
         "/recordings/doom/023.jpg",
         "/recordings/doom/024.jpg"
       ],
@@ -1002,179 +2446,277 @@
         "attack": "Fire for 8 game ticks in the current direction.",
         "wait": "Wait for 8 game ticks."
       },
-      "step": 6,
+      "step": 10,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +69.7.",
+      "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 351.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
-        "action": "forward",
+        "action": "turn_left",
         "probabilities": {
-          "forward": 0.6325768828392029,
-          "backward": 0.004032663535326719,
-          "strafe_left": 0.016779353842139244,
-          "strafe_right": 0.039807550609111786,
-          "turn_left": 0.012784479185938835,
-          "turn_right": 0.029121335595846176,
-          "attack": 0.17978784441947937,
-          "wait": 0.0851098820567131
+          "forward": 0.26742392778396606,
+          "backward": 0.00674922252073884,
+          "strafe_left": 0.007166450843214989,
+          "strafe_right": 0.023880716413259506,
+          "turn_left": 0.44568774104118347,
+          "turn_right": 0.18402524292469025,
+          "attack": 0.01772134006023407,
+          "wait": 0.04734526947140694
         },
         "observation": {
           "health": 100.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 338.90625007890776,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                314,
-                205,
-                10,
-                9
-              ]
+                181,
+                214,
+                30,
+                27
+              ],
+              "bearing_degrees": 21.09374992109224
             },
             {
-              "object": "ChaingunGuy",
+              "object": "Shotgun",
+              "id": 7,
               "screen_box_xywh": [
-                357,
-                197,
-                3,
-                18
-              ]
+                304,
+                233,
+                82,
+                33
+              ],
+              "bearing_degrees": -5.316610052584963
             },
             {
-              "object": "Zombieman",
+              "object": "DeadShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                279,
-                201,
-                4,
-                39
-              ]
+                304,
+                219,
+                91,
+                102
+              ],
+              "bearing_degrees": -5.471042804475815
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                0,
+                251,
+                99,
+                77
+              ],
+              "bearing_degrees": 41.6767322567386
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                0,
+                296,
+                26,
+                65
+              ],
+              "bearing_degrees": 47.65734562342925
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 41,
-          "decisions": 5,
-          "feedback": "Forward executed; reward +62.9."
+          "game_ticks": 58,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 21.09374992109224,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 9,
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 338.9 degrees."
         },
         "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 351.21093758177267,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                366,
-                252,
-                26,
-                29
-              ]
-            },
-            {
               "object": "GreenArmor",
-              "screen_box_xywh": [
-                314,
-                208,
-                9,
-                9
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                361,
-                195,
-                8,
-                53
-              ]
-            },
-            {
-              "object": "Zombieman",
+              "id": 0,
               "screen_box_xywh": [
                 256,
-                194,
-                15,
-                62
-              ]
+                213,
+                28,
+                25
+              ],
+              "bearing_degrees": 8.789062418227331
+            },
+            {
+              "object": "DeadShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                375,
+                220,
+                94,
+                106
+              ],
+              "bearing_degrees": -17.775747913714724
+            },
+            {
+              "object": "Shotgun",
+              "id": 7,
+              "screen_box_xywh": [
+                370,
+                164,
+                85,
+                34
+              ],
+              "bearing_degrees": -17.011559064594508
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                88,
+                243,
+                109,
+                66
+              ],
+              "bearing_degrees": 28.932244797067256
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                48,
+                280,
+                92,
+                59
+              ],
+              "bearing_degrees": 35.35265812056434
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 49,
-          "decisions": 6,
-          "feedback": "Forward executed; reward +69.7."
+          "game_ticks": 62,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 8.789062418227331,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 10,
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 351.2 degrees."
         },
-        "reward": 69.7052001953125,
+        "reward": 0.0,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +69.7.",
-        "seconds": 1.693,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 351.2 degrees.",
+        "seconds": 1.574,
         "subgoal": null,
         "priority": null
       }
     },
     {
       "case": "doom",
-      "revision": 8,
-      "seed": 17,
+      "revision": 12,
+      "seed": 65,
       "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 918.4937744140625,
+        "position_y": -3.4611053466796875,
+        "angle": 351.21093758177267,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
-            "object": "BulletPuff",
-            "screen_box_xywh": [
-              378,
-              182,
-              79,
-              83
-            ]
-          },
-          {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              311,
-              205,
-              10,
-              8
-            ]
+              253,
+              219,
+              29,
+              22
+            ],
+            "bearing_degrees": 9.292997559203059
           },
           {
-            "object": "Zombieman",
+            "object": "DeadShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              214,
-              176,
-              37,
-              78
-            ]
+              372,
+              271,
+              139,
+              64
+            ],
+            "bearing_degrees": -20.91018807212089
           },
           {
-            "object": "ChaingunGuy",
+            "object": "Shotgun",
+            "id": 7,
             "screen_box_xywh": [
-              363,
-              173,
-              22,
-              76
-            ]
+              373,
+              151,
+              97,
+              39
+            ],
+            "bearing_degrees": -18.572486118911513
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
+              50,
+              253,
+              128,
+              77
+            ],
+            "bearing_degrees": 32.666083247433164
+          },
+          {
+            "object": "DeadChaingunGuy",
+            "id": 2,
+            "screen_box_xywh": [
+              0,
+              300,
+              101,
+              72
+            ],
+            "bearing_degrees": 40.82812176698667
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 57,
-        "decisions": 7,
-        "feedback": "Forward executed; reward +73.4."
+        "game_ticks": 70,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 9.292997559203059,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
+        "decisions": 11,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (918.5, -3.5), heading 351.2 degrees."
       },
       "frames": [
         "/recordings/doom/025.jpg",
@@ -1192,188 +2734,266 @@
         "attack": "Fire for 8 game ticks in the current direction.",
         "wait": "Wait for 8 game ticks."
       },
-      "step": 7,
+      "step": 11,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +73.4.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (918.5, -3.5), heading 351.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.6097672581672668,
-          "backward": 0.006658612750470638,
-          "strafe_left": 0.033985674381256104,
-          "strafe_right": 0.05283907800912857,
-          "turn_left": 0.014857799746096134,
-          "turn_right": 0.043603815138339996,
-          "attack": 0.14492997527122498,
-          "wait": 0.09335775673389435
+          "forward": 0.794326663017273,
+          "backward": 0.005950337275862694,
+          "strafe_left": 0.006434426177293062,
+          "strafe_right": 0.020288115367293358,
+          "turn_left": 0.053875070065259933,
+          "turn_right": 0.05776433274149895,
+          "attack": 0.019058765843510628,
+          "wait": 0.042302291840314865
         },
         "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 896.0,
+          "position_y": 0.0,
+          "angle": 351.21093758177267,
+          "attack_ready": 0.0,
           "visible_objects": [
             {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                366,
-                252,
-                26,
-                29
-              ]
-            },
-            {
               "object": "GreenArmor",
-              "screen_box_xywh": [
-                314,
-                208,
-                9,
-                9
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                361,
-                195,
-                8,
-                53
-              ]
-            },
-            {
-              "object": "Zombieman",
+              "id": 0,
               "screen_box_xywh": [
                 256,
-                194,
-                15,
-                62
-              ]
+                213,
+                28,
+                25
+              ],
+              "bearing_degrees": 8.789062418227331
+            },
+            {
+              "object": "DeadShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                375,
+                220,
+                94,
+                106
+              ],
+              "bearing_degrees": -17.775747913714724
+            },
+            {
+              "object": "Shotgun",
+              "id": 7,
+              "screen_box_xywh": [
+                370,
+                164,
+                85,
+                34
+              ],
+              "bearing_degrees": -17.011559064594508
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                88,
+                243,
+                109,
+                66
+              ],
+              "bearing_degrees": 28.932244797067256
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                48,
+                280,
+                92,
+                59
+              ],
+              "bearing_degrees": 35.35265812056434
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 49,
-          "decisions": 6,
-          "feedback": "Forward executed; reward +69.7."
+          "game_ticks": 62,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 8.789062418227331,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 10,
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (896.0, 0.0), heading 351.2 degrees."
         },
         "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 918.4937744140625,
+          "position_y": -3.4611053466796875,
+          "angle": 351.21093758177267,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                378,
-                182,
-                79,
-                83
-              ]
-            },
-            {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                311,
-                205,
-                10,
-                8
-              ]
+                253,
+                219,
+                29,
+                22
+              ],
+              "bearing_degrees": 9.292997559203059
             },
             {
-              "object": "Zombieman",
+              "object": "DeadShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                214,
-                176,
-                37,
-                78
-              ]
+                372,
+                271,
+                139,
+                64
+              ],
+              "bearing_degrees": -20.91018807212089
             },
             {
-              "object": "ChaingunGuy",
+              "object": "Shotgun",
+              "id": 7,
               "screen_box_xywh": [
-                363,
-                173,
-                22,
-                76
-              ]
+                373,
+                151,
+                97,
+                39
+              ],
+              "bearing_degrees": -18.572486118911513
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                50,
+                253,
+                128,
+                77
+              ],
+              "bearing_degrees": 32.666083247433164
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                0,
+                300,
+                101,
+                72
+              ],
+              "bearing_degrees": 40.82812176698667
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 57,
-          "decisions": 7,
-          "feedback": "Forward executed; reward +73.4."
+          "game_ticks": 70,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 9.292997559203059,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 11,
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (918.5, -3.5), heading 351.2 degrees."
         },
-        "reward": 73.41630554199219,
+        "reward": 22.4937744140625,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +73.4.",
-        "seconds": 2.278,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (918.5, -3.5), heading 351.2 degrees.",
+        "seconds": 1.544,
         "subgoal": null,
         "priority": null
       }
     },
     {
       "case": "doom",
-      "revision": 9,
-      "seed": 17,
+      "revision": 13,
+      "seed": 65,
       "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 964.6354217529297,
+        "position_y": -10.56085205078125,
+        "angle": 351.21093758177267,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              309,
+              243,
               211,
-              12,
-              10
-            ]
+              34,
+              30
+            ],
+            "bearing_degrees": 10.530477510294645
           },
           {
-            "object": "Zombieman",
+            "object": "Shotgun",
+            "id": 7,
             "screen_box_xywh": [
-              171,
-              194,
-              51,
-              108
-            ]
+              393,
+              314,
+              150,
+              61
+            ],
+            "bearing_degrees": -26.067172152797127
           },
           {
-            "object": "ChaingunGuy",
+            "object": "DeadShotgunGuy",
+            "id": 1,
             "screen_box_xywh": [
-              288,
-              228,
+              406,
+              289,
+              229,
+              105
+            ],
+            "bearing_degrees": -32.13060053116817
+          },
+          {
+            "object": "Chaingun",
+            "id": 5,
+            "screen_box_xywh": [
               0,
-              2
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              376,
-              196,
-              51,
-              106
-            ]
+              258,
+              97,
+              83
+            ],
+            "bearing_degrees": 45.41116571946702
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 65,
-        "decisions": 8,
-        "feedback": "Forward executed; reward +69.7."
+        "game_ticks": 78,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 10.530477510294645,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
+        "decisions": 12,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (964.6, -10.6), heading 351.2 degrees."
       },
       "frames": [
         "/recordings/doom/029.jpg",
@@ -1391,188 +3011,222 @@
         "attack": "Fire for 8 game ticks in the current direction.",
         "wait": "Wait for 8 game ticks."
       },
-      "step": 8,
+      "step": 12,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +69.7.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (964.6, -10.6), heading 351.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.5779632925987244,
-          "backward": 0.008832269348204136,
-          "strafe_left": 0.03412298858165741,
-          "strafe_right": 0.05478573590517044,
-          "turn_left": 0.01474033948034048,
-          "turn_right": 0.04159249737858772,
-          "attack": 0.17606854438781738,
-          "wait": 0.0918942540884018
+          "forward": 0.8107572197914124,
+          "backward": 0.004995821043848991,
+          "strafe_left": 0.014906042255461216,
+          "strafe_right": 0.027433067560195923,
+          "turn_left": 0.052710190415382385,
+          "turn_right": 0.04295024648308754,
+          "attack": 0.01444073673337698,
+          "wait": 0.03180677443742752
         },
         "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 918.4937744140625,
+          "position_y": -3.4611053466796875,
+          "angle": 351.21093758177267,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                378,
-                182,
-                79,
-                83
-              ]
-            },
-            {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                311,
-                205,
-                10,
-                8
-              ]
+                253,
+                219,
+                29,
+                22
+              ],
+              "bearing_degrees": 9.292997559203059
             },
             {
-              "object": "Zombieman",
+              "object": "DeadShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                214,
-                176,
-                37,
-                78
-              ]
+                372,
+                271,
+                139,
+                64
+              ],
+              "bearing_degrees": -20.91018807212089
             },
             {
-              "object": "ChaingunGuy",
+              "object": "Shotgun",
+              "id": 7,
               "screen_box_xywh": [
-                363,
-                173,
-                22,
-                76
-              ]
+                373,
+                151,
+                97,
+                39
+              ],
+              "bearing_degrees": -18.572486118911513
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                50,
+                253,
+                128,
+                77
+              ],
+              "bearing_degrees": 32.666083247433164
+            },
+            {
+              "object": "DeadChaingunGuy",
+              "id": 2,
+              "screen_box_xywh": [
+                0,
+                300,
+                101,
+                72
+              ],
+              "bearing_degrees": 40.82812176698667
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 57,
-          "decisions": 7,
-          "feedback": "Forward executed; reward +73.4."
+          "game_ticks": 70,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 9.292997559203059,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 11,
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (918.5, -3.5), heading 351.2 degrees."
         },
         "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 964.6354217529297,
+          "position_y": -10.56085205078125,
+          "angle": 351.21093758177267,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                309,
+                243,
                 211,
-                12,
-                10
-              ]
+                34,
+                30
+              ],
+              "bearing_degrees": 10.530477510294645
             },
             {
-              "object": "Zombieman",
+              "object": "Shotgun",
+              "id": 7,
               "screen_box_xywh": [
-                171,
-                194,
-                51,
-                108
-              ]
+                393,
+                314,
+                150,
+                61
+              ],
+              "bearing_degrees": -26.067172152797127
             },
             {
-              "object": "ChaingunGuy",
+              "object": "DeadShotgunGuy",
+              "id": 1,
               "screen_box_xywh": [
-                288,
-                228,
+                406,
+                289,
+                229,
+                105
+              ],
+              "bearing_degrees": -32.13060053116817
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
                 0,
-                2
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                376,
-                196,
-                51,
-                106
-              ]
+                258,
+                97,
+                83
+              ],
+              "bearing_degrees": 45.41116571946702
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 65,
-          "decisions": 8,
-          "feedback": "Forward executed; reward +69.7."
+          "game_ticks": 78,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 10.530477510294645,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 12,
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (964.6, -10.6), heading 351.2 degrees."
         },
-        "reward": 69.73719787597656,
+        "reward": 46.14164733886719,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +69.7.",
-        "seconds": 1.664,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (964.6, -10.6), heading 351.2 degrees.",
+        "seconds": 1.553,
         "subgoal": null,
         "priority": null
       }
     },
     {
       "case": "doom",
-      "revision": 10,
-      "seed": 17,
+      "revision": 14,
+      "seed": 65,
       "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 1018.1010589599609,
+        "position_y": -15.996292114257812,
+        "angle": 351.21093758177267,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              307,
-              205,
-              13,
-              12
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              75,
-              151,
-              102,
-              168
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              281,
-              191,
-              2,
-              28
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              403,
-              154,
-              81,
-              160
-            ]
+              232,
+              223,
+              40,
+              36
+            ],
+            "bearing_degrees": 11.904475482653424
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 73,
-        "decisions": 9,
-        "feedback": "Forward executed; reward +68.1."
+        "game_ticks": 86,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 11.904475482653424,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
+        "decisions": 13,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1018.1, -16.0), heading 351.2 degrees."
       },
       "frames": [
         "/recordings/doom/033.jpg",
@@ -1590,818 +3244,135 @@
         "attack": "Fire for 8 game ticks in the current direction.",
         "wait": "Wait for 8 game ticks."
       },
-      "step": 9,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +68.1.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.617345929145813,
-          "backward": 0.008317333646118641,
-          "strafe_left": 0.03284022957086563,
-          "strafe_right": 0.06382199376821518,
-          "turn_left": 0.0237779151648283,
-          "turn_right": 0.034470099955797195,
-          "attack": 0.12442925572395325,
-          "wait": 0.09499718993902206
-        },
-        "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                309,
-                211,
-                12,
-                10
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                171,
-                194,
-                51,
-                108
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                288,
-                228,
-                0,
-                2
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                376,
-                196,
-                51,
-                106
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 65,
-          "decisions": 8,
-          "feedback": "Forward executed; reward +69.7."
-        },
-        "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                307,
-                205,
-                13,
-                12
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                75,
-                151,
-                102,
-                168
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                281,
-                191,
-                2,
-                28
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                403,
-                154,
-                81,
-                160
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 73,
-          "decisions": 9,
-          "feedback": "Forward executed; reward +68.1."
-        },
-        "reward": 68.0633544921875,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +68.1.",
-        "seconds": 1.657,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 11,
-      "seed": 17,
-      "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              306,
-              210,
-              14,
-              11
-            ]
-          },
-          {
-            "object": "Zombieman",
-            "screen_box_xywh": [
-              0,
-              244,
-              17,
-              24
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              273,
-              193,
-              4,
-              36
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              480,
-              133,
-              159,
-              269
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 81,
-        "decisions": 10,
-        "feedback": "Forward executed; reward +67.3."
-      },
-      "frames": [
-        "/recordings/doom/037.jpg",
-        "/recordings/doom/038.jpg",
-        "/recordings/doom/039.jpg",
-        "/recordings/doom/040.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 10,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +67.3.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.5972020626068115,
-          "backward": 0.009122345596551895,
-          "strafe_left": 0.027699006721377373,
-          "strafe_right": 0.0652836486697197,
-          "turn_left": 0.026099104434251785,
-          "turn_right": 0.04255804419517517,
-          "attack": 0.1337854415178299,
-          "wait": 0.09825032949447632
-        },
-        "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                307,
-                205,
-                13,
-                12
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                75,
-                151,
-                102,
-                168
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                281,
-                191,
-                2,
-                28
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                403,
-                154,
-                81,
-                160
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 73,
-          "decisions": 9,
-          "feedback": "Forward executed; reward +68.1."
-        },
-        "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                306,
-                210,
-                14,
-                11
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                0,
-                244,
-                17,
-                24
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                273,
-                193,
-                4,
-                36
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                480,
-                133,
-                159,
-                269
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 81,
-          "decisions": 10,
-          "feedback": "Forward executed; reward +67.3."
-        },
-        "reward": 67.30177307128906,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +67.3.",
-        "seconds": 1.159,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 12,
-      "seed": 17,
-      "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              304,
-              211,
-              16,
-              14
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              260,
-              194,
-              12,
-              50
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 89,
-        "decisions": 11,
-        "feedback": "Forward executed; reward +67.0."
-      },
-      "frames": [
-        "/recordings/doom/041.jpg",
-        "/recordings/doom/042.jpg",
-        "/recordings/doom/043.jpg",
-        "/recordings/doom/044.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 11,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +67.0.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.6774832010269165,
-          "backward": 0.006677008233964443,
-          "strafe_left": 0.02724079042673111,
-          "strafe_right": 0.04159579426050186,
-          "turn_left": 0.018732760101556778,
-          "turn_right": 0.025403039529919624,
-          "attack": 0.11095263063907623,
-          "wait": 0.09191478043794632
-        },
-        "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                306,
-                210,
-                14,
-                11
-              ]
-            },
-            {
-              "object": "Zombieman",
-              "screen_box_xywh": [
-                0,
-                244,
-                17,
-                24
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                273,
-                193,
-                4,
-                36
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                480,
-                133,
-                159,
-                269
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 81,
-          "decisions": 10,
-          "feedback": "Forward executed; reward +67.3."
-        },
-        "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                304,
-                211,
-                16,
-                14
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                260,
-                194,
-                12,
-                50
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 89,
-          "decisions": 11,
-          "feedback": "Forward executed; reward +67.0."
-        },
-        "reward": 66.95526123046875,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +67.0.",
-        "seconds": 1.702,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 13,
-      "seed": 17,
-      "observation": {
-        "health": 82.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              303,
-              204,
-              17,
-              16
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              238,
-              181,
-              23,
-              61
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 97,
-        "decisions": 12,
-        "feedback": "Forward executed; reward +66.8."
-      },
-      "frames": [
-        "/recordings/doom/045.jpg",
-        "/recordings/doom/046.jpg",
-        "/recordings/doom/047.jpg",
-        "/recordings/doom/048.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 12,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +66.8.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.5851162672042847,
-          "backward": 0.005155946593731642,
-          "strafe_left": 0.035930465906858444,
-          "strafe_right": 0.051962368190288544,
-          "turn_left": 0.020916055887937546,
-          "turn_right": 0.02964618429541588,
-          "attack": 0.17481057345867157,
-          "wait": 0.09646209329366684
-        },
-        "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                304,
-                211,
-                16,
-                14
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                260,
-                194,
-                12,
-                50
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 89,
-          "decisions": 11,
-          "feedback": "Forward executed; reward +67.0."
-        },
-        "next_observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                303,
-                204,
-                17,
-                16
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                238,
-                181,
-                23,
-                61
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 97,
-          "decisions": 12,
-          "feedback": "Forward executed; reward +66.8."
-        },
-        "reward": 66.79766845703125,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +66.8.",
-        "seconds": 2.23,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 14,
-      "seed": 17,
-      "observation": {
-        "health": 66.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              302,
-              215,
-              20,
-              18
-            ]
-          },
-          {
-            "object": "ShotgunGuy",
-            "screen_box_xywh": [
-              365,
-              199,
-              12,
-              77
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              211,
-              196,
-              38,
-              76
-            ]
-          },
-          {
-            "object": "BulletPuff",
-            "screen_box_xywh": [
-              268,
-              241,
-              4,
-              4
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 105,
-        "decisions": 13,
-        "feedback": "Forward executed; reward +73.6."
-      },
-      "frames": [
-        "/recordings/doom/049.jpg",
-        "/recordings/doom/050.jpg",
-        "/recordings/doom/051.jpg",
-        "/recordings/doom/052.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
       "step": 13,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +73.6.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (1018.1, -16.0), heading 351.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.6641899943351746,
-          "backward": 0.006599111016839743,
-          "strafe_left": 0.028230292722582817,
-          "strafe_right": 0.0730685293674469,
-          "turn_left": 0.018438978120684624,
-          "turn_right": 0.034519731998443604,
-          "attack": 0.08703337609767914,
-          "wait": 0.08791997283697128
+          "forward": 0.3483598232269287,
+          "backward": 0.007014950271695852,
+          "strafe_left": 0.02873826213181019,
+          "strafe_right": 0.04843474552035332,
+          "turn_left": 0.3474452495574951,
+          "turn_right": 0.1265478879213333,
+          "attack": 0.01885007694363594,
+          "wait": 0.07460892200469971
         },
         "observation": {
-          "health": 82.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 964.6354217529297,
+          "position_y": -10.56085205078125,
+          "angle": 351.21093758177267,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                303,
-                204,
-                17,
-                16
-              ]
+                243,
+                211,
+                34,
+                30
+              ],
+              "bearing_degrees": 10.530477510294645
             },
             {
-              "object": "ChaingunGuy",
+              "object": "Shotgun",
+              "id": 7,
               "screen_box_xywh": [
-                238,
-                181,
-                23,
+                393,
+                314,
+                150,
                 61
-              ]
+              ],
+              "bearing_degrees": -26.067172152797127
+            },
+            {
+              "object": "DeadShotgunGuy",
+              "id": 1,
+              "screen_box_xywh": [
+                406,
+                289,
+                229,
+                105
+              ],
+              "bearing_degrees": -32.13060053116817
+            },
+            {
+              "object": "Chaingun",
+              "id": 5,
+              "screen_box_xywh": [
+                0,
+                258,
+                97,
+                83
+              ],
+              "bearing_degrees": 45.41116571946702
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 97,
+          "game_ticks": 78,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 10.530477510294645,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 12,
-          "feedback": "Forward executed; reward +66.8."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (964.6, -10.6), heading 351.2 degrees."
         },
         "next_observation": {
-          "health": 66.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1018.1010589599609,
+          "position_y": -15.996292114257812,
+          "angle": 351.21093758177267,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                302,
-                215,
-                20,
-                18
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                365,
-                199,
-                12,
-                77
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                211,
-                196,
-                38,
-                76
-              ]
-            },
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                268,
-                241,
-                4,
-                4
-              ]
+                232,
+                223,
+                40,
+                36
+              ],
+              "bearing_degrees": 11.904475482653424
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 105,
+          "game_ticks": 86,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 11.904475482653424,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 13,
-          "feedback": "Forward executed; reward +73.6."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1018.1, -16.0), heading 351.2 degrees."
         },
-        "reward": 73.60614013671875,
+        "reward": 53.46563720703125,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +73.6.",
-        "seconds": 1.713,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1018.1, -16.0), heading 351.2 degrees.",
+        "seconds": 1.744,
         "subgoal": null,
         "priority": null
       }
@@ -2409,63 +3380,46 @@
     {
       "case": "doom",
       "revision": 15,
-      "seed": 17,
+      "seed": 65,
       "observation": {
-        "health": 58.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 1033.8035430908203,
+        "position_y": -15.996292114257812,
+        "angle": 358.24218758340976,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              302,
-              208,
-              23,
-              21
-            ]
-          },
-          {
-            "object": "ShotgunGuy",
-            "screen_box_xywh": [
-              382,
-              178,
-              55,
-              104
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              175,
-              168,
-              51,
-              108
-            ]
-          },
-          {
-            "object": "BulletPuff",
-            "screen_box_xywh": [
-              255,
-              219,
-              13,
-              16
-            ]
+              271,
+              220,
+              41,
+              37
+            ],
+            "bearing_degrees": 5.048695249117088
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 113,
+        "game_ticks": 90,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 5.048695249117088,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
         "decisions": 14,
-        "feedback": "Forward executed; reward +76.6."
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (1033.8, -16.0), heading 358.2 degrees."
       },
       "frames": [
-        "/recordings/doom/053.jpg",
-        "/recordings/doom/054.jpg",
-        "/recordings/doom/055.jpg",
-        "/recordings/doom/056.jpg"
+        "/recordings/doom/037.jpg",
+        "/recordings/doom/038.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -2480,127 +3434,99 @@
       "step": 14,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +76.6.",
+      "feedback": "turn_left: ammo +0, hits +0, kills +0; position (1033.8, -16.0), heading 358.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
-        "action": "forward",
+        "action": "turn_left",
         "probabilities": {
-          "forward": 0.559436559677124,
-          "backward": 0.011384339071810246,
-          "strafe_left": 0.031231772154569626,
-          "strafe_right": 0.05713009461760521,
-          "turn_left": 0.010435668751597404,
-          "turn_right": 0.03199275583028793,
-          "attack": 0.19706985354423523,
-          "wait": 0.10131900757551193
+          "forward": 0.19617223739624023,
+          "backward": 0.005115501582622528,
+          "strafe_left": 0.02125277742743492,
+          "strafe_right": 0.04249344393610954,
+          "turn_left": 0.5356939435005188,
+          "turn_right": 0.11092954874038696,
+          "attack": 0.020080415531992912,
+          "wait": 0.06826215237379074
         },
         "observation": {
-          "health": 66.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1018.1010589599609,
+          "position_y": -15.996292114257812,
+          "angle": 351.21093758177267,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                302,
-                215,
-                20,
-                18
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                365,
-                199,
-                12,
-                77
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                211,
-                196,
-                38,
-                76
-              ]
-            },
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                268,
-                241,
-                4,
-                4
-              ]
+                232,
+                223,
+                40,
+                36
+              ],
+              "bearing_degrees": 11.904475482653424
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 105,
+          "game_ticks": 86,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 11.904475482653424,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 13,
-          "feedback": "Forward executed; reward +73.6."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1018.1, -16.0), heading 351.2 degrees."
         },
         "next_observation": {
-          "health": 58.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1033.8035430908203,
+          "position_y": -15.996292114257812,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                302,
-                208,
-                23,
-                21
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                382,
-                178,
-                55,
-                104
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                175,
-                168,
-                51,
-                108
-              ]
-            },
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                255,
-                219,
-                13,
-                16
-              ]
+                271,
+                220,
+                41,
+                37
+              ],
+              "bearing_degrees": 5.048695249117088
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 113,
+          "game_ticks": 90,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 5.048695249117088,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 14,
-          "feedback": "Forward executed; reward +76.6."
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (1033.8, -16.0), heading 358.2 degrees."
         },
-        "reward": 76.59284973144531,
+        "reward": 15.702484130859375,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +76.6.",
-        "seconds": 1.648,
+        "feedback": "turn_left: ammo +0, hits +0, kills +0; position (1033.8, -16.0), heading 358.2 degrees.",
+        "seconds": 1.606,
         "subgoal": null,
         "priority": null
       }
@@ -2608,54 +3534,48 @@
     {
       "case": "doom",
       "revision": 16,
-      "seed": 17,
+      "seed": 65,
       "observation": {
-        "health": 58.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 1068.1605072021484,
+        "position_y": -15.999282836914062,
+        "angle": 358.24218758340976,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              300,
-              213,
-              28,
-              26
-            ]
-          },
-          {
-            "object": "ShotgunGuy",
-            "screen_box_xywh": [
-              426,
-              172,
-              89,
-              174
-            ]
-          },
-          {
-            "object": "ChaingunGuy",
-            "screen_box_xywh": [
-              97,
-              166,
-              73,
-              177
-            ]
+              265,
+              217,
+              48,
+              43
+            ],
+            "bearing_degrees": 5.511836208791522
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 121,
+        "game_ticks": 98,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 5.511836208791522,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
         "decisions": 15,
-        "feedback": "Forward executed; reward +73.4."
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1068.2, -16.0), heading 358.2 degrees."
       },
       "frames": [
-        "/recordings/doom/057.jpg",
-        "/recordings/doom/058.jpg",
-        "/recordings/doom/059.jpg",
-        "/recordings/doom/060.jpg"
+        "/recordings/doom/039.jpg",
+        "/recordings/doom/040.jpg",
+        "/recordings/doom/041.jpg",
+        "/recordings/doom/042.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -2670,118 +3590,99 @@
       "step": 15,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +73.4.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (1068.2, -16.0), heading 358.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.5653316974639893,
-          "backward": 0.01501807663589716,
-          "strafe_left": 0.042381033301353455,
-          "strafe_right": 0.07070346921682358,
-          "turn_left": 0.017536280676722527,
-          "turn_right": 0.027093488723039627,
-          "attack": 0.1653228998184204,
-          "wait": 0.09661304205656052
+          "forward": 0.8258609771728516,
+          "backward": 0.0038319064769893885,
+          "strafe_left": 0.010770831257104874,
+          "strafe_right": 0.026153787970542908,
+          "turn_left": 0.03824914991855621,
+          "turn_right": 0.044722285121679306,
+          "attack": 0.016601767390966415,
+          "wait": 0.033809248358011246
         },
         "observation": {
-          "health": 58.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1033.8035430908203,
+          "position_y": -15.996292114257812,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                302,
-                208,
-                23,
-                21
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                382,
-                178,
-                55,
-                104
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                175,
-                168,
-                51,
-                108
-              ]
-            },
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                255,
-                219,
-                13,
-                16
-              ]
+                271,
+                220,
+                41,
+                37
+              ],
+              "bearing_degrees": 5.048695249117088
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 113,
+          "game_ticks": 90,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 5.048695249117088,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 14,
-          "feedback": "Forward executed; reward +76.6."
+          "feedback": "turn_left: ammo +0, hits +0, kills +0; position (1033.8, -16.0), heading 358.2 degrees."
         },
         "next_observation": {
-          "health": 58.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1068.1605072021484,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                300,
-                213,
-                28,
-                26
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                426,
-                172,
-                89,
-                174
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                97,
-                166,
-                73,
-                177
-              ]
+                265,
+                217,
+                48,
+                43
+              ],
+              "bearing_degrees": 5.511836208791522
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 121,
+          "game_ticks": 98,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 5.511836208791522,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 15,
-          "feedback": "Forward executed; reward +73.4."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1068.2, -16.0), heading 358.2 degrees."
         },
-        "reward": 73.43063354492188,
+        "reward": 34.356964111328125,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +73.4.",
-        "seconds": 1.767,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1068.2, -16.0), heading 358.2 degrees.",
+        "seconds": 1.751,
         "subgoal": null,
         "priority": null
       }
@@ -2789,45 +3690,48 @@
     {
       "case": "doom",
       "revision": 17,
-      "seed": 17,
+      "seed": 65,
       "observation": {
-        "health": 38.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 1112.3199157714844,
+        "position_y": -15.999282836914062,
+        "angle": 358.24218758340976,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              294,
-              221,
-              34,
-              30
-            ]
-          },
-          {
-            "object": "ShotgunGuy",
-            "screen_box_xywh": [
-              565,
-              164,
-              74,
-              238
-            ]
+              255,
+              235,
+              59,
+              53
+            ],
+            "bearing_degrees": 6.338826109137699
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 129,
+        "game_ticks": 106,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 6.338826109137699,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
         "decisions": 16,
-        "feedback": "Forward executed; reward +66.1."
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1112.3, -16.0), heading 358.2 degrees."
       },
       "frames": [
-        "/recordings/doom/061.jpg",
-        "/recordings/doom/062.jpg",
-        "/recordings/doom/063.jpg",
-        "/recordings/doom/064.jpg"
+        "/recordings/doom/043.jpg",
+        "/recordings/doom/044.jpg",
+        "/recordings/doom/045.jpg",
+        "/recordings/doom/046.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -2842,100 +3746,99 @@
       "step": 16,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +66.1.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (1112.3, -16.0), heading 358.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.7248567342758179,
-          "backward": 0.007376993540674448,
-          "strafe_left": 0.025186607614159584,
-          "strafe_right": 0.051264163106679916,
-          "turn_left": 0.008306553587317467,
-          "turn_right": 0.022943813353776932,
-          "attack": 0.08185850083827972,
-          "wait": 0.07820658385753632
+          "forward": 0.8275749683380127,
+          "backward": 0.0033103597816079855,
+          "strafe_left": 0.01674305833876133,
+          "strafe_right": 0.024509960785508156,
+          "turn_left": 0.03081534244120121,
+          "turn_right": 0.047061409801244736,
+          "attack": 0.014794895425438881,
+          "wait": 0.035189975053071976
         },
         "observation": {
-          "health": 58.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1068.1605072021484,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                300,
-                213,
-                28,
-                26
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                426,
-                172,
-                89,
-                174
-              ]
-            },
-            {
-              "object": "ChaingunGuy",
-              "screen_box_xywh": [
-                97,
-                166,
-                73,
-                177
-              ]
+                265,
+                217,
+                48,
+                43
+              ],
+              "bearing_degrees": 5.511836208791522
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 121,
+          "game_ticks": 98,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 5.511836208791522,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 15,
-          "feedback": "Forward executed; reward +73.4."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1068.2, -16.0), heading 358.2 degrees."
         },
         "next_observation": {
-          "health": 38.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1112.3199157714844,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                294,
-                221,
-                34,
-                30
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                565,
-                164,
-                74,
-                238
-              ]
+                255,
+                235,
+                59,
+                53
+              ],
+              "bearing_degrees": 6.338826109137699
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 129,
+          "game_ticks": 106,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 6.338826109137699,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 16,
-          "feedback": "Forward executed; reward +66.1."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1112.3, -16.0), heading 358.2 degrees."
         },
-        "reward": 66.11114501953125,
+        "reward": 44.15940856933594,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +66.1.",
-        "seconds": 1.657,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1112.3, -16.0), heading 358.2 degrees.",
+        "seconds": 1.639,
         "subgoal": null,
         "priority": null
       }
@@ -2943,36 +3846,48 @@
     {
       "case": "doom",
       "revision": 18,
-      "seed": 17,
+      "seed": 65,
       "observation": {
-        "health": 30.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 1160.1279907226562,
+        "position_y": -15.999282836914062,
+        "angle": 358.24218758340976,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              281,
-              210,
-              41,
-              37
-            ]
+              238,
+              224,
+              77,
+              70
+            ],
+            "bearing_degrees": 7.771577798531041
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 137,
+        "game_ticks": 114,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 7.771577798531041,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
         "decisions": 17,
-        "feedback": "Forward executed; reward +58.2."
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1160.1, -16.0), heading 358.2 degrees."
       },
       "frames": [
-        "/recordings/doom/065.jpg",
-        "/recordings/doom/066.jpg",
-        "/recordings/doom/067.jpg",
-        "/recordings/doom/068.jpg"
+        "/recordings/doom/047.jpg",
+        "/recordings/doom/048.jpg",
+        "/recordings/doom/049.jpg",
+        "/recordings/doom/050.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -2987,82 +3902,99 @@
       "step": 17,
       "done": false,
       "success": false,
-      "feedback": "Forward executed; reward +58.2.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (1160.1, -16.0), heading 358.2 degrees.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.6266087889671326,
-          "backward": 0.007324513513594866,
-          "strafe_left": 0.01612270623445511,
-          "strafe_right": 0.0328947976231575,
-          "turn_left": 0.005267285741865635,
-          "turn_right": 0.012790231965482235,
-          "attack": 0.20839683711528778,
-          "wait": 0.09059485793113708
+          "forward": 0.8363112211227417,
+          "backward": 0.0029664160683751106,
+          "strafe_left": 0.01030934788286686,
+          "strafe_right": 0.0223916657269001,
+          "turn_left": 0.029470786452293396,
+          "turn_right": 0.04650703817605972,
+          "attack": 0.019538993015885353,
+          "wait": 0.03250458464026451
         },
         "observation": {
-          "health": 38.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1112.3199157714844,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                294,
-                221,
-                34,
-                30
-              ]
-            },
-            {
-              "object": "ShotgunGuy",
-              "screen_box_xywh": [
-                565,
-                164,
-                74,
-                238
-              ]
+                255,
+                235,
+                59,
+                53
+              ],
+              "bearing_degrees": 6.338826109137699
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 129,
+          "game_ticks": 106,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 6.338826109137699,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 16,
-          "feedback": "Forward executed; reward +66.1."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1112.3, -16.0), heading 358.2 degrees."
         },
         "next_observation": {
-          "health": 30.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
           "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1160.1279907226562,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
           "visible_objects": [
             {
               "object": "GreenArmor",
+              "id": 0,
               "screen_box_xywh": [
-                281,
-                210,
-                41,
-                37
-              ]
+                238,
+                224,
+                77,
+                70
+              ],
+              "bearing_degrees": 7.771577798531041
             }
           ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 137,
+          "game_ticks": 114,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 7.771577798531041,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
           "decisions": 17,
-          "feedback": "Forward executed; reward +58.2."
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1160.1, -16.0), heading 358.2 degrees."
         },
-        "reward": 58.212493896484375,
+        "reward": 47.808074951171875,
         "done": false,
         "success": false,
-        "feedback": "Forward executed; reward +58.2.",
-        "seconds": 2.23,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1160.1, -16.0), heading 358.2 degrees.",
+        "seconds": 1.529,
         "subgoal": null,
         "priority": null
       }
@@ -3070,36 +4002,48 @@
     {
       "case": "doom",
       "revision": 19,
-      "seed": 17,
+      "seed": 65,
       "observation": {
-        "health": 30.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
+        "health": 100.0,
+        "ammo2": 50.0,
+        "killcount": 2.0,
         "armor": 0.0,
+        "hitcount": 2.0,
+        "position_x": 1209.2298278808594,
+        "position_y": -15.999282836914062,
+        "angle": 358.24218758340976,
+        "attack_ready": 1.0,
         "visible_objects": [
           {
             "object": "GreenArmor",
+            "id": 0,
             "screen_box_xywh": [
-              271,
-              236,
-              52,
-              47
-            ]
+              203,
+              256,
+              115,
+              104
+            ],
+            "bearing_degrees": 10.606600746349102
           }
         ],
         "image_size": [
           640,
           480
         ],
-        "game_ticks": 145,
+        "game_ticks": 122,
+        "crosshair_x": 320,
+        "room_exit_x": 1184,
+        "exit_bearing_degrees": 10.606600746349102,
+        "enemies_to_kill": 2,
+        "cleared_at_x": 896.0,
         "decisions": 18,
-        "feedback": "Forward executed; reward +61.4."
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1209.2, -16.0), heading 358.2 degrees. Both enemies killed; advanced through the cleared room."
       },
       "frames": [
-        "/recordings/doom/069.jpg",
-        "/recordings/doom/070.jpg",
-        "/recordings/doom/071.jpg",
-        "/recordings/doom/072.jpg"
+        "/recordings/doom/051.jpg",
+        "/recordings/doom/052.jpg",
+        "/recordings/doom/053.jpg",
+        "/recordings/doom/054.jpg"
       ],
       "actions": {
         "forward": "Move forward for 8 game ticks.",
@@ -3112,550 +4056,101 @@
         "wait": "Wait for 8 game ticks."
       },
       "step": 18,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +61.4.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.8292146325111389,
-          "backward": 0.004526698961853981,
-          "strafe_left": 0.010602307505905628,
-          "strafe_right": 0.029360495507717133,
-          "turn_left": 0.004772678948938847,
-          "turn_right": 0.013465002179145813,
-          "attack": 0.03645509481430054,
-          "wait": 0.07160308957099915
-        },
-        "observation": {
-          "health": 30.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                281,
-                210,
-                41,
-                37
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 137,
-          "decisions": 17,
-          "feedback": "Forward executed; reward +58.2."
-        },
-        "next_observation": {
-          "health": 30.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                271,
-                236,
-                52,
-                47
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 145,
-          "decisions": 18,
-          "feedback": "Forward executed; reward +61.4."
-        },
-        "reward": 61.37882995605469,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +61.4.",
-        "seconds": 1.653,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 20,
-      "seed": 17,
-      "observation": {
-        "health": 30.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              251,
-              221,
-              74,
-              67
-            ]
-          },
-          {
-            "object": "BulletPuff",
-            "screen_box_xywh": [
-              521,
-              159,
-              118,
-              243
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 153,
-        "decisions": 19,
-        "feedback": "Forward executed; reward +64.3."
-      },
-      "frames": [
-        "/recordings/doom/073.jpg",
-        "/recordings/doom/074.jpg",
-        "/recordings/doom/075.jpg",
-        "/recordings/doom/076.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 19,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +64.3.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.8088303804397583,
-          "backward": 0.004402964375913143,
-          "strafe_left": 0.010858704335987568,
-          "strafe_right": 0.026318835094571114,
-          "turn_left": 0.004924769513309002,
-          "turn_right": 0.011966614983975887,
-          "attack": 0.06307794898748398,
-          "wait": 0.0696197897195816
-        },
-        "observation": {
-          "health": 30.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                271,
-                236,
-                52,
-                47
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 145,
-          "decisions": 18,
-          "feedback": "Forward executed; reward +61.4."
-        },
-        "next_observation": {
-          "health": 30.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                251,
-                221,
-                74,
-                67
-              ]
-            },
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                521,
-                159,
-                118,
-                243
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 153,
-          "decisions": 19,
-          "feedback": "Forward executed; reward +64.3."
-        },
-        "reward": 64.26048278808594,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +64.3.",
-        "seconds": 1.583,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 21,
-      "seed": 17,
-      "observation": {
-        "health": 24.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 0.0,
-        "visible_objects": [
-          {
-            "object": "BulletPuff",
-            "screen_box_xywh": [
-              348,
-              218,
-              55,
-              62
-            ]
-          },
-          {
-            "object": "GreenArmor",
-            "screen_box_xywh": [
-              202,
-              255,
-              127,
-              115
-            ]
-          }
-        ],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 161,
-        "decisions": 20,
-        "feedback": "Forward executed; reward +66.0."
-      },
-      "frames": [
-        "/recordings/doom/077.jpg",
-        "/recordings/doom/078.jpg",
-        "/recordings/doom/079.jpg",
-        "/recordings/doom/080.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 20,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +66.0.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.7521799802780151,
-          "backward": 0.007500907871872187,
-          "strafe_left": 0.015703806653618813,
-          "strafe_right": 0.03349898010492325,
-          "turn_left": 0.0059629175812006,
-          "turn_right": 0.012127632275223732,
-          "attack": 0.0946146547794342,
-          "wait": 0.07841116935014725
-        },
-        "observation": {
-          "health": 30.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                251,
-                221,
-                74,
-                67
-              ]
-            },
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                521,
-                159,
-                118,
-                243
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 153,
-          "decisions": 19,
-          "feedback": "Forward executed; reward +64.3."
-        },
-        "next_observation": {
-          "health": 24.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                348,
-                218,
-                55,
-                62
-              ]
-            },
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                202,
-                255,
-                127,
-                115
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 161,
-          "decisions": 20,
-          "feedback": "Forward executed; reward +66.0."
-        },
-        "reward": 65.98162841796875,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +66.0.",
-        "seconds": 1.03,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 22,
-      "seed": 17,
-      "observation": {
-        "health": 14.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 96.0,
-        "visible_objects": [],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 169,
-        "decisions": 21,
-        "feedback": "Forward executed; reward +1061.3."
-      },
-      "frames": [
-        "/recordings/doom/081.jpg",
-        "/recordings/doom/082.jpg",
-        "/recordings/doom/083.jpg",
-        "/recordings/doom/084.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 21,
-      "done": false,
-      "success": false,
-      "feedback": "Forward executed; reward +1061.3.",
-      "decision": {
-        "controller": "model",
-        "action": "forward",
-        "probabilities": {
-          "forward": 0.6539076566696167,
-          "backward": 0.005992221646010876,
-          "strafe_left": 0.09902335703372955,
-          "strafe_right": 0.04962727054953575,
-          "turn_left": 0.04437612369656563,
-          "turn_right": 0.026570690795779228,
-          "attack": 0.03749511018395424,
-          "wait": 0.08300753682851791
-        },
-        "observation": {
-          "health": 24.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 0.0,
-          "visible_objects": [
-            {
-              "object": "BulletPuff",
-              "screen_box_xywh": [
-                348,
-                218,
-                55,
-                62
-              ]
-            },
-            {
-              "object": "GreenArmor",
-              "screen_box_xywh": [
-                202,
-                255,
-                127,
-                115
-              ]
-            }
-          ],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 161,
-          "decisions": 20,
-          "feedback": "Forward executed; reward +66.0."
-        },
-        "next_observation": {
-          "health": 14.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 96.0,
-          "visible_objects": [],
-          "image_size": [
-            640,
-            480
-          ],
-          "game_ticks": 169,
-          "decisions": 21,
-          "feedback": "Forward executed; reward +1061.3."
-        },
-        "reward": 1061.2512664794922,
-        "done": false,
-        "success": false,
-        "feedback": "Forward executed; reward +1061.3.",
-        "seconds": 1.627,
-        "subgoal": null,
-        "priority": null
-      }
-    },
-    {
-      "case": "doom",
-      "revision": 23,
-      "seed": 17,
-      "observation": {
-        "health": 14.0,
-        "ammo2": 52.0,
-        "killcount": 0.0,
-        "armor": 96.0,
-        "visible_objects": [],
-        "image_size": [
-          640,
-          480
-        ],
-        "game_ticks": 169,
-        "decisions": 22,
-        "feedback": "Corridor completed.",
-        "image_is_current": false
-      },
-      "frames": [
-        "/recordings/doom/085.jpg"
-      ],
-      "actions": {
-        "forward": "Move forward for 8 game ticks.",
-        "backward": "Move backward for 8 game ticks.",
-        "strafe_left": "Strafe left for 8 game ticks without changing aim.",
-        "strafe_right": "Strafe right for 8 game ticks without changing aim.",
-        "turn_left": "Turn left for 4 game ticks.",
-        "turn_right": "Turn right for 4 game ticks.",
-        "attack": "Fire for 8 game ticks in the current direction.",
-        "wait": "Wait for 8 game ticks."
-      },
-      "step": 22,
       "done": true,
       "success": true,
-      "feedback": "Corridor completed.",
+      "feedback": "forward: ammo +0, hits +0, kills +0; position (1209.2, -16.0), heading 358.2 degrees. Both enemies killed; advanced through the cleared room.",
+      "frame_duration_ms": 57.142857142857146,
+      "step_pause_ms": 0,
       "decision": {
         "controller": "model",
         "action": "forward",
         "probabilities": {
-          "forward": 0.43725812435150146,
-          "backward": 0.03633003681898117,
-          "strafe_left": 0.05523151531815529,
-          "strafe_right": 0.060784485191106796,
-          "turn_left": 0.1254681646823883,
-          "turn_right": 0.10752571374177933,
-          "attack": 0.08104689419269562,
-          "wait": 0.09635511785745621
+          "forward": 0.8258020877838135,
+          "backward": 0.0025188804138451815,
+          "strafe_left": 0.010737674310803413,
+          "strafe_right": 0.022837163880467415,
+          "turn_left": 0.03678958863019943,
+          "turn_right": 0.04607662931084633,
+          "attack": 0.018856823444366455,
+          "wait": 0.03638109564781189
         },
         "observation": {
-          "health": 14.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 96.0,
-          "visible_objects": [],
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
+          "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1160.1279907226562,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                238,
+                224,
+                77,
+                70
+              ],
+              "bearing_degrees": 7.771577798531041
+            }
+          ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 169,
-          "decisions": 21,
-          "feedback": "Forward executed; reward +1061.3."
+          "game_ticks": 114,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 7.771577798531041,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 17,
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1160.1, -16.0), heading 358.2 degrees."
         },
         "next_observation": {
-          "health": 14.0,
-          "ammo2": 52.0,
-          "killcount": 0.0,
-          "armor": 96.0,
-          "visible_objects": [],
+          "health": 100.0,
+          "ammo2": 50.0,
+          "killcount": 2.0,
+          "armor": 0.0,
+          "hitcount": 2.0,
+          "position_x": 1209.2298278808594,
+          "position_y": -15.999282836914062,
+          "angle": 358.24218758340976,
+          "attack_ready": 1.0,
+          "visible_objects": [
+            {
+              "object": "GreenArmor",
+              "id": 0,
+              "screen_box_xywh": [
+                203,
+                256,
+                115,
+                104
+              ],
+              "bearing_degrees": 10.606600746349102
+            }
+          ],
           "image_size": [
             640,
             480
           ],
-          "game_ticks": 169,
-          "decisions": 22,
-          "feedback": "Corridor completed.",
-          "image_is_current": false
+          "game_ticks": 122,
+          "crosshair_x": 320,
+          "room_exit_x": 1184,
+          "exit_bearing_degrees": 10.606600746349102,
+          "enemies_to_kill": 2,
+          "cleared_at_x": 896.0,
+          "decisions": 18,
+          "feedback": "forward: ammo +0, hits +0, kills +0; position (1209.2, -16.0), heading 358.2 degrees. Both enemies killed; advanced through the cleared room."
         },
-        "reward": 0.0,
+        "reward": 49.101837158203125,
         "done": true,
         "success": true,
-        "feedback": "Corridor completed.",
-        "seconds": 0.984,
+        "feedback": "forward: ammo +0, hits +0, kills +0; position (1209.2, -16.0), heading 358.2 degrees. Both enemies killed; advanced through the cleared room.",
+        "seconds": 1.581,
         "subgoal": null,
         "priority": null
       }

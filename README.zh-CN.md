@@ -174,9 +174,9 @@ jevany demo
 
 ### [Doom 走廊 · 3D](examples/README.md#doom-corridor-3d)
 
-使用 ViZDoom 和随包提供的 Freedoom 资源，在敌人的火力下穿过走廊，抵达绿色护甲。
+从最后一个房间开始，击杀左右两名敌人，再继续前进。使用 ViZDoom 和随包提供的 Freedoom 资源。
 
-![Doom checkpoint 回放：穿越走廊、动作概率、生命值和弹药](docs/demos/playground-doom.gif)
+![Doom checkpoint 回放：击杀左右两名敌人后继续前进](docs/demos/playground-doom.gif)
 
 ### [Crafter 生存建造 · 2D](examples/README.md#crafter-survival-2d)
 

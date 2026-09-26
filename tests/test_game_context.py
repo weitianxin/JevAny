@@ -213,17 +213,81 @@ def test_recorder_publishes_a_complete_replay_and_removes_old_frames(tmp_path):
 @pytest.mark.demo
 def test_doom_marks_the_cached_image_when_the_engine_finishes():
     pytest.importorskip("vizdoom")
+    from jevany.demos.games import Doom
+
+    env = Doom(17)
+    try:
+        assert "image_is_current" not in env.observe()
+        while not env.done:
+            observation, _, _, _ = env.step("forward")
+        # Reaching the armor without shooting either enemy is no longer success.
+        assert not env.success and observation["armor"] > 0
+        assert observation["hitcount"] == 0
+        assert observation["image_is_current"] is False
+    finally:
+        env.close()
+
+
+@pytest.mark.demo
+def test_doom_final_room_observations_and_request_match_native_targets():
+    pytest.importorskip("vizdoom")
+    from jevany.demos.games import Doom
+
+    env = Doom(17)
+    try:
+        before = env.observe()
+        assert before["position_x"] == 896 and before["position_y"] == 0
+        assert before["killcount"] == before["hitcount"] == 0
+        enemies = {item["object"]: item for item in before["visible_objects"]
+                   if item["object"].endswith("Guy")}
+        assert set(enemies) == {"ChaingunGuy", "ShotgunGuy"}
+        assert enemies["ChaingunGuy"]["bearing_degrees"] > 0
+        assert enemies["ShotgunGuy"]["bearing_degrees"] < 0
+        request = decision_request("doom", "checkpoint", before, env.ACTION_LOOKUP, [])
+        record, _ = to_record(SystemOneRequest.model_validate(request))
+        assert "Kill both enemies" in record["state"]
+        assert "LIVING enemy: ChaingunGuy" in record["state"]
+        assert "26.6 degrees left" in record["state"]
+        assert "26.6 degrees right" in record["state"]
+        assert request["questions"]["action"]["criteria"] == env.ACTION_LOOKUP
+        with pytest.raises(ValueError, match="unavailable"):
+            env.step("auto_aim")
+        assert env.observe() == before
+    finally:
+        env.close()
+
+
+@pytest.mark.demo
+def test_doom_recorded_actions_kill_both_enemies_before_advancing():
+    pytest.importorskip("vizdoom")
     import json
     from jevany.demos.games import Doom
     from jevany.demos.server import ROOT
 
     replay = json.loads((ROOT / "recordings/doom/replay.json").read_text())
     env = Doom(replay["seed"])
+    killed = set()
+    cleared_step = None
     try:
-        assert "image_is_current" not in env.observe()
         for step in replay["steps"][1:]:
+            before = env.observe()
             observation, _, _, _ = env.step(step["decision"]["action"])
-        assert env.success and observation["armor"] > 0
-        assert observation["image_is_current"] is False
+            # Bundled Freedoom sprites differ between supported ViZDoom versions.
+            for key in ("ammo2", "hitcount", "killcount"):
+                assert observation[key] == step["observation"][key]
+            if observation["hitcount"] > before["hitcount"]:
+                assert step["decision"]["action"] == "attack"
+                assert observation["ammo2"] < before["ammo2"]
+                newly_dead = {item["id"] for item in observation["visible_objects"]
+                              if item["object"].startswith("Dead")} - killed
+                assert len(newly_dead) == 1
+                killed |= newly_dead
+            if len(killed) == 2 and cleared_step is None:
+                cleared_step = step["step"]
+                assert not env.success
+            if env.success:
+                assert step["step"] > cleared_step
+                assert observation["position_x"] >= max(1184, env.cleared_at_x + 64)
+        assert env.success and len(killed) == 2
     finally:
         env.close()

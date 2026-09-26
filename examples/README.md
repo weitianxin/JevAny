@@ -94,18 +94,22 @@ and serving extras.
 
 ## Doom corridor (3D)
 
-[ViZDoom](https://github.com/Farama-Foundation/ViZDoom) runs its
-`deadly_corridor` scenario with the included Freedoom assets. No commercial Doom
-installation or separate WAD download is required. The goal is to reach the
-green armor while preserving health and ammunition.
+[ViZDoom](https://github.com/Farama-Foundation/ViZDoom) runs a focused version of
+`deadly_corridor` with the included Freedoom assets. The player starts in the
+final room with its original two enemies; enemies in earlier rooms are removed.
+No commercial Doom installation or separate WAD download is required. The
+instruction given to the model is: **kill the enemy on the left and the enemy on
+the right, then move forward through the cleared room.**
 
 Eight controls cover forward/backward movement, strafing, turning, shooting and
 waiting. A move or shot advances eight game ticks; a turn advances four.
-Observations contain the current rendered view, health, ammunition and visible
-object boxes. An episode is limited to 160 decisions. In the included model
-replay, the player reaches the armor by moving through the corridor.
+Observations contain the current screenshot, health, ammunition, visible enemies'
+positions relative to the crosshair, and the previous action's actual hits and
+kills. Corpses are identified separately. Success requires hitting and killing
+both enemies, then advancing through the room; reaching armor alone does not
+complete the task. An episode is limited to 160 decisions.
 
-![Accelerated checkpoint replay of Doom corridor navigation](../docs/demos/playground-doom.gif)
+![Checkpoint replay: kill the left and right enemies, then advance](../docs/demos/playground-doom.gif)
 
 ## Crafter survival (2D)
 

@@ -1,5 +1,8 @@
 """CPU adapters for Crafter and ViZDoom, with the simulation paused between steps."""
 from pathlib import Path
+from math import atan2, degrees
+import re
+import struct
 from tempfile import TemporaryDirectory
 from typing import Any
 
@@ -195,7 +198,10 @@ class Crafter:
 
 
 class Doom:
-    """Run Freedoom's corridor scenario in synchronous mode with bounded controls."""
+    """Clear the final room of Freedoom's corridor, then advance past its enemies."""
+
+    frame_duration_ms = 2000 / 35
+    step_pause_ms = 0
 
     ACTION_LOOKUP = {
         "forward": "Move forward for 8 game ticks.",
@@ -218,6 +224,34 @@ class Doom:
         self.config_directory = None
         self.reset(seed)
 
+    @staticmethod
+    def _final_room(source: Path, destination: Path) -> None:
+        """Move the native map's spawn to its final room and keep that room's pair."""
+        data = source.read_bytes()
+        magic, count, directory = struct.unpack_from("<4sii", data)
+        lumps = []
+        for index in range(count):
+            offset, size, name = struct.unpack_from("<ii8s", data, directory + index * 16)
+            content = data[offset:offset + size]
+            if name.rstrip(b"\0") == b"TEXTMAP":
+                def thing(match):
+                    block = match[0]
+                    identity = re.search(r"\bid\s*=\s*(\d+);", block)
+                    identity = int(identity[1]) if identity else None
+                    if identity in (10, 11, 12, 13):
+                        return ""
+                    if identity == 1:
+                        return re.sub(r"\bx\s*=\s*[^;]+;", "x = 896.0;", block)
+                    return block
+                content = re.sub(r"\bthing\s*\{[^}]*\}", thing, content.decode()).encode()
+            lumps.append((name, content))
+        output, entries = bytearray(12), bytearray()
+        for name, content in lumps:
+            entries.extend(struct.pack("<ii8s", len(output), len(content), name))
+            output.extend(content)
+        struct.pack_into("<4sii", output, 0, magic, count, len(output))
+        destination.write_bytes(output + entries)
+
     def reset(self, seed: int | None = None) -> dict[str, Any]:
         import vizdoom as vzd
         self.close()
@@ -227,6 +261,9 @@ class Doom:
         try:
             self.game.set_doom_config_path(str(Path(self.config_directory.name) / "vizdoom.ini"))
             self.game.load_config(str(Path(vzd.scenarios_path) / "deadly_corridor.cfg"))
+            scenario = Path(self.config_directory.name) / "final_room.wad"
+            self._final_room(Path(vzd.scenarios_path) / "deadly_corridor.wad", scenario)
+            self.game.set_doom_scenario_path(str(scenario))
             self.game.set_window_visible(False)
             self.game.set_sound_enabled(False)
             self.game.set_mode(vzd.Mode.PLAYER)
@@ -238,6 +275,7 @@ class Doom:
             self.game.set_labels_buffer_enabled(True)
             self.game.set_doom_skill(1)
             self.game.set_seed(17 if seed is None else seed)
+            self.game.set_episode_start_time(14)
             self.game.set_episode_timeout(CASES["doom"]["limit"] * 8 + 1)
             self.game.init()
             self.game.new_episode()
@@ -246,7 +284,8 @@ class Doom:
             raise
         self.buttons = list(self.game.get_available_buttons())
         self.steps, self.done, self.success = 0, False, False
-        self.feedback = "Reach the green armor at the far end of the corridor."
+        self.feedback = "Kill the enemy on the left and the enemy on the right, then advance through the room."
+        self.cleared_at_x = None
         self.frames = []
         self.image = self.game.get_state().screen_buffer.copy()
         self.last_ticks = self.game.get_episode_time()
@@ -255,14 +294,24 @@ class Doom:
     def observe(self) -> dict[str, Any]:
         state = self.game.get_state()
         variables = {name.lower(): float(self.game.get_game_variable(getattr(self.vzd.GameVariable, name)))
-                     for name in ("HEALTH", "AMMO2", "KILLCOUNT", "ARMOR")}
+                     for name in ("HEALTH", "AMMO2", "KILLCOUNT", "ARMOR", "HITCOUNT",
+                                  "POSITION_X", "POSITION_Y", "ANGLE", "ATTACK_READY")}
+        def bearing(x, y):
+            direction = degrees(atan2(y - variables["position_y"], x - variables["position_x"]))
+            return (direction - variables["angle"] + 180) % 360 - 180
+
         visible = [] if state is None else [
-            {"object": label.object_name,
-             "screen_box_xywh": [label.x, label.y, label.width, label.height]}
+            {"object": label.object_name, "id": label.object_id,
+             "screen_box_xywh": [label.x, label.y, label.width, label.height],
+             "bearing_degrees": bearing(label.object_position_x, label.object_position_y)}
             for label in state.labels if label.object_name != "DoomPlayer"
         ]
         observation = {**variables, "visible_objects": visible, "image_size": [640, 480],
                        "game_ticks": self.last_ticks,
+                       "crosshair_x": 320, "room_exit_x": 1184,
+                       "exit_bearing_degrees": bearing(1312, 0),
+                       "enemies_to_kill": 2,
+                       "cleared_at_x": self.cleared_at_x,
                        "decisions": self.steps, "feedback": self.feedback}
         if state is None:
             observation["image_is_current"] = False
@@ -274,6 +323,7 @@ class Doom:
     def step(self, action: str) -> tuple[dict, float, bool, dict]:
         if action not in self.get_all_actions():
             raise ValueError(f"unavailable Doom action: {action!r}")
+        before = self.observe()
         target = self.CONTROLS.get(action)
         control = [target is not None and button.name == target for button in self.buttons]
         self.frames, reward = [], 0.0
@@ -287,13 +337,24 @@ class Doom:
             if self.game.is_episode_finished():
                 break
         self.steps += 1
-        self.done = self.game.is_episode_finished() or self.steps >= CASES["doom"]["limit"]
-        # The scenario exits when armor is reached. Death and timeout are failures.
-        armor = self.game.get_game_variable(self.vzd.GameVariable.ARMOR)
-        self.success = bool(self.done and not self.game.is_player_dead() and armor > 0)
-        self.feedback = f"{action.replace('_', ' ').capitalize()} executed; reward {reward:+.1f}."
+        after = self.observe()
+        if self.cleared_at_x is None and after["hitcount"] >= 2 and after["killcount"] >= 2:
+            self.cleared_at_x = after["position_x"]
+        self.success = bool(
+            not self.game.is_player_dead() and self.cleared_at_x is not None
+            and after["position_x"] >= max(1184, self.cleared_at_x + 64)
+        )
+        self.done = self.success or self.game.is_episode_finished() or self.steps >= CASES["doom"]["limit"]
+        self.feedback = (
+            f"{action}: ammo {after['ammo2'] - before['ammo2']:+g}, "
+            f"hits {after['hitcount'] - before['hitcount']:+g}, "
+            f"kills {after['killcount'] - before['killcount']:+g}; "
+            f"position ({after['position_x']:.1f}, {after['position_y']:.1f}), "
+            f"heading {after['angle']:.1f} degrees."
+        )
         if self.done:
-            self.feedback = "Corridor completed." if self.success else "Run ended before reaching the armor."
+            self.feedback += (" Both enemies killed; advanced through the cleared room." if self.success else
+                              " Run ended before killing both enemies and advancing.")
         return self.observe(), float(reward), bool(self.done), {"success": self.success}
 
     def render(self):

@@ -174,9 +174,9 @@ These GIFs show accelerated replays of JevAny-27B-SFT controlling the environmen
 
 ### [Doom corridor · 3D](examples/README.md#doom-corridor-3d)
 
-Reach the green armor at the far end of a hostile corridor, using ViZDoom and the included Freedoom assets.
+Start in the final room, kill the enemies on the left and right, then move forward through the cleared room. Uses ViZDoom and the included Freedoom assets.
 
-![Doom checkpoint replay with corridor navigation, action probabilities, health and ammunition](docs/demos/playground-doom.gif)
+![Doom checkpoint replay: kill both enemies, then advance](docs/demos/playground-doom.gif)
 
 ### [Crafter survival · 2D](examples/README.md#crafter-survival-2d)
 

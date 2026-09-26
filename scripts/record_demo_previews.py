@@ -48,7 +48,8 @@ def record(client: DecisionClient, case: str, seed: int, root: Path, *,
                 f"Seed {seed}. Recorded checkpoint decisions in the native environment. Each selected action "
                 "is executed unchanged. " + (
                     "The checkpoint first chooses an immediate objective, then a native action."
-                    if case == "crafter" else "The objective is to reach the green armor."
+                    if case == "crafter" else
+                    "Start in the corridor's final room, kill its left and right enemies, then advance."
                 )
             ),
             "images": images, "steps": steps,

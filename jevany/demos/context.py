@@ -26,6 +26,62 @@ SYMBOLS = {
     "cow": "C", "zombie": "Z", "skeleton": "S", "arrow": "a", "boundary": "#",
 }
 
+DOOM_RULES = (
+    "Kill BOTH enemies before advancing through the exit. The screenshot is your current "
+    "first-person view. Aim horizontally: the crosshair is at x=320. Turn left to aim at "
+    "an enemy left of the crosshair; turn right for an enemy on its right. Aim at the "
+    "enemy's body center: sprite bounds may include an outstretched arm or weapon. "
+    "Fire when a living enemy's body is within 8 degrees of your aim. "
+    "Dead enemies, dropped weapons, blood and armor "
+    "are not targets. Stop shooting at a target as soon as its death is confirmed, then "
+    "aim at the remaining living enemy. After both kills, turn to face the exit "
+    "(within 10 degrees) and move forward. An aligned heading is good enough for "
+    "forward movement; do not keep turning to chase exact zero or alternate left/right "
+    "when already within tolerance. "
+    "Turning changes aim; strafing moves sideways without turning. The simulation pauses "
+    "between decisions. Every listed control remains available."
+)
+
+
+def doom_state(observation: dict[str, Any]) -> str:
+    """Keep current aim, native deaths and movement progress explicit."""
+    lines = [
+        f"Goal: {CASES['doom']['goal']}",
+        f"Player health={observation['health']:g}, ammo={observation['ammo2']:g}. "
+        f"Native kills={observation['killcount']:g}/2; hits by player={observation['hitcount']:g}.",
+        f"Position x={observation['position_x']:.1f}, y={observation['position_y']:.1f}; "
+        f"heading={(observation['angle'] + 180) % 360 - 180:.1f} degrees. Heading 0 faces down the corridor "
+        "toward the green armor at x=1312, y=0, beyond the room's exit at x=1184. "
+        "Positive headings turn left.",
+        f"Weapon ready to fire: {bool(observation['attack_ready'])}.",
+        "Current visible objects (image width 640; crosshair x=320):",
+    ]
+    for item in observation["visible_objects"]:
+        x, _, width, _ = item["screen_box_xywh"]
+        center = x + width / 2
+        relation = ("crosshair overlaps its horizontal bounds" if x <= 320 < x + width else
+                    f"{abs(center - 320):.0f} pixels {'left' if center < 320 else 'right'} of crosshair")
+        kind = ("DEAD enemy" if item["object"].startswith("Dead") else
+                "LIVING enemy" if item["object"] in ("ShotgunGuy", "ChaingunGuy") else "non-enemy")
+        offset = item["bearing_degrees"]
+        lines.append(f"- {kind}: {item['object']} id={item['id']}, x={x}..{x+width}; {relation}. "
+                     f"Body center is {abs(offset):.1f} degrees {'left' if offset >= 0 else 'right'} "
+                     "of current aim.")
+        if kind == "LIVING enemy":
+            lines.append(f"  Aim at this enemy's body: {'ALIGNED' if abs(offset) <= 8 else 'NOT ALIGNED'} "
+                         "(tolerance 8 degrees).")
+    if observation["cleared_at_x"] is not None:
+        offset = observation["exit_bearing_degrees"]
+        lines.append("Both enemies have been hit and killed. Combat is complete. "
+                     f"The green armor beyond the exit is {abs(offset):.1f} degrees "
+                     f"{'left' if offset >= 0 else 'right'} "
+                     "of your current heading. "
+                     f"Exit alignment: {'ALIGNED' if abs(offset) <= 10 else 'NOT ALIGNED'} "
+                     "(tolerance 10 degrees). Move through the cleared room "
+                     f"to x={max(1184, observation['cleared_at_x'] + 64):.1f}.")
+    lines.append("Last action result: " + observation["feedback"])
+    return "\n".join(lines)
+
 
 def crafter_state(observation: dict[str, Any]) -> str:
     """Describe the current viewport and resources remembered from earlier views."""
@@ -99,6 +155,10 @@ def decision_request(case: str, model: str, observation: dict[str, Any],
         instructions = CRAFTER_RULES + "\nSelect the single next action that advances the unfinished goal while staying alive."
         actions = {key: (description + " " + observation.get("action_context", {}).get(key, "")).rstrip()
                    for key, description in actions.items()}
+    elif case == "doom" and "hitcount" in observation:
+        state = doom_state(observation)
+        state += "\nRecent actions:\n" + ("\n".join(entry["feedback"] for entry in recent) or "None.")
+        instructions = DOOM_RULES
     return {
         "model": model, "state": state,
         "questions": {"action": {"type": "choice", "instructions": instructions, "criteria": actions}},
