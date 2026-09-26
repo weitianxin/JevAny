@@ -142,6 +142,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--lr", type=float, default=0.0002)
     parser.add_argument("--head-lr", type=float, default=0.0001)
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cuda")
+    parser.add_argument("--dtype", choices=["fp32", "bf16"],
+                        help="training autocast precision; defaults to bf16 on CUDA and fp32 on CPU")
     parser.add_argument("--branch-mode", choices=["auto", "packed", "rows"], default="auto")
     parser.add_argument("--media", choices=["image", "video"], help="exercise native media training")
     parser.add_argument("--mixed-text", action="store_true", help="include text-only rows in a media fixture")
@@ -152,6 +154,9 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("--steps must be at least 2")
     if args.rlcr and args.init_from is None:
         parser.error("--rlcr requires --init-from")
+    training_dtype = args.dtype or ("bf16" if args.device == "cuda" else "fp32")
+    if training_dtype == "bf16" and args.device != "cuda":
+        parser.error("--dtype bf16 requires --device cuda")
     rank = int(os.environ.get("RANK", "0"))
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
@@ -178,7 +183,7 @@ def main(argv: list[str] | None = None) -> None:
         "--base", args.base, "--base-revision", args.revision,
         "--data", str(fixture / "train.jsonl"), "--out", str(checkpoint_path),
         "--device", args.device, "--weights-dtype", "bf16" if args.device == "cuda" else "fp32",
-        "--dtype", "bf16" if args.device == "cuda" else "fp32",
+        "--dtype", training_dtype,
         "--epochs", str(args.steps), "--max-steps", str(args.steps), "--batch", "2", "--accum", "1",
         "--lora", "4", "--head-dim", "32", "--lr", str(args.lr), "--head-lr", str(args.head_lr),
         "--checkpointing", "1", "--weight-decay", "0", "--seed", "17",
@@ -261,6 +266,7 @@ def main(argv: list[str] | None = None) -> None:
         "backbone_adapter": model.backbone_adapter, "media": args.media, "mixed_text": args.mixed_text,
         "trained_delimiter_embeddings": model.special_embeddings, "steps": args.steps,
         "learning_rate": args.lr, "head_learning_rate": args.head_lr,
+        "training_dtype": training_dtype,
         "world_size": world_size, "losses": losses, "adapter_tensors_finite": finite,
         "evaluation_records": len(records),
         "lora_updated": lora_updated, "checkpoint_probability_max_delta": maximum_delta,

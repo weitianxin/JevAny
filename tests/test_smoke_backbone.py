@@ -32,6 +32,8 @@ def test_sft_rlcr_and_serving_smoke(tmp_path, family):
         else:
             make_vision_base(base, family)
         args = ["--base", str(base), "--device", "cpu", "--lr", "0.001", "--head-lr", "0.001"]
+        if family == "llama":
+            args += ["--dtype", "fp32"]
         if family != "llama":
             args += ["--media", "image"]
         main(args + ["--steps", "12", "--out", str(tmp_path / "sft")])
@@ -41,6 +43,7 @@ def test_sft_rlcr_and_serving_smoke(tmp_path, family):
             report = json.loads((tmp_path / stage / "smoke.json").read_text())
             assert report["passed"]
             assert report["objective"] == stage
+            assert report["training_dtype"] == "fp32"
             assert report["lora_updated"]
             assert report["serving"]["passed"]
             assert report["serving"]["invalid_requests_rejected"]
@@ -48,7 +51,7 @@ def test_sft_rlcr_and_serving_smoke(tmp_path, family):
         torch.set_num_threads(previous)
 
 
-@pytest.mark.parametrize("extra", [["--steps", "0"], ["--rlcr"]])
+@pytest.mark.parametrize("extra", [["--steps", "0"], ["--rlcr"], ["--device", "cpu", "--dtype", "bf16"]])
 def test_invalid_smoke_arguments(tmp_path, extra):
     with pytest.raises(SystemExit):
         main(["--base", "unused", "--out", str(tmp_path), *extra])

@@ -354,16 +354,19 @@ Use `--base-load-path /path/to/snapshot` to load a predownloaded copy while keep
 the official `--base` and `--revision` in the checkpoint.
 The smoke script exposes `--lr` and `--head-lr` for bases with different gradient
 scales; its default head learning rate is `1e-4`.
+Use `--dtype fp32` to disable training autocast while retaining BF16 frozen
+weights on CUDA; the report records this separately from the checkpoint's weight dtype.
 The script runs the actual trainer, measures uncalibrated NLL before and during
 training, reloads the checkpoint, and checks predictions through both the Python
 runtime and the FastAPI application. The HTTP checks exercise health, model
 description, repeated typed requests, and rejection of invalid requests. It checks
 prefix-cache parity where supported and explicit rejection elsewhere.
 It writes `smoke.json`, per-rank GPU identity, and the trainer's evaluation
-history. A passing run requires finite adapter weights, updated LoRA weights,
+history. A passing SFT run requires finite adapter weights, updated LoRA weights,
 lower final NLL, and successful prediction checks. Its small evaluation probe
 intentionally reuses training examples; this is an optimization and compatibility
-test, not an accuracy benchmark.
+test, not an accuracy benchmark. The probe covers all eight training rows,
+including both media and text rows when `--mixed-text` is enabled.
 
 To check RLCR continuation and serving from the resulting checkpoint:
 
