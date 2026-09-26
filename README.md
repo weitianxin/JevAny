@@ -120,6 +120,8 @@ The SFT recipe uses `Qwen/Qwen2.5-0.5B` and a CUDA GPU. Change `base` and `data`
 
 Six pretrained bases across these five families passed 12-step GPU training with lower final loss and successful checkpoint reloads. See the [compatibility test results](results/backbone-smoke-v1.json).
 
+Native image training supports Qwen VL, Llama Vision, Gemma 3, Pixtral and Phi-4 Multimodal (after conversion); Qwen also supports video. Choose a vision base and set `multimodal = true`. See the [setup instructions](docs/TRAINING.md#native-multimodal-training) and [GPU checks](results/multimodal-backbone-smoke-v1.json).
+
 ## Run the examples
 
 With a server running:

@@ -10,4 +10,6 @@ RLCR follows the reward proposed in *Beyond Binary Rewards: Training LMs to Reas
 
 Qwen3.8-27B is produced by the Qwen team. The adapters in this project require its separately distributed base weights.
 
+The Phi-4 vision conversion helper adapts configuration and weight-name mappings from Hugging Face Transformers under Apache-2.0. It merges Microsoft's pretrained vision LoRA before JevAny training.
+
 The README teaser uses Lucide icons. The [source records](docs/icons/sources.json) and [license notices](docs/icons/LICENSE) accompany the editable SVG.

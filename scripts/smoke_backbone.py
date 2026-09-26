@@ -20,11 +20,12 @@ from jevany.backbones import decision_tokens
 from jevany.checkpoint import Checkpoint
 from jevany.data import load_records, materialize
 from jevany.predictors import ModelPredictor
+from jevany.model import tokenizer_of
 from jevany.suite import digest, load_split, read_json, write_json, write_jsonl
 from jevany.train import main as train
 
 
-def prepare_fixture(directory: Path) -> None:
+def prepare_fixture(directory: Path, media: str | None = None, mixed_text: bool = False) -> None:
     directory.mkdir(parents=True)
     rows = []
     for index in range(8):
@@ -41,6 +42,34 @@ def prepare_fixture(directory: Path) -> None:
                              "criteria": ["low", "high"], "label": 1},
             },
         })
+    if media:
+        from PIL import Image
+        rows = []
+        for color in ("red", "blue"):
+            image = Image.new("RGB", (112, 112), color)
+            if media == "image":
+                image.save(directory / f"{color}.png")
+            else:
+                import av
+                with av.open(str(directory / f"{color}.mp4"), "w") as output:
+                    stream = output.add_stream("libx264", rate=4)
+                    stream.width = stream.height = 112
+                    stream.pix_fmt = "yuv420p"
+                    for _ in range(8):
+                        for packet in stream.encode(av.VideoFrame.from_image(image)):
+                            output.mux(packet)
+                    for packet in stream.encode():
+                        output.mux(packet)
+        for index in range(8):
+            color = "red" if index % 2 == 0 else "blue"
+            row = {"state": "Inspect the sample.", "questions": {
+                "color": {"type": "choice", "instructions": "What is the sample's color?",
+                          "criteria": {"red": "Red", "blue": "Blue"}, "label": color}},
+                   "media": [{"type": media, "uri": f"{color}.{'png' if media == 'image' else 'mp4'}"}]}
+            if mixed_text and index >= 6:
+                row.pop("media")
+                row["state"] = f"The sample is {color}."
+            rows.append(row)
     write_jsonl(directory / "train.jsonl", rows)
     probe = load_records(directory / "train.jsonl")[:4]
     files = {}
@@ -64,6 +93,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--head-lr", type=float, default=0.0001)
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cuda")
     parser.add_argument("--branch-mode", choices=["auto", "packed", "rows"], default="auto")
+    parser.add_argument("--media", choices=["image", "video"], help="exercise native media training")
+    parser.add_argument("--mixed-text", action="store_true", help="include text-only rows in a media fixture")
     args = parser.parse_args(argv)
     if args.steps < 2:
         parser.error("--steps must be at least 2")
@@ -72,7 +103,7 @@ def main(argv: list[str] | None = None) -> None:
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     fixture = args.out / "fixture"
     if rank == 0:
-        prepare_fixture(fixture)
+        prepare_fixture(fixture, args.media, args.mixed_text)
     else:
         deadline = time.monotonic() + 60
         while not (fixture / "manifest.json").is_file():
@@ -101,6 +132,8 @@ def main(argv: list[str] | None = None) -> None:
         "--branch-mode", args.branch_mode, "--eval-suite", str(fixture),
         "--eval-before-start", "--eval-every-steps", str(max(1, args.steps // 3)),
     ]
+    if args.media:
+        command.append("--multimodal")
     train(command)
     if rank:
         return
@@ -128,30 +161,41 @@ def main(argv: list[str] | None = None) -> None:
             maximum_delta = max(maximum_delta, max(abs(probabilities[key] - value)
                                                    for key, value in zip(row["keys"], row["p"])))
     encoded = model.encode(tokenizer, materialize(records[0]))
-    direct = model.probs(encoded)
-    first, prefix = model.probs_and_prefix(encoded)
-    cached = model.probs_with_prefix(encoded, prefix)
-    cache_delta = max(float((left - right).abs().max())
-                      for left, right in zip(direct + direct, first + cached))
+    cache_delta = None
+    media_delta = None
+    if args.media:
+        second = model.encode(tokenizer, materialize(records[1]))
+        media_delta = max(float((a - b).abs().max()) for a, b in zip(model.probs(encoded), model.probs(second)))
+    else:
+        direct = model.probs(encoded)
+        first, prefix = model.probs_and_prefix(encoded)
+        cached = model.probs_with_prefix(encoded, prefix)
+        cache_delta = max(float((left - right).abs().max())
+                          for left, right in zip(direct + direct, first + cached))
+    tok = tokenizer_of(tokenizer)
     from safetensors.torch import load_file
     weights = load_file(checkpoint_path / "adapter_model.safetensors")
     finite = all(bool(torch.isfinite(value).all()) for value in weights.values())
     lora_updated = any("lora_B" in name and bool(value.abs().sum() > 0) for name, value in weights.items())
     report = {
         "base": args.base, "base_revision": args.revision, "model_type": model.lm.config.model_type,
-        "branch_mode": model.branch_mode, "token_schema": tokenizer.init_kwargs["jevany_token_schema"],
-        "decision_token_ids": [tokenizer.convert_tokens_to_ids(token) for token in decision_tokens(tokenizer)],
+        "branch_mode": model.branch_mode, "token_schema": tok.init_kwargs["jevany_token_schema"],
+        "decision_token_ids": [tok.convert_tokens_to_ids(token) for token in decision_tokens(tok)],
+        "backbone_adapter": model.backbone_adapter, "media": args.media, "mixed_text": args.mixed_text,
         "trained_delimiter_embeddings": model.special_embeddings, "steps": args.steps,
         "learning_rate": args.lr, "head_learning_rate": args.head_lr,
         "world_size": world_size, "losses": losses, "adapter_tensors_finite": finite,
         "lora_updated": lora_updated, "checkpoint_probability_max_delta": maximum_delta,
         "prefix_cache_probability_max_delta": cache_delta,
+        "media_probability_max_delta": media_delta,
         "training": read_json(checkpoint_path / "training_metrics.json"),
         "scope": "Real pretrained weights; repeated tiny training fixture; no generalization claim.",
     }
     report["passed"] = (
         finite and lora_updated and all(math.isfinite(point["nll"]) for point in losses)
-        and losses[-1]["nll"] < losses[0]["nll"] and maximum_delta < 1e-5 and cache_delta < 0.01
+        and losses[-1]["nll"] < losses[0]["nll"] and maximum_delta < 1e-5
+        and (cache_delta is None or cache_delta < 0.01)
+        and (media_delta is None or media_delta > 0)
     )
     write_json(args.out / "smoke.json", report)
     print(json.dumps(report, indent=2), flush=True)

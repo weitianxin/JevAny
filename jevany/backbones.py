@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from transformers import (
     AutoConfig, AutoModel, AutoModelForCausalLM, AutoProcessor, AutoTokenizer,
-    DynamicCache, PreTrainedModel, PreTrainedTokenizerBase,
+    DynamicCache, PretrainedConfig, PreTrainedModel, PreTrainedTokenizerBase,
 )
 from transformers.pytorch_utils import Conv1D
 
@@ -77,6 +77,10 @@ class BackboneAdapter:
     token IDs, position IDs and an attention mask. The default execution uses
     independent causal rows unless packed-mask support is known.
     """
+
+    name = "text"
+    media_types: frozenset[str] = frozenset()
+    conditional_parameters = False
 
     def load_preprocessor(self, name: str, revision: str | None = None):
         return prepare_tokenizer(AutoTokenizer.from_pretrained(name, revision=revision))
@@ -145,9 +149,22 @@ class BackboneAdapter:
     def encode_media(self, processor, record, **kwargs) -> dict:
         raise ValueError("this backbone adapter does not support media")
 
+    def forward_media(self, language_model, multimodal_model, inputs: dict) -> torch.Tensor:
+        """Return token hidden states, retaining each processor's model inputs."""
+        model = multimodal_model if multimodal_model is not None else language_model
+        return model(**inputs).last_hidden_state
 
-class QwenVisionAdapter(BackboneAdapter):
-    """Existing native Qwen image/video path, separate from text adaptation."""
+
+class VisionAdapter(BackboneAdapter):
+    """Native Transformers vision model with a separately addressable decoder.
+
+    Subclasses declare the decoder path and supported media. Override
+    ``process_media`` for another processor protocol or ``forward_media`` for
+    models whose output layout differs from the Transformers base-model API.
+    """
+
+    media_types = frozenset({"image"})
+    language_model_path = "language_model"
 
     def load_preprocessor(self, name: str, revision: str | None = None):
         processor = AutoProcessor.from_pretrained(name, revision=revision)
@@ -157,33 +174,131 @@ class QwenVisionAdapter(BackboneAdapter):
     def load_model(self, name: str, *, revision: str | None, dtype: torch.dtype,
                    attn: str) -> tuple[PreTrainedModel, PreTrainedModel | None]:
         model = AutoModel.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn)
-        if not hasattr(model, "language_model") or not hasattr(model, "visual"):
-            raise ValueError("qwen_vl requires a Qwen vision base with language_model and visual modules")
-        return model.language_model, model
+        model.requires_grad_(False)
+        if not self.language_model_path:
+            return model, None
+        try:
+            decoder = model.get_submodule(self.language_model_path)
+        except AttributeError as error:
+            raise ValueError(f"{self.name} requires a {self.language_model_path} decoder") from error
+        return decoder, model
 
     def attach_language_model(self, multimodal_model, language_model) -> None:
-        multimodal_model.language_model = language_model
-
-    def frozen_modules(self, multimodal_model) -> tuple[nn.Module, ...]:
-        return (multimodal_model.visual,)
+        if self.language_model_path:
+            multimodal_model.set_submodule(self.language_model_path, language_model)
 
     def encode_media(self, processor, record, **kwargs) -> dict:
+        unsupported = {item["type"] for item in record.get("media", [])} - self.media_types
+        if unsupported:
+            raise ValueError(f"{self.name} does not support {', '.join(sorted(unsupported))}; "
+                             f"supported media: {', '.join(sorted(self.media_types))}")
         from .model import encode_multimodal
-        return encode_multimodal(processor, record, **kwargs)
+        return encode_multimodal(processor, record, adapter=self, **kwargs)
+
+    def process_media(self, processor, media: list[dict], text: str):
+        """Encode images with the native placeholder and image processor."""
+        from PIL import Image
+        images = []
+        for item in media:
+            with Image.open(item["uri"]) as image:
+                images.append(image.convert("RGB"))
+        return processor(text=[processor.image_token * len(images) + text],
+                         images=images, return_tensors="pt")
 
 
-def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False) -> BackboneAdapter:
+class QwenVisionAdapter(VisionAdapter):
+    """Preserve the released Qwen processor's image/video encoding."""
+
+    name = "qwen_vl"
+    media_types = frozenset({"image", "video"})
+
+    def process_media(self, processor, media: list[dict], text: str):
+        prefix, images, videos = [], [], []
+        for item in media:
+            token = processor.image_token if item["type"] == "image" else processor.video_token
+            prefix.append(processor.vision_start_token + token + processor.vision_end_token)
+            (images if item["type"] == "image" else videos).append(item["uri"])
+        kwargs = {"return_tensors": "pt"}
+        if images:
+            kwargs["size"] = {"shortest_edge": 32 * 32,
+                              "longest_edge": max(128 * 128, (512 * 512) // len(images))}
+        if videos:
+            kwargs.update(size={"shortest_edge": 32 * 32, "longest_edge": 512 * 512},
+                          num_frames=8, fps=None, max_video_tokens=512, cap_pixels_per_frame=True)
+        return processor(text=["".join(prefix) + text], images=images or None, videos=videos or None, **kwargs)
+
+
+class LlamaVisionAdapter(VisionAdapter):
+    name = "llama_vision"
+    # Cross-attention LoRA is unused on text-only records.
+    conditional_parameters = True
+
+    def supports_packed(self, config) -> bool:
+        return False
+
+
+class GemmaVisionAdapter(VisionAdapter):
+    name = "gemma_vision"
+
+
+class PixtralVisionAdapter(VisionAdapter):
+    name = "pixtral"
+
+
+class PhiVisionAdapter(VisionAdapter):
+    name = "phi_vision"
+    language_model_path = ""
+
+    def lora_modules(self, model: nn.Module, preset: str, explicit: str = "") -> str | list[str]:
+        targets = super().lora_modules(model, preset, explicit)
+        decoder = [name for name, module in model.named_modules()
+                   if name.startswith("layers.") and isinstance(module, nn.Linear)]
+        if explicit:
+            missing = [target for target in targets
+                       if not any(name == target or name.endswith("." + target) for name in decoder)]
+            if missing:
+                raise ValueError(f"phi_vision LoRA targets must name language decoder layers: {missing}")
+            return [name for name in decoder if any(name == target or name.endswith("." + target) for target in targets)]
+        if targets == "all-linear":
+            return decoder
+        targets = [name for name in targets if name.startswith("layers.")]
+        if not targets:
+            raise ValueError(f"lora_targets={preset!r} has no Phi decoder layers; use 'all' or 'attn'")
+        return targets
+
+
+def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
+                         source: str | None = None, revision: str | None = None) -> BackboneAdapter:
     """Load a built-in adapter or an explicitly requested ``module:Class``."""
     if name == "auto":
-        name = "qwen_vl" if multimodal else "text"
-    builtins = {"text": BackboneAdapter, "qwen_vl": QwenVisionAdapter}
+        if multimodal and source is None:
+            raise ValueError("source is required to select a native media adapter automatically")
+        if multimodal and source is not None:
+            config, _ = PretrainedConfig.get_config_dict(source, revision=revision)
+            model_type = config.get("model_type")
+            if model_type == "phi4mm":
+                raise ValueError("Phi-4's original weights need native conversion first; run "
+                                 "python -m scripts.convert_phi4_vision --source <base> --revision <commit> --out <directory>, "
+                                 "then train with --base <directory> --multimodal")
+            types = {"mllama": "llama_vision", "gemma3": "gemma_vision",
+                     "llava": "pixtral", "phi4_multimodal": "phi_vision"}
+            name = ("qwen_vl" if model_type and model_type.startswith("qwen") and config.get("vision_config")
+                    else types.get(model_type))
+            if name is None:
+                raise ValueError(f"no built-in media adapter for {model_type!r}; "
+                                 "provide backbone_adapter='module:Class'")
+        else:
+            name = "text"
+    builtins = {"text": BackboneAdapter, "qwen_vl": QwenVisionAdapter,
+                "llama_vision": LlamaVisionAdapter, "gemma_vision": GemmaVisionAdapter,
+                "pixtral": PixtralVisionAdapter, "phi_vision": PhiVisionAdapter}
     if name in builtins:
         if multimodal and name == "text":
             raise ValueError("backbone_adapter='text' cannot be used with multimodal=true")
         return builtins[name]()
     module, separator, attribute = name.partition(":")
     if not separator or not module or not attribute:
-        raise ValueError("backbone_adapter must be auto, text, qwen_vl, or module:Class")
+        raise ValueError(f"backbone_adapter must be auto, {', '.join(builtins)}, or module:Class")
     adapter_class = getattr(importlib.import_module(module), attribute)
     if not isinstance(adapter_class, type) or not issubclass(adapter_class, BackboneAdapter):
         raise ValueError(f"{name} must subclass jevany.backbones.BackboneAdapter")

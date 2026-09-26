@@ -18,6 +18,7 @@ from pathlib import Path
 import torch
 
 from .model import DecisionModel, load_preprocessor
+from .backbones import get_backbone_adapter
 
 HUB_ID = re.compile(r"[\w.-]+/[\w.-]+(@[\w.-]+)?")
 
@@ -139,17 +140,20 @@ class Checkpoint:
                 raise ValueError(f"base load path does not exist: {opts.base_load_path}")
             source, revision = opts.base_load_path, None
         tokenizer_source = self.path if meta.tokenizer_saved else source
+        adapter_name = meta.backbone_adapter
+        if adapter_name == "auto" and meta.multimodal:
+            adapter_name = get_backbone_adapter("auto", multimodal=True, source=source, revision=revision).name
         if meta.tokenizer_saved and not self.file("tokenizer_config.json").is_file():
             raise ValueError(f"{self.path}: missing saved tokenizer_config.json")
         tok = load_preprocessor(tokenizer_source, revision=None if meta.tokenizer_saved else revision,
-                                multimodal=meta.multimodal, backbone_adapter=meta.backbone_adapter)
+                                multimodal=meta.multimodal, backbone_adapter=adapter_name)
         merge = merge and not self.adapter_config().get("trainable_token_indices")   # token-trained adapters stay unmerged
         lora_targets = meta.extra.get("args", {}).get("lora_targets", "all")
         m = DecisionModel(source, tok, device, lora=meta.lora, revision=revision, head_dim=meta.head_dim,
                           lora_targets=lora_targets, special_embeddings=meta.special_embeddings,
                           option_isolation=meta.option_isolation, dtype=torch.float32 if merge else dtype,
                           attn=opts.attn, multimodal=meta.multimodal,
-                          backbone_adapter=meta.backbone_adapter, branch_mode=meta.branch_mode,
+                          backbone_adapter=adapter_name, branch_mode=meta.branch_mode,
                           lora_target_modules=meta.extra.get("args", {}).get("lora_target_modules", ""))
         self.warm_start(m, meta)
         if opts.lora_scale != 1:
@@ -179,7 +183,14 @@ class Checkpoint:
                 raise ValueError(f"--init_from {self.path}: {name} is {theirs!r} there and {mine!r} here")
         if self.meta.tokenizer_saved:
             for name in ("backbone_adapter", "branch_mode"):
-                if getattr(self.meta, name) != getattr(ours, name):
+                expected = getattr(self.meta, name)
+                if name == "backbone_adapter" and expected == "auto":
+                    expected = get_backbone_adapter("auto", multimodal=self.meta.multimodal,
+                                                    source=self.meta.base, revision=self.meta.base_revision).name
+                actual = getattr(ours, name)
+                if name == "backbone_adapter" and actual == "auto":
+                    actual = model.backbone_adapter
+                if expected != actual:
                     raise ValueError(f"--init_from {self.path}: incompatible {name}")
         saved_tokens = self.adapter_config().get("trainable_token_indices")
         current_tokens = model.lm.peft_config["default"].trainable_token_indices

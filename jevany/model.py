@@ -22,7 +22,8 @@ def load_tokenizer(name, revision=None):
 
 
 def load_preprocessor(name, revision=None, multimodal=False, backbone_adapter="auto"):
-    return get_backbone_adapter(backbone_adapter, multimodal=multimodal).load_preprocessor(name, revision)
+    return get_backbone_adapter(backbone_adapter, multimodal=multimodal,
+                                source=name, revision=revision).load_preprocessor(name, revision)
 
 
 def tokenizer_of(preprocessor):
@@ -86,46 +87,42 @@ def encode(tok, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH, strict=False, o
             "labels": [q["label"] for q in rec["questions"]], "state_truncated": len(state_tokens) + 1 > max_state}
 
 
-def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH, strict=False):
+def media_to(value, device):
+    """Move native processor tensors while retaining nested lists and metadata."""
+    if isinstance(value, torch.Tensor):
+        return value.to(device)
+    if isinstance(value, dict):
+        return {key: media_to(item, device) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return type(value)(media_to(item, device) for item in value)
+    return value
+
+
+def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH, strict=False, adapter=None):
     """Encode one image or video decision request with the base model's native multimodal processor."""
     media = rec.get("media") or []
     if not media:
         return encode(processor.tokenizer, rec, max_state=max_state, max_branch=max_branch, strict=strict)
     if len(rec["questions"]) != 1:
         raise ValueError("multimodal records must contain exactly one isolated question")
-    prefix, images, videos = [], [], []
-    for item in media:
-        if item["type"] == "image":
-            prefix.append(processor.vision_start_token + processor.image_token + processor.vision_end_token)
-            images.append(item["uri"])
-        elif item["type"] == "video":
-            prefix.append(processor.vision_start_token + processor.video_token + processor.vision_end_token)
-            videos.append(item["uri"])
-        else:
-            raise ValueError(f"unsupported media type: {item['type']}")
+    adapter = adapter or get_backbone_adapter("qwen_vl")
+    unsupported = {item["type"] for item in media} - adapter.media_types
+    if unsupported:
+        raise ValueError(f"{adapter.name} does not support media types: {sorted(unsupported)}")
+    def text(value):
+        value = safe_text(value)
+        for token in processor.tokenizer.all_special_tokens:
+            if token.startswith(("<", "[")):
+                value = value.replace(token, token.replace("<", "‹").replace("[", "［"))
+        return value
     special = decision_tokens(processor.tokenizer)
-    parts = prefix + [special[0], safe_text(rec["state"])]
+    parts = [special[0], text(rec["state"])]
     for question in rec["questions"]:
-        parts.extend((special[1], safe_text(question["instr"])))
+        parts.extend((special[1], text(question["instr"])))
         for option in question["options"]:
-            parts.extend((special[2], safe_text(option), special[3]))
+            parts.extend((special[2], text(option), special[3]))
         parts.append(special[4])
-    processor_kwargs = {"return_tensors": "pt"}
-    if images:
-        # Keep the combined visual budget roughly constant for multi-image questions.
-        processor_kwargs["size"] = {
-            "shortest_edge": 32 * 32,
-            "longest_edge": max(128 * 128, (512 * 512) // len(images)),
-        }
-    if videos:
-        processor_kwargs.update({
-            "size": {"shortest_edge": 32 * 32, "longest_edge": 512 * 512},
-            "num_frames": 8,
-            "fps": None,
-            "max_video_tokens": 512,
-            "cap_pixels_per_frame": True,
-        })
-    batch = processor(text=["".join(parts)], images=images or None, videos=videos or None, **processor_kwargs)
+    batch = adapter.process_media(processor, media, "".join(parts))
     ids = batch["input_ids"][0].tolist()
     tok = processor.tokenizer
     q_id, close_id, decide_id = (tok.convert_tokens_to_ids(special[index]) for index in (1, 3, 4))
@@ -148,7 +145,7 @@ def encode_multimodal(processor, rec, max_state=MAX_STATE, max_branch=MAX_BRANCH
         seg.extend([index] * (end - start + 1))
     if len(seg) != len(ids):
         raise ValueError("multimodal branch layout mismatch")
-    mm = {key: value.cpu() for key, value in batch.items() if key not in ("input_ids", "attention_mask")}
+    mm = media_to({key: value for key, value in batch.items() if key != "input_ids"}, "cpu")
     return {"ids": ids, "seg": seg, "pos": list(range(len(ids))), "opt": [OPT_NONE] * len(ids),
             "option_isolation": False, "decide_idx": decide_idx, "opt_idx": opt_idx,
             "labels": [q["label"] for q in rec["questions"]], "state_truncated": False,
@@ -238,7 +235,8 @@ class DecisionModel(nn.Module):
         super().__init__()
         tokenizer = tokenizer_of(tok)
         prepare_tokenizer(tokenizer)
-        self.adapter = get_backbone_adapter(backbone_adapter, multimodal=multimodal)
+        self.adapter = get_backbone_adapter(backbone_adapter, multimodal=multimodal, source=name, revision=revision)
+        self.backbone_adapter = self.adapter.name if backbone_adapter == "auto" else backbone_adapter
         # backbone only (no vocab head): we never generate text.
         # eager on MPS/CPU (known-good with our float 4D mask); SDPA on CUDA (accepts arbitrary additive masks).
         attn = attn or ("sdpa" if str(device).startswith("cuda") else "eager")
@@ -282,6 +280,8 @@ class DecisionModel(nn.Module):
         if rec.get("media"):
             if not self.multimodal:
                 raise ValueError("checkpoint does not support media")
+            if self.option_isolation:
+                raise ValueError("option_isolation is not supported for native media records")
             return self.adapter.encode_media(tok, rec, **kw)
         return encode(tokenizer_of(tok), rec, option_isolation=self.option_isolation, **kw)
 
@@ -349,12 +349,12 @@ class DecisionModel(nn.Module):
         return self.forward_batch([enc])[0]
 
     def forward_multimodal(self, enc):
-        if self.mm is None:
+        if not self.multimodal:
             raise ValueError("multimodal encoding requires a multimodal checkpoint")
-        kwargs = {key: value.to(self.device) for key, value in enc["mm"].items()}
+        kwargs = media_to(enc["mm"], self.device)
         ids = torch.tensor([enc["ids"]], device=self.device)
-        attention = torch.ones_like(ids)
-        hidden = self.mm(input_ids=ids, attention_mask=attention, **kwargs).last_hidden_state[0].float()
+        kwargs.setdefault("attention_mask", torch.ones_like(ids))
+        hidden = self.adapter.forward_media(self.lm, self.mm, {"input_ids": ids, **kwargs})[0].float()
         return self._readout(hidden, enc)
 
     def forward_batch(self, encs):
@@ -386,6 +386,8 @@ class DecisionModel(nn.Module):
     @torch.no_grad()
     def prefix(self, enc):
         """Run the state tokens only. Returns (n_state_tokens, kv cache, state hidden states [Ls, d])."""
+        if enc.get("multimodal"):
+            raise ValueError("prefix caching does not support media; use probs()")
         Ls = enc["seg"].count(0)
         ids = torch.tensor([enc["ids"][:Ls]], device=self.device); pos = torch.tensor([enc["pos"][:Ls]], device=self.device)
         # the cache must know the layer types (hybrid backbones keep recurrent + conv states per DeltaNet layer)
@@ -396,6 +398,8 @@ class DecisionModel(nn.Module):
     def probs_and_prefix(self, enc):
         """One full pass that also returns the state prefix (KV cropped to the state, state hidden states): a cache miss
         costs a single forward pass, not two."""
+        if enc.get("multimodal"):
+            raise ValueError("prefix caching does not support media; use probs()")
         Ls = enc["seg"].count(0)
         if self.branch_mode == "rows":
             # recurrent layers cannot be cropped back to the state, so a hybrid miss is a state pass (kept as the prefix)
@@ -414,6 +418,8 @@ class DecisionModel(nn.Module):
     def probs_with_prefix(self, enc, prefix):
         """probs() for a record whose state tokens equal the cached prefix's; only the branches run. The cache is cropped
         back to the state afterwards so it can be reused."""
+        if enc.get("multimodal"):
+            raise ValueError("prefix caching does not support media; use probs()")
         Ls, cache, h_state = prefix
         if enc["seg"].count(0) != Ls: raise ValueError("prefix does not match this record's state")
         if self.branch_mode == "rows":

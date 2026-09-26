@@ -234,6 +234,8 @@ class DistributedBatchForward(torch.nn.Module):
 def distributed_model(model: torch.nn.Module, device_index: int | None) -> DistributedDataParallel:
     """Wrap batched inference for DDP, including the supported PyTorch 2.6 API."""
     kwargs = {"broadcast_buffers": False}
+    if getattr(getattr(model, "adapter", None), "conditional_parameters", False):
+        kwargs["find_unused_parameters"] = True
     if device_index is not None:
         kwargs.update(device_ids=[device_index], output_device=device_index)
     if "init_sync" in inspect.signature(DistributedDataParallel).parameters:
@@ -316,7 +318,7 @@ def parse_args(argv=None):
     ap.add_argument("--option_isolation", type=int, choices=[0, 1], default=0, help="option spans are isolated sub-branches with shared positions (exact permutation invariance)")
     ap.add_argument("--special_embeddings", type=int, choices=[0, 1], default=0,
                     help="also train existing delimiter embeddings; newly added delimiters are always trained")
-    ap.add_argument("--multimodal", action="store_true", help="load the Qwen vision tower and accept image or video media entries")
+    ap.add_argument("--multimodal", action="store_true", help="use the base model's native media adapter")
     ap.add_argument("--max_state", type=int, default=MAX_STATE, help="maximum state tokens admitted for training")
     ap.add_argument("--max_branch", type=int, default=MAX_BRANCH, help="maximum tokens in one state-plus-question branch")
     ap.add_argument("--max_packed", type=int, default=MAX_PACKED, help="maximum tokens in one packed training record")
@@ -587,16 +589,21 @@ def main(argv=None):
     load_revision = None if a.base_load_path else revision
     initial_checkpoint = Checkpoint(a.init_from) if a.init_from else None
     saved_tokenizer = initial_checkpoint is not None and initial_checkpoint.meta.tokenizer_saved
+    from .backbones import get_backbone_adapter
+    adapter_name = a.backbone_adapter
+    if adapter_name == "auto":
+        adapter_name = get_backbone_adapter("auto", multimodal=a.multimodal,
+                                           source=model_source, revision=load_revision).name
     if saved_tokenizer and not initial_checkpoint.file("tokenizer_config.json").is_file():
         raise ValueError(f"{initial_checkpoint.path}: missing saved tokenizer_config.json")
     tok = load_preprocessor(initial_checkpoint.path if saved_tokenizer else model_source,
                             revision=None if saved_tokenizer else load_revision, multimodal=a.multimodal,
-                            backbone_adapter=a.backbone_adapter)
+                            backbone_adapter=adapter_name)
     model = DecisionModel(model_source, tok, dev, lora=a.lora, revision=load_revision,
                           head_dim=a.head_dim, lora_targets=a.lora_targets,
                           option_isolation=bool(a.option_isolation), special_embeddings=bool(a.special_embeddings),
                           dtype=torch.bfloat16 if a.weights_dtype == "bf16" else torch.float32,
-                          multimodal=a.multimodal, backbone_adapter=a.backbone_adapter,
+                          multimodal=a.multimodal, backbone_adapter=adapter_name,
                           branch_mode=a.branch_mode, lora_target_modules=a.lora_target_modules)
     for adapter_config in getattr(model.lm, "peft_config", {}).values():
         adapter_config.base_model_name_or_path = a.base
@@ -607,7 +614,7 @@ def main(argv=None):
     meta = Meta(base=a.base, base_revision=revision, lora=a.lora, head_dim=a.head_dim,
                 option_isolation=bool(a.option_isolation),
                 special_embeddings=model.special_embeddings, multimodal=a.multimodal,
-                backbone_adapter=a.backbone_adapter, branch_mode=model.branch_mode, tokenizer_saved=True,
+                backbone_adapter=model.backbone_adapter, branch_mode=model.branch_mode, tokenizer_saved=True,
                 weights_dtype=a.weights_dtype, holdout=holdout)
     init_source = None
     if a.init_from:

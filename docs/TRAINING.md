@@ -175,7 +175,7 @@ jevany train --config recipes/sft.toml \
 The optional adapter settings are:
 
 ```toml
-backbone_adapter = "auto" # text by default; qwen_vl with multimodal=true
+backbone_adapter = "auto" # chooses the native media adapter when multimodal=true
 branch_mode = "auto"      # packed where supported; independent causal rows otherwise
 lora_targets = "all"     # all linear layers, preserving the existing Qwen layout
 # lora_target_modules = "q_proj,v_proj" # explicit names override the preset
@@ -217,9 +217,78 @@ Set `backbone_adapter = "my_package.adapters:MyAdapter"` in the recipe. The impo
 path is saved in the checkpoint; install the same trusted adapter package in the
 serving environment. Text backbones must accept token IDs, position IDs and an
 attention mask and expose `last_hidden_state` and input embeddings. Native
-image/video processing remains a separate adapter: `qwen_vl` preserves the
-existing Qwen implementation, and other vision architectures require their own
-media adapter.
+media processing is handled by the vision adapters below.
+
+### Native multimodal training
+
+Set `multimodal = true` and choose a native vision base. The data format, training
+loop, LoRA settings and checkpoint loading stay the same:
+
+| Family | Vision base | Adapter | Media |
+|---|---|---|---|
+| Qwen | `Qwen/Qwen3-VL-2B-Instruct`; released Qwen 27B base | `qwen_vl` | Images, video |
+| Llama | `meta-llama/Llama-3.2-11B-Vision-Instruct` | `llama_vision` | Images |
+| Gemma | `google/gemma-3-4b-it` | `gemma_vision` | Images |
+| Mistral | `mistral-community/pixtral-12b` (Transformers format) | `pixtral` | Images |
+| Phi | Native conversion of `microsoft/Phi-4-multimodal-instruct` | `phi_vision` | Images |
+
+`auto` selects from the base's configuration. A text-only variant does not gain
+vision support by setting the flag. Unsupported media types fail with an error.
+Audio is not part of the current training/request format.
+
+For example, on a local CUDA GPU:
+
+```bash
+python -m pip install -e '.[train,multimodal]'
+jevany train --config recipes/sft.toml --multimodal \
+  --base google/gemma-3-4b-it --data data/images.jsonl --out runs/gemma-vision
+```
+
+Each media record contains one question. Native media records do not support
+`option_isolation` or prefix-cache reuse. Relative media paths resolve against the
+JSONL file; use the same labelled request format as text training:
+
+```json
+{"state":"Inspect the sample.","media":[{"type":"image","uri":"red.png"}],"questions":{"color":{"type":"choice","instructions":"What color is the sample?","criteria":{"red":"Red","blue":"Blue"},"label":"red"}}}
+```
+
+Training freezes the existing vision encoder and projector, and fits the language
+decoder's LoRA, decision head and added decision-token embeddings. The native
+processor handles image token expansion and model-specific inputs such as
+Llama's cross-attention mask and Gemma's token types. Checkpoints save the complete
+processor and selected adapter, so serving and subsequent training use the same
+encoding. Text-only and image records can share a run; DDP accounts for Llama's
+cross-attention parameters being unused on text-only records.
+
+Microsoft's original Phi-4 Multimodal release uses the older `phi4mm` format.
+Convert it once with the included public helper:
+
+```bash
+python -m scripts.convert_phi4_vision \
+  --source microsoft/Phi-4-multimodal-instruct \
+  --revision 93f923e1a7727d1c4f446756212d9d3e8fcc5d81 --out models/phi4-vision
+jevany train --config recipes/sft.toml --multimodal \
+  --base models/phi4-vision --data data/images.jsonl --out runs/phi-vision \
+  --lr 0.00002 --head-lr 0.00002
+```
+
+The converter merges the original pretrained vision LoRA, checks every native
+weight, and preserves the media token IDs. `conversion.json` records the source
+revision. The output is a full image/text base; keep it available when loading
+checkpoints trained from it. The speech LoRA is not retained.
+
+For another native vision architecture, subclass `VisionAdapter` from
+`jevany.backbones`. Set `media_types` and `language_model_path`; override
+`process_media` or `forward_media` for another processor/model protocol.
+`encode_media` can handle architectures needing different readout positions.
+Set `conditional_parameters = True` if some trainable decoder paths are absent
+on text-only records. Select the installed class through the existing
+`backbone_adapter = "my_package.adapters:MyVisionAdapter"` setting. Models return
+token hidden states for the shared decision head; the trainer does not contain
+family-specific forward branches.
+
+Both local training and `torchrun` use these interfaces without a cloud account
+or resource-provider SDK.
 
 ### Short compatibility checks
 
@@ -230,6 +299,7 @@ SFT-to-RLCR continuation:
 
 ```bash
 python -m pytest tests/test_backbones.py -q
+python -m pytest tests/test_multimodal_backbones.py -q
 ```
 
 To check pretrained weights without completing a training run:
@@ -258,6 +328,23 @@ The [recorded GPU checks](../results/backbone-smoke-v1.json) cover six pretraine
 bases across the five families and four additional two-GPU DDP runs, each with
 12 optimizer steps. The report pins the weight revisions, identifies the public
 Llama/Gemma mirrors, and includes all probe losses and reload/cache differences.
+
+For native media, the same smoke script generates its own image or video files:
+
+```bash
+python -m scripts.smoke_backbone --base Qwen/Qwen3-VL-2B-Instruct \
+  --media image --mixed-text --steps 12 --out runs/smoke-qwen-vision
+```
+
+Use `--media video` for a video-capable base, or run the same module under
+`torchrun`. The media check also requires predictions to change when the media
+changes while the question and state stay fixed.
+
+The [native-media GPU results](../results/multimodal-backbone-smoke-v1.json)
+include all five families, mixed text/image records, Qwen video, the existing
+Qwen 27B base, and an eight-rank Pixtral run. Each run uses 12 optimizer steps.
+The report retains the initial Phi loss failure and Pixtral's loss fluctuations;
+their final checks use `--lr 0.00002 --head-lr 0.00002`.
 
 The PyTorch 2.6 / CUDA 12.6 container used for the GPU checks required explicit
 `TORCH_NCCL_USE_COMM_NONBLOCKING=0`: a standalone collective probe returned

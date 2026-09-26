@@ -120,6 +120,8 @@ SFT recipe 默认使用 `Qwen/Qwen2.5-0.5B` 和 CUDA GPU。修改 TOML 中的 `b
 
 这五个系列的六个预训练基座均通过了 12 步 GPU 训练和 checkpoint 重载检查，最终 loss 低于初始值。详见[兼容性验证记录](results/backbone-smoke-v1.json)。
 
+原生图片训练支持 Qwen VL、Llama Vision、Gemma 3、Pixtral 和转换后的 Phi-4 Multimodal；Qwen 还支持视频。选择视觉基座并设置 `multimodal = true`。参见[接入方式](docs/TRAINING.md#native-multimodal-training)和 [GPU 验证](results/multimodal-backbone-smoke-v1.json)。
+
 ## 运行示例
 
 服务启动后：

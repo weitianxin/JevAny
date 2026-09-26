@@ -7,6 +7,11 @@ https://github.com/jaredpalmer/kev
 Kev is distributed under the Apache License 2.0. JevAny keeps that license,
 marks derived source files, and documents the changes in ACKNOWLEDGEMENTS.md.
 
+The Phi-4 conversion helper includes configuration and weight-name mappings
+adapted from Hugging Face Transformers, Copyright 2025 The HuggingFace Inc. team,
+under the Apache License 2.0:
+https://github.com/huggingface/transformers
+
 The released adapters require Qwen3.8-27B by the Qwen team. The base model is
 distributed separately under its own Apache License 2.0 terms.
 
