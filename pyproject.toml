@@ -43,14 +43,30 @@ serve = ["jevany[local]", "fastapi>=0.115", "uvicorn>=0.30"]
 train = ["jevany[local]", "datasets>=3.0", "wandb>=0.19"]
 multimodal = ["av>=14", "pillow>=10", "torchvision>=0.21,<0.24"]
 bedrock = ["boto3>=1.40"]
+demo = [
+    "numpy>=2.2,<2.3",
+    "pillow>=10,<12",
+    "crafter==1.8.3",
+    "ruamel.yaml>=0.17,<0.18",
+    "vizdoom>=1.2.4,<1.4",
+]
+robotics = [
+    "numpy>=2.2,<2.3",
+    "pillow>=10,<12",
+    "pybullet==3.2.7",
+]
 dev = ["jevany[train,serve,multimodal]", "httpx>=0.28", "pytest>=9", "build>=1.2", "typesafe-sdk"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["server: needs a running JevAny server"]
+markers = [
+    "server: needs a running JevAny server",
+    "demo: exercises optional CPU game or robotics engines",
+]
 
 [tool.setuptools.packages.find]
 include = ["jevany*"]
 
 [tool.setuptools.package-data]
 "jevany.datasets" = ["starter/*.jsonl", "starter/*.md"]
+"jevany.demos" = ["static/*", "recordings/*.txt", "recordings/*/*.json", "recordings/*/*.jpg"]

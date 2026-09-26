@@ -23,8 +23,8 @@ JevAny 用于训练和部署 Jev 风格的决策模型：你可以微调开源�
 
 | 从这里开始 | JevAny 提供什么 |
 |---|---|
-| **[训练](#训练)** | 训练数据、支持的基座、SFT/RLCR recipe 和多 GPU 训练入口 |
-| **[推理与部署](#推理与部署)** | 预训练模型、本地 Python 推理和 HTTP API |
+| **[训练](#训练)** | 训练数据和统一的 SFT/RLCR 训练框架 |
+| **[推理与部署](#推理与部署)** | 预训练模型、统一 API、测试环境与应用示例 |
 
 ## 演示
 
@@ -32,7 +32,7 @@ JevAny 用于训练和部署 Jev 风格的决策模型：你可以微调开源�
 
 [![JevAny 在机器人、浏览器、软件、实验室和出行任务中选择动作](docs/demos/jevany-cases.gif)](docs/CASES.md)
 
-[查看全部 30 个案例](docs/CASES.md)，了解任务和决策记录。这些是精选成功运行，不代表任务成功率。要测试自己的模型，可以运行[示例与测试环境](#示例与测试环境)。
+[查看 30 个精选成功案例](docs/CASES.md)，或通过[示例与测试环境](#示例与测试环境)试用自己的模型。
 
 ## 安装
 
@@ -105,9 +105,7 @@ jevany train --config recipes/rlcr.toml
 | [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | 默认发布模型 |
 | [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | RLCR 实验版本 |
 
-两个版本都是基于 27B 视觉基座的 adapter，首次加载会另行下载基座权重。其 BF16 基座张量需要约 54 GB，此外还需 adapter 和运行时内存；展示案例使用 A100 80 GB GPU。自己训练的小模型使用同一 API，硬件需求由各自的基座决定。
-
-运行时在单个设备上加载完整模型。[部署说明](docs/DEPLOYMENT.md#checkpoints-and-hardware) 包含硬件要求、离线加载和版本固定方法；[评测](#评测) 对比了两个已发布 checkpoint。
+两个版本首次使用时都会加载 27B 视觉基座。单个设备需容纳约 54 GB 的 BF16 基座权重及额外运行内存。也可以训练更小的模型，再通过同一 API 部署。详见[硬件与加载说明](docs/DEPLOYMENT.md#checkpoints-and-hardware)。
 
 ## 推理与部署
 
@@ -161,23 +159,47 @@ jev = JevModel.from_pretrained("runs/my-jev", model_name="my-jev")
 result = jev.system_one(state=state, questions=questions)
 ```
 
-同一请求格式也适用于 `POST /v1/systemone`、`jevany decide examples/request.json` 和官方 TypeSafe SDK。各入口的用法见[部署指南](docs/DEPLOYMENT.md)。
-
-原生图片/视频输入需要兼容的视觉 checkpoint，每个请求只支持一个问题。HTTP 媒体输入通过 `JEVANY_MEDIA_ROOT` 显式启用，详见[媒体配置与限制](docs/DEPLOYMENT.md#native-media-and-limits)。
+更多模型调用方式见[部署指南](docs/DEPLOYMENT.md)，图片和视频输入见[媒体配置](docs/DEPLOYMENT.md#native-media-and-limits)。
 
 ## 示例与测试环境
 
-服务启动后，可以用以下应用测试 checkpoint 在具体任务上的表现：
+在本地浏览器中打开交互演示。内置回放不需要 GPU、模型下载或推理服务：
 
-| 任务 | 环境 | 输出或成功判定 | 运行命令 |
-|---|---|---|---|
-| [收件箱分类](examples/inbox.py) | 三条本地示例消息 | 人工检查输出的文件夹和回复决策 | `python -m examples.inbox` |
-| [SQL 修复](examples/sql_repair.py) | 内存 SQLite 数据库 | 查询汇总结果与独立计算一致 | `python -m examples.sql_repair` |
-| [服务恢复](examples/service_recovery.py) | 本地副本模拟器 | 在 12 次决策内，让全部 100 个请求返回当前数据 | `python -m examples.service_recovery` |
+```bash
+python -m pip install -e .
+jevany demo
+```
 
-SQL 修复和服务恢复检查失败时退出码为 1；收件箱分类打印决策供人工查看。任意示例加上 `--checkpoint runs/my-jev` 即可在进程内加载模型，也可以通过 `--base-url http://127.0.0.1:8008` 连接服务。
+以下动图录自本地浏览器的 **Replay** 界面，已加速。机械臂回放保留了 JevAny-27B-SFT 的实际决策和原始选项概率。两个游戏的预览明确标注为脚本控制，不代表模型表现。
 
-接入自己的环境时，实现 `reset`、`step` 和 `get_all_actions`，再通过 `jevany.agent.run_episode` 运行。[示例说明](examples/README.md) 介绍了接口；[Harness 与符号控制](docs/INTEGRATIONS.md) 提供可选的 LLM 规划层。
+### [Doom 走廊 · 3D](examples/README.md#doom-corridor-3d)
+
+使用 ViZDoom 和随包提供的 Freedoom 资源，在走廊中移动、瞄准和战斗。
+
+![Doom 浏览器回放：走廊战斗、动作选项、生命值和弹药](docs/demos/playground-doom.gif)
+
+### [Crafter 生存建造 · 2D](examples/README.md#crafter-survival-2d)
+
+采集木材、制作工具、开采石头，同时管理生命值和物资。
+
+![Crafter 浏览器回放：资源采集、制作工具和四项目标的完成进度](docs/demos/playground-crafter.gif)
+
+### [机械臂插孔](examples/README.md#robot-peg-insertion)
+
+控制 Franka 夹爪抓取、对准并插入工件，由 PyBullet 接触物理验证结果。
+
+![机械臂浏览器回放：Franka 插孔动作、模型原始选项概率和物理成功检查](docs/demos/playground-arm.gif)
+
+### 实时控制
+
+安装可选游戏引擎后，可以自己操作，也可以连接[已启动的模型服务](#http-服务)，在浏览器中选择 **Run model**：
+
+```bash
+python -m pip install -e '.[demo]'
+jevany demo --base-url http://127.0.0.1:8008 --text-only
+```
+
+实时模型决策目前使用文本状态。机械臂控制使用单独的 `.[robotics]` 依赖。安装步骤、平台要求和环境接口见[演示指南](examples/README.md)，结合 LLM 规划器使用 Jev 决策可参考[集成文档](docs/INTEGRATIONS.md)。
 
 ## 评测
 

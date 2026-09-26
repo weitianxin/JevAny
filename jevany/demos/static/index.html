@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JevAny Playground</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="JevAny playground"><span class="brand-mark">J</span> JevAny <span class="wordmark">PLAYGROUND</span></a>
+    <span id="connection" class="connection"><i></i> Local playback</span>
+  </header>
+  <main>
+    <div class="intro">
+      <div><p class="eyebrow">JEVANY PLAYGROUND</p><h1>Games and robotics, in your browser.</h1>
+        <p class="lead">Explore three environments, try the controls, or hand them to your model.</p></div>
+      <span class="local-note">Replays work offline.<br>No GPU or account needed.</span>
+    </div>
+    <nav id="cases" class="cases" aria-label="Choose an environment"></nav>
+    <div class="workspace-heading">
+      <div><p id="category" class="eyebrow"></p><h2 id="title"></h2></div>
+      <div class="modes" role="group" aria-label="Control mode">
+        <button data-mode="replay" aria-pressed="true">Replay</button>
+        <button data-mode="manual" aria-pressed="false">Play yourself</button>
+        <button data-mode="model" aria-pressed="false">Run model</button>
+      </div>
+    </div>
+    <div id="setup" class="setup" hidden></div>
+    <div id="error" class="error" role="alert" hidden></div>
+    <section class="workspace">
+      <div class="scene-column">
+        <div class="viewport">
+          <img id="scene" alt="Current environment view" draggable="false">
+          <div class="scene-top"><span id="provenance" class="badge"></span><span id="step-count" class="badge"></span></div>
+          <div id="waiting" class="waiting" hidden><span class="spinner"></span><b id="waiting-label">Waiting for the model</b><span>The environment is paused.</span></div>
+        </div>
+        <div class="transport">
+          <button id="primary" class="primary" disabled>Loading…</button>
+          <button id="step" disabled>Next step</button>
+          <input id="scrub" type="range" min="0" max="1" value="0" aria-label="Replay position">
+          <label id="seed-label" hidden>Seed <input id="seed" type="number" min="0" max="2147483647" value="17"></label>
+          <button id="reset" class="quiet">Restart</button>
+        </div>
+        <div id="metrics" class="metrics"></div>
+        <div class="feedback"><span id="result-dot"></span><div><p id="feedback-label" class="eyebrow">ENVIRONMENT FEEDBACK</p><p id="feedback"></p></div></div>
+        <p id="recording-note" class="recording-note"></p>
+      </div>
+      <aside>
+        <div class="mission"><p class="eyebrow">THE GOAL</p><p id="goal"></p></div>
+        <div class="actions-heading"><p class="eyebrow" id="actions-label">AVAILABLE ACTIONS</p><span id="action-count"></span></div>
+        <p id="probability-note" class="hint"></p>
+        <div id="actions" class="actions"></div>
+      </aside>
+    </section>
+    <div class="evidence">
+      <details><summary>Inspect environment state</summary><pre id="state-json"></pre></details>
+      <button id="download" class="quiet">Download trace ↓</button>
+    </div>
+    <footer><span>JevAny · finite actions, visible outcomes</span><span id="footer-note">Playback uses packaged assets only.</span></footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

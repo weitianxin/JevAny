@@ -23,8 +23,8 @@ Train and serve Jev-style decision models with JevAny: fine-tune an open languag
 
 | Start here | What JevAny provides |
 |---|---|
-| **[Training](#training)** | Training data, supported backbones, SFT/RLCR recipes, and a multi-GPU launcher |
-| **[Inference & Serving](#inference--serving)** | Pretrained models, local Python inference, and an HTTP API |
+| **[Training](#training)** | Training data and shared SFT/RLCR infrastructure |
+| **[Inference & Serving](#inference--serving)** | Pretrained models, a shared API, test environments, and application examples |
 
 ## Demos
 
@@ -32,7 +32,7 @@ Examples built with [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27
 
 [![JevAny choosing actions across robotics, browser, software, laboratory and mobility tasks](docs/demos/jevany-cases.gif)](docs/CASES.md)
 
-[Explore all 30 cases](docs/CASES.md), with task descriptions and decision records. These are selected successful runs, not a success-rate benchmark. To try your own model, run the [examples and test environments](#examples--test-environments).
+[Explore 30 selected successful runs](docs/CASES.md), or try your own model with the [examples and test environments](#examples--test-environments).
 
 ## Installation
 
@@ -105,9 +105,7 @@ See the [training guide](docs/TRAINING.md#backbone-support) for supported backbo
 | [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | Default released model |
 | [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | Experimental RLCR continuation |
 
-Both releases are adapters over a 27B vision-capable base, downloaded separately on first load. Their BF16 base tensors require about 54 GB, plus adapter and runtime memory; the showcase used A100 80 GB GPUs. Smaller models you train use the same API with their own hardware requirements.
-
-The runtime loads one full model on one device. [Deployment details](docs/DEPLOYMENT.md#checkpoints-and-hardware) cover hardware, offline loading and revision pinning; [Evaluation](#evaluation) compares the released checkpoints.
+Both releases load a 27B vision-capable base on first use. Allow about 54 GB for BF16 base weights, plus runtime memory, on a single device. You can also train a smaller model and serve it through the same API. See the [hardware and loading guide](docs/DEPLOYMENT.md#checkpoints-and-hardware).
 
 ## Inference & Serving
 
@@ -161,23 +159,47 @@ jev = JevModel.from_pretrained("runs/my-jev", model_name="my-jev")
 result = jev.system_one(state=state, questions=questions)
 ```
 
-The same request format also works with `POST /v1/systemone`, `jevany decide examples/request.json`, and the official TypeSafe SDK. See the [deployment guide](docs/DEPLOYMENT.md) for each option.
-
-Native image/video inputs require a compatible vision checkpoint and one question per request. Enable HTTP media inputs explicitly through `JEVANY_MEDIA_ROOT`; see [media setup and limits](docs/DEPLOYMENT.md#native-media-and-limits).
+See the [deployment guide](docs/DEPLOYMENT.md) for more ways to call a model and [media setup](docs/DEPLOYMENT.md#native-media-and-limits) for image and video inputs.
 
 ## Examples & Test Environments
 
-With a server running, use these applications to try a checkpoint on a concrete task:
+Open the playground in your local browser. The included replays need no GPU, model download, or inference server:
 
-| Task | Environment | Result or success criterion | Run |
-|---|---|---|---|
-| [Inbox triage](examples/inbox.py) | Three local sample messages | Inspect the printed folder and reply decisions | `python -m examples.inbox` |
-| [SQL repair](examples/sql_repair.py) | In-memory SQLite database | Query totals match an independent calculation | `python -m examples.sql_repair` |
-| [Service recovery](examples/service_recovery.py) | Local replica simulator | Serve all 100 requests with current data within 12 decisions | `python -m examples.service_recovery` |
+```bash
+python -m pip install -e .
+jevany demo
+```
 
-SQL repair and service recovery exit with status 1 when their checks fail. Inbox triage prints decisions for manual inspection. Pass `--checkpoint runs/my-jev` to any example to load your model in-process, or `--base-url http://127.0.0.1:8008` to use a server.
+These GIFs show accelerated recordings of the local browser's **Replay** interface. The robot replay contains recorded JevAny-27B-SFT decisions and their original probabilities. The game previews use explicitly labelled scripted controls; they do not report model performance.
 
-To add an environment, implement `reset`, `step` and `get_all_actions` and run it with `jevany.agent.run_episode`. [Example instructions](examples/README.md) explain the interface; [harness and symbolic integrations](docs/INTEGRATIONS.md) add optional LLM planning.
+### [Doom corridor · 3D](examples/README.md#doom-corridor-3d)
+
+Move, aim and fight through a corridor using ViZDoom and the included Freedoom assets.
+
+![Doom browser replay with corridor combat, action choices, health and ammunition](docs/demos/playground-doom.gif)
+
+### [Crafter survival · 2D](examples/README.md#crafter-survival-2d)
+
+Gather wood, craft tools and mine stone while managing health and supplies.
+
+![Crafter browser replay showing resource gathering, crafting actions and progress through four goal milestones](docs/demos/playground-crafter.gif)
+
+### [Robot peg insertion](examples/README.md#robot-peg-insertion)
+
+Use a Franka gripper to grasp, align and insert a peg, checked by PyBullet contact physics.
+
+![Robot browser replay showing the Franka arm inserting a peg, recorded model probabilities and physical success checks](docs/demos/playground-arm.gif)
+
+### Live control
+
+Install the optional game engines to play yourself, or connect a [running model server](#http-server) and choose **Run model** in the browser:
+
+```bash
+python -m pip install -e '.[demo]'
+jevany demo --base-url http://127.0.0.1:8008 --text-only
+```
+
+Live model runs currently use text state. Robot control uses the separate `.[robotics]` extra. See the [playground guide](examples/README.md) for setup, platform requirements and environment APIs, or [integrations](docs/INTEGRATIONS.md) to combine Jev decisions with an LLM planner.
 
 ## Evaluation
 

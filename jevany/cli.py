@@ -1,4 +1,4 @@
-"""The `jevany` command: train, serve, decide, and prepare data."""
+"""The `jevany` command: train, serve, decide, explore demos, and prepare data."""
 import argparse
 import json
 import sys
@@ -10,7 +10,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="jevany", description="Train and deploy Jev-style decision models.")
     from . import __version__
     parser.add_argument("--version", action="version", version=__version__)
-    parser.add_argument("command", choices=["train", "serve", "decide", "data"])
+    parser.add_argument("command", choices=["train", "serve", "decide", "data", "demo"])
     if not argv or argv[0] in ("-h", "--help", "--version"):
         parser.parse_args(argv or ["--help"])
         return
@@ -25,6 +25,9 @@ def main(argv: list[str] | None = None) -> None:
             serve(rest)
         elif command == "data":
             data_main(rest)
+        elif command == "demo":
+            from .demos.server import main as demo
+            demo(rest)
         else:
             decide_main(rest)
     except ImportError as error:

@@ -1,4 +1,163 @@
-# Applications using one interface
+# Games, robotics, and application examples
+
+## Open the playground
+
+From the repository root, after creating the Python environment in the
+[installation guide](../README.md#installation):
+
+```bash
+python -m pip install -e .
+jevany demo
+```
+
+Open `http://127.0.0.1:8090` if your browser does not open automatically.
+Replays work offline and need no GPU, model weights, Docker, or cloud account.
+Use `--port 8091` to change the port or `--no-open` on a remote machine. For a
+remote host, forward the chosen port to your computer before opening the URL.
+
+The playground has three modes:
+
+| Mode | What runs | Requirements |
+|---|---|---|
+| **Replay** | Packaged frames and action records, with pause, step and seek controls | Base installation |
+| **Play yourself** | Your button presses execute native environment actions on CPU | The environment's optional extra |
+| **Run model** | JevAny receives measured state and recent actions, chooses an action, and displays its probabilities | Optional extra and a running JevAny server |
+
+The two game previews are **scripted environment tours**, not JevAny gameplay.
+The robot preview is an existing selected successful JevAny-27B-SFT recording;
+its original option probabilities are retained. Neither is a success-rate
+benchmark. Fresh model runs keep the model's actual choices, including failures.
+
+## Play locally or connect your model
+
+For both games:
+
+```bash
+python -m pip install -e '.[demo]'
+jevany demo
+```
+
+Choose **Play yourself** and click the action controls. No inference server is
+needed. Change the seed and start a new run to change the initial world.
+
+For model decisions, [start a JevAny server](../README.md#http-server), then:
+
+```bash
+jevany demo --base-url http://127.0.0.1:8008 --text-only
+```
+
+Choose **Run model**, then **One decision** or **Run automatically**. Use
+**Pause after this step** to stop after the current request finishes. The
+environment pauses while inference runs; Doom does not keep advancing while
+waiting for the model. Each action then executes a bounded amount of simulation.
+The browser shows the environment's result and the returned probability for
+every candidate, without replacing a failed choice with a scripted action.
+
+Use `--text-only` with the bundled HTTP server. It accepts images only as local
+files under `JEVANY_MEDIA_ROOT`; the playground's inline image transport is not
+connected to that file policy. Images remain visible in the browser.
+Use `--model MODEL_ID` to set the request's model identity and `--timeout 300`
+if your server needs longer than the default 120 seconds per request.
+Hardware requirements belong to the model server; the playground itself runs
+on CPU. **Download trace** saves the states, actions and distributions from the
+current run. Live trace exports do not include image frames.
+
+### Platform requirements
+
+The base replay viewer uses only the ordinary JevAny client installation.
+For live games, ViZDoom's prebuilt wheels support recent Linux, Apple Silicon
+macOS and x86-64 Windows. Older Linux distributions may fall back to a source
+build; use a recent Linux environment to avoid that step. On Intel macOS,
+install `vizdoom==1.2.4` together with the game extra.
+
+The optional robot environment is installed separately:
+
+```bash
+python -m pip install -e '.[robotics]'
+```
+
+PyBullet 3.2.7 has no Python 3.12 wheels on PyPI, so this step requires a C++
+build toolchain and can take several minutes. This does not affect robot
+replays or either game. The game and robot extras can coexist with the training
+and serving extras.
+
+## Doom corridor (3D)
+
+[ViZDoom](https://github.com/Farama-Foundation/ViZDoom) runs its
+`deadly_corridor` scenario with the included Freedoom assets. No commercial Doom
+installation or separate WAD download is required. The goal is to reach the
+green armor while preserving health and ammunition.
+
+Eight controls cover forward/backward movement, strafing, turning, shooting and
+waiting. A move or shot advances eight game ticks; a turn advances four.
+Observations contain the current rendered view, health, ammunition and visible
+object boxes. An episode is limited to 160 decisions. The preview uses a simple
+scripted controller for 48 decisions; it does not claim to complete the level.
+
+![Accelerated local browser replay of Doom corridor with scripted controls](../docs/demos/playground-doom.gif)
+
+## Crafter survival (2D)
+
+[Crafter](https://github.com/danijar/crafter) is a pixel-art survival game with
+17 native actions. This task asks for a complete crafting sequence: gather wood,
+place a table, make a wood pickaxe, and mine stone while remaining alive.
+Movement, crafting, food, health and resource use are handled by the game.
+
+The adapter preserves all native actions, including unavailable crafting
+attempts that consume a turn. Observations include the rendered image, inventory,
+achievements and only the visible 9 × 7 terrain window. Runs stop at goal
+completion, death or 200 decisions. The bundled scripted
+preview demonstrates the crafting sequence.
+
+![Accelerated local browser replay of Crafter gathering wood, crafting and mining stone with scripted controls](../docs/demos/playground-crafter.gif)
+
+## Robot peg insertion
+
+This task adapts JevAny's existing Franka Panda
+[peg-insertion case](../docs/CASES.md#robotics-assembly-and-laboratory-automation).
+The nine controls move joint motors, close or open the fingers, and position the
+gripper above either socket. Actual PyBullet contact and gravity determine
+whether the peg is grasped, carried and inserted; the model does not set an
+object's position directly.
+
+Success requires a prior two-finger grasp, alignment with the cyan socket,
+correct insertion depth, an upright peg, released fingers and a settled object.
+Closing the gripper above the peg or choosing the wrong socket fails these
+checks. Runs have a 24-decision limit.
+
+![Accelerated local browser replay of the Franka peg-insertion task with recorded JevAny-27B-SFT probabilities](../docs/demos/playground-arm.gif)
+
+## Environment API
+
+The implementations live in [`jevany/demos`](../jevany/demos). Optional engines
+load only when a live environment is created:
+
+```python
+from jevany.demos import make_environment
+
+env = make_environment("crafter", seed=17)
+try:
+    state = env.observe()
+    actions = env.get_all_actions()
+    state, reward, done, info = env.step("move_right")
+    image = env.render()  # RGB array
+finally:
+    env.close()
+```
+
+Environments implement `reset`, `step`, `get_all_actions`, `render` and `close`,
+and provide `ACTION_LOOKUP` descriptions. They can also be used with
+[`jevany.agent.run_episode`](../jevany/agent.py), whose default request contains
+structured state only, as do the live browser runs described above.
+
+The viewer serves packaged HTML, CSS, JavaScript and frames without a frontend
+build or CDN. To regenerate the **scripted game previews** with the game extra
+installed, run `python scripts/record_demo_previews.py`. The recorder uses a
+fixture planner for Crafter and explicitly marks the output as scripted.
+Recorded game imagery and upstream notices are described in
+[`recordings/LICENSES.txt`](../jevany/demos/recordings/LICENSES.txt).
+
+## Command-line application examples
 
 Run from the repository root after [starting a server](../docs/DEPLOYMENT.md).
 These examples adapt three scenarios from the existing
@@ -44,7 +203,7 @@ jevany decide examples/request.json
 jevany decide examples/request.json --checkpoint runs/my-jev
 ```
 
-The earlier Bedrock [harness](bedrock_harness.py) and
-[symbolic tree](bedrock_symbolic.py) examples remain available for applications
-that use an LLM planner to construct bounded decisions. See
+The Bedrock [harness](bedrock_harness.py) and
+[symbolic tree](bedrock_symbolic.py) examples use an LLM planner to construct
+bounded decisions. See
 [INTEGRATIONS.md](../docs/INTEGRATIONS.md) for their additional dependencies.

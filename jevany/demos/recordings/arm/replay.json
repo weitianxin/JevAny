@@ -1,0 +1,710 @@
+{
+  "case": "arm",
+  "controller": "model",
+  "model": "tianxinwei/JevAny-27B-SFT",
+  "checkpoint_revision": "ad7b48b7056a9742f54aacc9b98b6b46dc2ce167",
+  "seed": 17,
+  "environment": "PyBullet 3.2.7 / native 3D rigid-body and articulated-joint simulation",
+  "note": "Selected successful JevAny-27B-SFT run, replayed from native PyBullet frames. Original option probabilities are preserved. Playback is accelerated; it does not measure single-attempt success rate.",
+  "steps": [
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 0,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.3602,
+          -0.02,
+          0.4001
+        ],
+        "gripper": "open",
+        "object_between_both_fingers": null,
+        "parts_xyz_metres": {
+          "peg": [
+            0.4702,
+            -0.19,
+            0.055
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "safe transport height",
+        "previous_action": "observe",
+        "feedback": "Ready.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": false,
+        "target_grasp_height_metres": 0.055,
+        "gripper_height_above_target_metres": 0.3451,
+        "gripper_at_target_grasp_height": false,
+        "gripper_geometry": "above target grasp height",
+        "checks": {
+          "peg_grasped": false,
+          "centered_in_cyan_socket": false,
+          "seated_depth": true,
+          "upright": true,
+          "released": true,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/000.jpg"
+      ],
+      "actions": {
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "finish": "Finish. Stop without any further movement.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position."
+      },
+      "feedback": "Ready. Align with the peg before closing the fingers.",
+      "done": false,
+      "success": false,
+      "decision": null
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 1,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.4699,
+          -0.1896,
+          0.2903
+        ],
+        "gripper": "open",
+        "object_between_both_fingers": null,
+        "parts_xyz_metres": {
+          "peg": [
+            0.4702,
+            -0.19,
+            0.055
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "safe transport height",
+        "previous_action": "approach",
+        "feedback": "Action executed.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.055,
+        "gripper_height_above_target_metres": 0.2353,
+        "gripper_at_target_grasp_height": false,
+        "gripper_geometry": "above target grasp height",
+        "checks": {
+          "peg_grasped": false,
+          "centered_in_cyan_socket": false,
+          "seated_depth": true,
+          "upright": true,
+          "released": true,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/001.jpg",
+        "/recordings/arm/002.jpg",
+        "/recordings/arm/003.jpg",
+        "/recordings/arm/004.jpg",
+        "/recordings/arm/005.jpg",
+        "/recordings/arm/006.jpg",
+        "/recordings/arm/007.jpg",
+        "/recordings/arm/008.jpg"
+      ],
+      "actions": {
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "finish": "Finish. Stop without any further movement.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position."
+      },
+      "feedback": "Action executed.",
+      "done": false,
+      "success": false,
+      "decision": {
+        "controller": "model",
+        "action": "approach",
+        "probabilities": {
+          "seat": 0.0003257548378314823,
+          "finish": 0.0004813770647160709,
+          "grasp": 0.0015961601166054606,
+          "red_socket": 0.00035104455309920013,
+          "lift": 0.0004733906826004386,
+          "cyan_socket": 0.001352699939161539,
+          "release": 0.0001708589552436024,
+          "approach": 0.9868398904800415,
+          "lower": 0.008408738300204277
+        }
+      }
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 2,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.4746,
+          -0.1909,
+          0.0674
+        ],
+        "gripper": "open",
+        "object_between_both_fingers": null,
+        "parts_xyz_metres": {
+          "peg": [
+            0.4779,
+            -0.1899,
+            0.0559
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "near table",
+        "previous_action": "lower",
+        "feedback": "Action executed.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.0559,
+        "gripper_height_above_target_metres": 0.0115,
+        "gripper_at_target_grasp_height": true,
+        "gripper_geometry": "at target grasp height",
+        "checks": {
+          "peg_grasped": false,
+          "centered_in_cyan_socket": false,
+          "seated_depth": true,
+          "upright": true,
+          "released": true,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/009.jpg",
+        "/recordings/arm/010.jpg",
+        "/recordings/arm/011.jpg",
+        "/recordings/arm/012.jpg",
+        "/recordings/arm/013.jpg",
+        "/recordings/arm/014.jpg",
+        "/recordings/arm/015.jpg",
+        "/recordings/arm/016.jpg"
+      ],
+      "actions": {
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "finish": "Finish. Stop without any further movement.",
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height."
+      },
+      "feedback": "Action executed.",
+      "done": false,
+      "success": false,
+      "decision": {
+        "controller": "model",
+        "action": "lower",
+        "probabilities": {
+          "seat": 0.0006833376828581095,
+          "release": 0.0008047935552895069,
+          "finish": 0.0008676270372234285,
+          "lower": 0.9520081877708435,
+          "lift": 0.005811732728034258,
+          "grasp": 0.022508887574076653,
+          "cyan_socket": 0.002667165594175458,
+          "approach": 0.013950255699455738,
+          "red_socket": 0.0006980152102187276
+        }
+      }
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 3,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.4746,
+          -0.191,
+          0.0674
+        ],
+        "gripper": "closed",
+        "object_between_both_fingers": "peg",
+        "parts_xyz_metres": {
+          "peg": [
+            0.4765,
+            -0.192,
+            0.0565
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "near table",
+        "previous_action": "grasp",
+        "feedback": "Both fingers contact peg",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.0565,
+        "gripper_height_above_target_metres": 0.0109,
+        "gripper_at_target_grasp_height": true,
+        "gripper_geometry": "at target grasp height",
+        "checks": {
+          "peg_grasped": true,
+          "centered_in_cyan_socket": false,
+          "seated_depth": true,
+          "upright": true,
+          "released": false,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/017.jpg",
+        "/recordings/arm/018.jpg",
+        "/recordings/arm/019.jpg",
+        "/recordings/arm/020.jpg",
+        "/recordings/arm/021.jpg",
+        "/recordings/arm/022.jpg",
+        "/recordings/arm/023.jpg",
+        "/recordings/arm/024.jpg"
+      ],
+      "actions": {
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "finish": "Finish. Stop without any further movement."
+      },
+      "feedback": "Both fingers contact peg",
+      "done": false,
+      "success": false,
+      "decision": {
+        "controller": "model",
+        "action": "grasp",
+        "probabilities": {
+          "lower": 0.012911926954984665,
+          "approach": 0.004980315454304218,
+          "cyan_socket": 0.001101538771763444,
+          "grasp": 0.9583463668823242,
+          "lift": 0.014318693429231644,
+          "red_socket": 0.0004417786549311131,
+          "release": 0.0022672764025628567,
+          "seat": 0.0007521239458583295,
+          "finish": 0.004880050662904978
+        }
+      }
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 4,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.4746,
+          -0.191,
+          0.3092
+        ],
+        "gripper": "closed",
+        "object_between_both_fingers": "peg",
+        "parts_xyz_metres": {
+          "peg": [
+            0.479,
+            -0.1726,
+            0.2947
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "safe transport height",
+        "previous_action": "lift",
+        "feedback": "Action executed.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.2947,
+        "gripper_height_above_target_metres": 0.0145,
+        "gripper_at_target_grasp_height": true,
+        "gripper_geometry": "at target grasp height",
+        "checks": {
+          "peg_grasped": true,
+          "centered_in_cyan_socket": false,
+          "seated_depth": false,
+          "upright": false,
+          "released": false,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/025.jpg",
+        "/recordings/arm/026.jpg",
+        "/recordings/arm/027.jpg",
+        "/recordings/arm/028.jpg",
+        "/recordings/arm/029.jpg",
+        "/recordings/arm/030.jpg",
+        "/recordings/arm/031.jpg",
+        "/recordings/arm/032.jpg"
+      ],
+      "actions": {
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height.",
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "finish": "Finish. Stop without any further movement.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward."
+      },
+      "feedback": "Action executed.",
+      "done": false,
+      "success": false,
+      "decision": {
+        "controller": "model",
+        "action": "lift",
+        "probabilities": {
+          "lower": 0.005237241741269827,
+          "lift": 0.9484989047050476,
+          "red_socket": 0.002085628919303417,
+          "seat": 0.0017727127997204661,
+          "grasp": 0.007529758848249912,
+          "cyan_socket": 0.02077016793191433,
+          "finish": 0.005925871431827545,
+          "approach": 0.0030727891717106104,
+          "release": 0.005106983240693808
+        }
+      }
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 5,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.6097,
+          0.1694,
+          0.31
+        ],
+        "gripper": "closed",
+        "object_between_both_fingers": "peg",
+        "parts_xyz_metres": {
+          "peg": [
+            0.6158,
+            0.1873,
+            0.2931
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "safe transport height",
+        "previous_action": "cyan_socket",
+        "feedback": "Action executed.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.2931,
+        "gripper_height_above_target_metres": 0.0169,
+        "gripper_at_target_grasp_height": true,
+        "gripper_geometry": "at target grasp height",
+        "checks": {
+          "peg_grasped": true,
+          "centered_in_cyan_socket": false,
+          "seated_depth": false,
+          "upright": true,
+          "released": false,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/033.jpg",
+        "/recordings/arm/034.jpg",
+        "/recordings/arm/035.jpg",
+        "/recordings/arm/036.jpg",
+        "/recordings/arm/037.jpg",
+        "/recordings/arm/038.jpg",
+        "/recordings/arm/039.jpg",
+        "/recordings/arm/040.jpg"
+      ],
+      "actions": {
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "finish": "Finish. Stop without any further movement.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height."
+      },
+      "feedback": "Action executed.",
+      "done": false,
+      "success": false,
+      "decision": {
+        "controller": "model",
+        "action": "cyan_socket",
+        "probabilities": {
+          "lower": 0.00697410898283124,
+          "lift": 0.01749071292579174,
+          "finish": 0.004462046083062887,
+          "release": 0.003545855637639761,
+          "seat": 0.057022999972105026,
+          "approach": 0.007494599558413029,
+          "grasp": 0.0011323642684146762,
+          "red_socket": 0.0053713382221758366,
+          "cyan_socket": 0.8965059518814087
+        }
+      }
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 6,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.6099,
+          0.1694,
+          0.1407
+        ],
+        "gripper": "closed",
+        "object_between_both_fingers": "peg",
+        "parts_xyz_metres": {
+          "peg": [
+            0.6165,
+            0.1811,
+            0.1237
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "safe transport height",
+        "previous_action": "seat",
+        "feedback": "Action executed.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.1237,
+        "gripper_height_above_target_metres": 0.0169,
+        "gripper_at_target_grasp_height": true,
+        "gripper_geometry": "at target grasp height",
+        "checks": {
+          "peg_grasped": true,
+          "centered_in_cyan_socket": true,
+          "seated_depth": false,
+          "upright": true,
+          "released": false,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/041.jpg",
+        "/recordings/arm/042.jpg",
+        "/recordings/arm/043.jpg",
+        "/recordings/arm/044.jpg",
+        "/recordings/arm/045.jpg",
+        "/recordings/arm/046.jpg",
+        "/recordings/arm/047.jpg",
+        "/recordings/arm/048.jpg"
+      ],
+      "actions": {
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position.",
+        "finish": "Finish. Stop without any further movement.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command.",
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height."
+      },
+      "feedback": "Action executed.",
+      "done": false,
+      "success": false,
+      "decision": {
+        "controller": "model",
+        "action": "seat",
+        "probabilities": {
+          "grasp": 0.0024919682182371616,
+          "release": 0.011055818758904934,
+          "seat": 0.8466150164604187,
+          "lower": 0.10528966784477234,
+          "finish": 0.010793748311698437,
+          "lift": 0.004247748292982578,
+          "cyan_socket": 0.017673205584287643,
+          "approach": 0.0012408910552039742,
+          "red_socket": 0.000591995136346668
+        }
+      }
+    },
+    {
+      "case": "arm",
+      "seed": 17,
+      "step": 7,
+      "observation": {
+        "gripper_xyz_metres": [
+          0.6099,
+          0.1694,
+          0.3493
+        ],
+        "gripper": "open",
+        "object_between_both_fingers": null,
+        "parts_xyz_metres": {
+          "peg": [
+            0.6056,
+            0.173,
+            0.055
+          ]
+        },
+        "destinations_xyz_metres": {
+          "cyan_socket": [
+            0.61,
+            0.17,
+            0.14
+          ],
+          "red_socket": [
+            0.39,
+            0.23,
+            0.14
+          ]
+        },
+        "gripper_height": "safe transport height",
+        "previous_action": "release",
+        "feedback": "Action executed.",
+        "physical_collisions": 0,
+        "target_name": "peg",
+        "gripper_aligned_above_target_xy": true,
+        "target_grasp_height_metres": 0.055,
+        "gripper_height_above_target_metres": 0.2943,
+        "gripper_at_target_grasp_height": false,
+        "gripper_geometry": "above target grasp height",
+        "checks": {
+          "peg_grasped": true,
+          "centered_in_cyan_socket": true,
+          "seated_depth": true,
+          "upright": true,
+          "released": true,
+          "settled": true
+        }
+      },
+      "frames": [
+        "/recordings/arm/049.jpg",
+        "/recordings/arm/050.jpg",
+        "/recordings/arm/051.jpg",
+        "/recordings/arm/052.jpg",
+        "/recordings/arm/053.jpg",
+        "/recordings/arm/054.jpg",
+        "/recordings/arm/055.jpg",
+        "/recordings/arm/056.jpg"
+      ],
+      "actions": {
+        "cyan_socket": "Align with cyan socket. Move above the cyan socket at safe transport height.",
+        "grasp": "Close fingers in place. Send a finger-closing command only. Contact requires XY alignment and the gripper already being at object grasp height.",
+        "lower": "Descend to grasp height. Move the gripper down vertically to the object's current grasp height at the current x-y position.",
+        "release": "Open and retract. Open the fingers at the current position and retract upward.",
+        "red_socket": "Align with red socket. Move above the red socket at safe transport height.",
+        "approach": "Approach peg. Move directly above the peg at safe height, keeping the current finger opening.",
+        "seat": "Lower into the socket. Lower the held peg to the mouth of the socket, ready for gravity-assisted seating.",
+        "finish": "Finish. Stop without any further movement.",
+        "lift": "Lift with the gripper. Lift vertically to a safe transport height, maintaining the finger command."
+      },
+      "feedback": "Peg seated upright in the cyan socket, released, and physically settled.",
+      "done": true,
+      "success": true,
+      "decision": {
+        "controller": "model",
+        "action": "release",
+        "probabilities": {
+          "cyan_socket": 0.014447045512497425,
+          "grasp": 0.0043319398537278175,
+          "lower": 0.11201793700456619,
+          "release": 0.7088149189949036,
+          "red_socket": 0.0014176946133375168,
+          "approach": 0.0036497749388217926,
+          "seat": 0.08358561992645264,
+          "finish": 0.059626299887895584,
+          "lift": 0.012108718045055866
+        }
+      }
+    }
+  ]
+}
