@@ -9,55 +9,49 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-32d6c5"></a>
 </p>
 
-JevAny is a calibrated decision layer for reinforcement learning, agents, multimodal evidence, and model harnesses. It turns shared context into typed answers and option probabilities in one prefill pass. It does not generate an answer or a reasoning trace.
+JevAny chooses among the options you give it. Send the current state, a question, and candidate answers; get back a selection and the probability of each option, without decoding answer text.
 
-The current 27B release uses a Qwen3.8 backbone and contains two rank 16 LoRA checkpoints:
+Use it to route a request, choose an agent's next action, or make a decision from image or video evidence. Your application supplies the available actions and executes the choice. For open-ended tasks, a [harness](#harness-and-symbolic-control) can first turn the task into explicit questions and options.
 
-- [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) is the recommended general checkpoint.
-- [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) is an experimental calibration-reward checkpoint.
+[Quick start](#quick-start) · [Results](#results) · [How it works](#how-it-works) · [Training](#train-your-own) · [Limits](#scope)
 
-Both require separately distributed base weights and the JevAny runtime.
+## Applications
 
-## See It Act
+Examples built with our [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) model.
 
-From assembling a rover to repairing a release, the same checkpoint chooses what happens next across **30 tasks**.
+[![JevAny choosing actions in robotics, laboratory, mobility, browser, and software tasks](docs/demos/jevany-cases.gif)](docs/demos/jevany-cases.gif)
 
-[![JevAny choosing actions across 30 robotics, laboratory, mobility, browser, and software tasks](docs/demos/jevany-cases.gif)](docs/demos/jevany-cases.gif)
+[Explore the cases](docs/CASES.md) for each task, the constraints that decide the order of work, and the recorded decisions behind every trace.
 
-[Explore the cases →](docs/CASES.md)
+## Quick start
 
-## One Core, Several Systems
+You need Python 3.12 or newer. The commands below also need a CUDA GPU that holds the full 27B model in BF16 plus runtime memory, since the server loads the model onto one device. Leave local disk space for the base weights as well as the adapter.
 
-| System | What it does | Status |
-|---|---|---|
-| **Jev-Judge** | Typed choice, binary, and ordinal decisions with confidence | Released |
-| **Jev-Agent** | Chooses actions in multi-step environments | Prototype evaluated |
-| **Jev-Harness** | Lets an LLM compile open-ended tasks into bounded decisions | Prototype |
-| **Jev-Tool** | Selects tools, execution modes, and escalation paths | Prototype |
-| **Jev-Symbolic** | Runs LLM-authored, validated decision trees with JevAny at each node | Prototype |
-| **Jev-Test** | Adapts from repeated samples without ground-truth labels | Research result |
-| **Jev-Image** | Makes decisions from native image evidence | Evaluated with blank and shuffled controls |
-| **Jev-Video** | Scores native video evidence | Evaluated on three temporal decision tasks |
+The v0.2 release has two rank 16 LoRA adapters with a learned pointer head, both on a Qwen3.8-27B base:
 
-Next priorities are harder agent tasks, long context, document images, broader temporal reasoning, broader computer-use, coding and robotics evaluations, and guarded test-time updates. See [ROADMAP.md](ROADMAP.md) for acceptance criteria.
+| Checkpoint | When to use it |
+|---|---|
+| [JevAny-27B-SFT](https://huggingface.co/tianxinwei/JevAny-27B-SFT) | Start here. Stronger accuracy on both the development and transfer suites. |
+| [JevAny-27B-RLCR](https://huggingface.co/tianxinwei/JevAny-27B-RLCR) | The reinforcement learning with calibration rewards (RLCR) experiment. No overall transfer gain over SFT so far. |
 
-## Quick Start
+### Start the server
 
 ```bash
 git clone https://github.com/weitianxin/JevAny.git
 cd JevAny
-python -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e '.[serve]'
-
-hf download tianxinwei/JevAny-27B-SFT \
-  --local-dir models/JevAny-27B-SFT
+python -m pip install -e '.[serve,multimodal]'
 
 JEVANY_DTYPE=bf16 python -m jevany.serve \
-  --run models/JevAny-27B-SFT --device cuda --port 8008
+  --run tianxinwei/JevAny-27B-SFT --device cuda --port 8008
 ```
 
-Send one state and up to 64 questions:
+The first start downloads the adapter and its separately distributed base weights from Hugging Face. `--run` also accepts a local checkpoint directory. Once the server is listening on port 8008, send a request from another terminal.
+
+### Make a decision
+
+This request asks two independent questions about the same ticket: which department should handle it, and how likely it is to need urgent review.
 
 ```bash
 curl http://127.0.0.1:8008/v1/systemone \
@@ -86,11 +80,42 @@ curl http://127.0.0.1:8008/v1/systemone \
   }'
 ```
 
-The response includes the selected answer, normalized confidence, and the full option distribution. [docs/DATA.md](docs/DATA.md) defines the request and training formats.
+Read `answers.department.choice` for the selected department, `answers.department.probabilities` for the alternatives, and `answers.urgent.noul` for the probability of urgent review.
+
+A text request can contain 1–64 questions about the same `state`. Three question types share the same endpoint:
+
+| Type | You provide | You receive in `answers.<question_id>` |
+|---|---|---|
+| `choice` | Named options in a `criteria` object | The selected `choice`, all option `probabilities`, and normalized `confidence` |
+| `noul` | A yes/no question | `noul`: the probability of **true**, from 0 to 1 |
+| `score` | Ordered levels in a `criteria` list | The expected zero-based `score`, a `legend`, level `probabilities`, and `confidence` |
+
+For `choice`, `confidence` rescales the highest option probability relative to a uniform distribution. Use the `probabilities` field when you need the probability of a particular option.
+
+See the [request and training formats](docs/DATA.md) for complete examples. Image and video requests take a single question and need [media setup](#scope).
+
+## One core, several systems
+
+These integrations all call the same decision API. The status column says how far we took each one.
+
+| System | What it does | Status |
+|---|---|---|
+| Jev-Judge | Typed choice, binary, and ordinal decisions with confidence | Released |
+| Jev-Agent | Chooses actions in multi-step environments | Prototype evaluated |
+| Jev-Harness | Lets an LLM compile open-ended tasks into bounded decisions | Prototype |
+| Jev-Tool | Selects tools, execution modes, and escalation paths | Prototype |
+| Jev-Symbolic | Runs LLM-authored, validated decision trees with JevAny at each node | Prototype |
+| Jev-Test | Adapts from repeated samples without ground-truth labels | Negative result; see below |
+| Jev-Image | Makes decisions from native image evidence | Evaluated with blank and shuffled controls |
+| Jev-Video | Scores native video evidence | Evaluated on three temporal decision tasks |
+
+Next priorities include harder agent tasks, long context, document images, broader temporal reasoning, computer use, coding, robotics, and guarded test-time updates. [ROADMAP.md](ROADMAP.md) lists the acceptance criteria.
 
 ## Results
 
-The v2 checkpoints were selected on separate development and transfer panels. Higher is better except NLL.
+SFT is the default checkpoint. RLCR improved development NLL by 0.005 and did not improve transfer accuracy.
+
+The [v0.2 release record](results/release-v0.2.json) reports results on 1,004 development questions and 1,046 transfer questions. NLL (negative log-likelihood) penalizes low probability on the correct answer; lower is better.
 
 | Model | Development accuracy | Development NLL ↓ | Transfer accuracy | MMLU-Pro | AI2D | MMMU |
 |---|---:|---:|---:|---:|---:|---:|
@@ -98,22 +123,22 @@ The v2 checkpoints were selected on separate development and transfer panels. Hi
 | JevAny-27B-RLCR v2 | 89.74% | **0.260** | 82.31% | **73.5%** | **87.0%** | 63.0% |
 | Jev | n/a | n/a | 85.37% | 84.0% | n/a | n/a |
 
-RLCR changed transfer accuracy by `-0.10` percentage points against SFT, with 3 fixes and 4 regressions. The paired 95% bootstrap interval is `[-0.58, 0.39]` points. Its small development NLL gain did not transfer after independent calibration, so SFT remains the default. Jev is a different hosted system evaluated through the same decision suite, not a weight-matched ablation.
+RLCR changed transfer accuracy by `-0.10` percentage points against SFT, with 3 fixes and 4 regressions. The paired 95% bootstrap interval is `[-0.58, 0.39]` points. The small development NLL gain did not survive independent calibration. Jev is a different hosted system evaluated through the same decision suite, not a weight-matched ablation.
 
-Development accuracy and NLL exclude 100 VideoFeedback questions whose labels are all the same highest score. The video path was exercised, but that slice is not evidence of temporal understanding and is not reported as a capability score. AI2D and MMMU use native images through the backbone's vision path. The training set also contains native A-OKVQA and ScienceQA images.
+Development accuracy and NLL exclude 100 VideoFeedback questions whose labels are all the same highest score. Those questions did exercise the video path, but a slice with one label cannot show temporal understanding, so we do not report it as a capability score. AI2D and MMMU use native images through the backbone's vision path. The training set also contains native A-OKVQA and ScienceQA images.
 
 <p align="center">
   <img src="docs/results-v2.svg" alt="JevAny v2 evaluation overview" width="100%">
 </p>
 
-### Native Image And Video Decisions
+### Native image and video decisions
 
-We evaluated the released SFT checkpoint with the real media, a neutral blank asset, and media shuffled between questions within each task. Shuffling operates on unique media groups, so questions that share one image or video always receive the same replacement. The media sensitivity gate requires full-media accuracy to exceed the stronger control by at least five points, with a positive paired media-group bootstrap interval. Passing it shows that the model uses the media; it does not by itself establish high task accuracy.
+We evaluated the released SFT checkpoint with the real media, a neutral blank asset, and media shuffled between questions within each task. We shuffle by unique media group, so questions that share one image or video receive the same replacement. The media sensitivity gate requires full-media accuracy to exceed the stronger control by at least five points, with a positive paired media-group bootstrap interval. Passing the gate shows that the model reads the media; task accuracy is a separate question.
 
 | Panel | Questions | Full media | Blank | Shuffled | Gain over strongest control |
 |---|---:|---:|---:|---:|---:|
-| **MMStar clean image panel** | 1,330 | **74.5%** | 29.0% | 28.9% | **+45.5** `[+42.4, +48.6]` |
-| **MVBench three-task video panel** | 600 | **33.5%** | 12.3% | 15.3% | **+18.2** `[+13.9, +22.4]` |
+| MMStar clean image panel | 1,330 | **74.5%** | 29.0% | 28.9% | **+45.5** `[+42.4, +48.6]` |
+| MVBench three-task video panel | 600 | **33.5%** | 12.3% | 15.3% | **+18.2** `[+13.9, +22.4]` |
 
 | MVBench task | Questions | Full media | Blank | Shuffled | Gain over strongest control |
 |---|---:|---:|---:|---:|---:|
@@ -121,20 +146,20 @@ We evaluated the released SFT checkpoint with the real media, a neutral blank as
 | Egocentric navigation | 200 | **43.5%** | 23.0% | 29.0% | **+14.5** `[+6.3, +22.4]` |
 | Action antonym | 200 | **12.0%** | 0.0% | 0.5% | **+11.5** `[+7.0, +16.0]` |
 
-The image panel removes invalid choices and every item matched to the training, calibration, or development splits by media or by normalized question and unordered option text. It has zero remaining exact or perceptual media overlap, question-option overlap, and source-ID overlap. Its task-macro random and label-position baselines are 26.7% and 31.8%. The video panel has the same zero-overlap checks. Its overall media gain is significant, but the low action-antonym score and poor video calibration are important limitations.
+From the image panel we dropped invalid choices and every item that matched the training, calibration, or development splits by media or by normalized question and unordered option text. No exact or perceptual media overlap, question-option overlap, or source-ID overlap remains. Its task-macro random and label-position baselines are 26.7% and 31.8%. The video panel passes the same zero-overlap checks. Its overall media gain is significant, though the action-antonym score is low and the video probabilities are badly calibrated.
 
-Full metrics, per-task intervals, dataset revisions, checkpoint hashes, and control provenance are in [the image report](results/multimodal-image-v1.json) and [the video report](results/multimodal-video-v1.json). The internal evaluation checkpoint and public SFT release have identical LoRA and pointer-head tensors; [the equivalence record](results/release-equivalence-v0.2.json) accounts for the embedded release temperature. Benchmark media is not redistributed because its upstream terms apply.
+Full metrics, per-task intervals, dataset revisions, checkpoint hashes, and control provenance are in [the image report](results/multimodal-image-v1.json) and [the video report](results/multimodal-video-v1.json). The internal evaluation checkpoint and public SFT release have identical LoRA and pointer-head tensors; [the equivalence record](results/release-equivalence-v0.2.json) accounts for the embedded release temperature. Upstream terms keep us from redistributing the benchmark media.
 
-The examples below use self-created synthetic media released with this repository. Each modality shows one fixed middle-confidence success and one alternate case from three predeclared examples. [The selection record](docs/demos/multimodal-demo.json) includes every probability.
+The examples below use synthetic media we made and released with this repository. Both cases per modality come from a predeclared set of three, and [the selection record](docs/demos/multimodal-demo.json) lists every probability. The two video cases put the same question to different clips, so only the motion separates the answers.
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="docs/demos/jev-image-success.png" alt="JevAny image decision success" width="100%"><br><b>Jev-Image success</b></td>
-    <td width="50%" align="center"><img src="docs/demos/jev-image-alternate.png" alt="Alternate JevAny image decision" width="100%"><br><b>Jev-Image alternate</b></td>
+    <td width="50%" align="center"><img src="docs/demos/jev-image-success.png" alt="JevAny reading a route diagram to pick the reachable destination" width="100%"><br><b>Jev-Image: which destination is still reachable</b></td>
+    <td width="50%" align="center"><img src="docs/demos/jev-image-alternate.png" alt="JevAny reading bay status indicators to pick the bay needing inspection" width="100%"><br><b>Jev-Image: which bay needs inspection</b></td>
   </tr>
   <tr>
-    <td width="50%" align="center"><img src="docs/demos/jev-video-success.gif" alt="JevAny video decision success" width="100%"><br><b>Jev-Video success</b></td>
-    <td width="50%" align="center"><img src="docs/demos/jev-video-alternate.gif" alt="Alternate JevAny video decision" width="100%"><br><b>Jev-Video alternate</b></td>
+    <td width="50%" align="center"><img src="docs/demos/jev-video-success.gif" alt="JevAny tracking a cart that finishes at the west bay" width="100%"><br><b>Jev-Video: the cart finishes west</b></td>
+    <td width="50%" align="center"><img src="docs/demos/jev-video-alternate.gif" alt="JevAny tracking a cart that finishes at the north bay" width="100%"><br><b>Jev-Video: the cart finishes north</b></td>
   </tr>
 </table>
 
@@ -142,50 +167,54 @@ The examples below use self-created synthetic media released with this repositor
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="docs/demos/jev-agent-frozen-lake.gif" alt="JevAny solving FrozenLake" width="100%"><br><b>FrozenLake</b><br>98% success, 50 episodes</td>
-    <td width="50%" align="center"><img src="docs/demos/jev-agent-sokoban.gif" alt="JevAny acting in Sokoban" width="100%"><br><b>Sokoban</b><br>48% success, 50 episodes</td>
+    <td width="50%" align="center"><img src="docs/demos/jev-agent-frozen-lake.gif" alt="JevAny solving FrozenLake" width="100%"><br><b>FrozenLake</b><br>98% of 50 episodes solved</td>
+    <td width="50%" align="center"><img src="docs/demos/jev-agent-sokoban.gif" alt="JevAny acting in Sokoban" width="100%"><br><b>Sokoban</b><br>48% of 50 episodes solved</td>
   </tr>
 </table>
 
-Each step exposes only legal actions as options. JevAny selects an action without generating text. FrozenLake is nearly solved; Sokoban remains the useful hard case.
+We expose only the legal actions at each step, and JevAny picks one without generating text. FrozenLake lets you recover from a bad step. Sokoban gives you no way to undo a push, so one choice can decide the episode.
 
 ### Jev-Test
 
-We tested transductive adaptation without ground-truth labels. For every input, the parent produced 16 stochastic decisions. A strict majority became the pseudo label; ties were rejected. The protocol was locked before post-adaptation gold scoring.
+We tested transductive adaptation without ground-truth labels. The parent produced 16 stochastic decisions per input, a strict majority became the pseudo label, and we dropped ties. We locked the protocol before scoring the adapted models against gold labels.
 
 | Dataset | Parent accuracy | Pseudo-label SFT | Pseudo-label RLCR | Parent NLL | SFT NLL | RLCR NLL |
 |---|---:|---:|---:|---:|---:|---:|
 | MMLU-Pro | **73.00%** | 72.00% | 72.00% | 0.942 | **0.930** | 0.933 |
 | MuSR | 60.71% | **61.11%** | 60.98% | **1.122** | 1.552 | 1.483 |
 
-MMLU-Pro calibration improved slightly while accuracy fell. MuSR accuracy moved by at most 0.40 points while calibration became much worse. This simple self-training recipe is therefore a negative result, not a release feature. Exact protocol and metrics are in [results/ttt-protocol-v1.json](results/ttt-protocol-v1.json) and [results/release-v0.2.json](results/release-v0.2.json).
+MMLU-Pro NLL improved by 0.012 while accuracy fell a point. MuSR accuracy moved by at most 0.40 points while its NLL rose from 1.122 to 1.552. This self-training recipe is a negative result, and the code stays experimental. The [locked protocol](results/ttt-protocol-v1.json) and [release measurements](results/release-v0.2.json) document the full experiment.
 
-## Harness And Symbolic Control
+## Harness and symbolic control
 
 Jev-Harness uses an external LLM only as a task compiler. The planner sees an evidence schema by default, produces typed questions, and cannot replace the caller-owned state. JevAny then makes the bounded decision.
 
+With the JevAny server running, install the Bedrock adapter:
+
+```bash
+python -m pip install -e '.[bedrock]'
+```
+
+Use standard AWS credentials with access to the chosen Bedrock model. This example uses the same planner model as the [recorded harness run](docs/demos/jev-harness.json):
+
 ```python
+from jevany.bedrock import BedrockGenerator
 from jevany.harness import HTTPDecisionClient, JevHarness
 
-harness = JevHarness(bedrock_generator, HTTPDecisionClient("http://127.0.0.1:8008"))
+planner = BedrockGenerator("us.anthropic.claude-opus-4-7")
+harness = JevHarness(planner, HTTPDecisionClient("http://127.0.0.1:8008"))
 result = harness.run(
     "Choose an execution mode and decide whether rollback is required.",
     {"environment": "staging", "tests": "passed", "snapshot": "available"},
 )
+print(result["decision"]["answers"])
 ```
 
-Jev-Symbolic asks an LLM to author a compact decision tree, validates branch coverage and acyclicity, then sends each internal node to JevAny. Every result records the outcome ID and complete branch trace.
+Jev-Symbolic asks an LLM to write a compact decision tree, validates branch coverage and acyclicity, then sends each internal node to JevAny. Every result records the outcome ID and complete branch trace.
 
-Install the optional Bedrock adapter and use standard AWS credentials:
+For command-line entry points, see [the harness example](examples/bedrock_harness.py) and [the symbolic example](examples/bedrock_symbolic.py). The saved [harness](docs/demos/jev-harness.json) and [symbolic](docs/demos/jev-symbolic.json) outputs include the compiled requests and decisions.
 
-```bash
-pip install -e '.[bedrock]'
-python examples/bedrock_harness.py --task 'Route this action' --evidence '{"risk":"low"}'
-```
-
-See [examples/bedrock_harness.py](examples/bedrock_harness.py), [examples/bedrock_symbolic.py](examples/bedrock_symbolic.py), and the saved [harness](docs/demos/jev-harness.json) and [symbolic](docs/demos/jev-symbolic.json) outputs.
-
-## How It Works
+## How it works
 
 ```text
 state ───────────────┬─ question A ─ options ─ <decide> ─ probabilities A
@@ -193,29 +222,38 @@ state ───────────────┬─ question A ─ options
                      └─ question C ─ options ─ <decide> ─ probabilities C
 ```
 
-The backbone reads the shared state and one causal row per question. A learned pointer head compares the hidden state at `<decide>` with every option boundary. Softmax over those scores gives the answer distribution.
+The Qwen3.8 backbone processes each question in its own causal row, repeating the shared state so that questions cannot influence one another. A learned pointer head compares the hidden state at `<decide>` with every option boundary. Softmax over those scores gives the answer distribution. A temperature fitted on a separate calibration partition adjusts the probabilities without changing the highest-scoring option.
 
-SFT trains the adapter and pointer head with hard or soft targets. RLCR perturbs pointer logits, scores correctness and confidence, centers rewards within each proposal group, and anchors the update with supervised loss. It borrows the calibration reward from [Beyond Binary Rewards](https://arxiv.org/abs/2507.16806), but it is not token-level GRPO and does not generate reasoning or confidence tokens. [docs/ALGORITHM.md](docs/ALGORITHM.md) gives the full objective.
+Supervised fine-tuning (SFT) trains the adapter and pointer head with hard or soft targets while the base weights stay frozen. RLCR perturbs pointer logits, scores correctness and confidence, centers rewards within each proposal group, and anchors the update with supervised loss. It adapts the calibration reward from [Beyond Binary Rewards](https://arxiv.org/abs/2507.16806) to option probabilities. The policy operates on perturbed pointer logits rather than generated reasoning tokens. [docs/ALGORITHM.md](docs/ALGORITHM.md) gives the full objective and its differences from token-level GRPO.
 
-## Train Your Own
+## Train your own
 
-Training uses the inference JSON shape plus a `label` on each question:
+Training uses the inference JSON shape plus a `label` on each question; optional `target` distributions provide soft labels. [examples/train.jsonl](examples/train.jsonl) is a small dataset for trying this format.
+
+The example below uses eight CUDA GPUs, with a full model on each device. Set `--nproc_per_node` to the number of GPUs you intend to use; each must fit the model and its training memory.
 
 ```bash
+python -m pip install -e '.[train]'
+
 torchrun --nproc_per_node=8 -m jevany.train \
   --base Qwen/Qwen3.8-27B \
   --data examples/train.jsonl \
-  --lora 16 --weights_dtype bf16 --dtype bf16 \
+  --device cuda --lora 16 --weights_dtype bf16 --dtype bf16 \
+  --checkpointing 1 \
   --out runs/my-sft
 ```
 
-The runtime supports multi-node DDP, distributed evaluation, regular checkpoints, and W&B. The reproducible launch templates are [scripts/train_sft.sh](scripts/train_sft.sh) and [scripts/train_rlcr.sh](scripts/train_rlcr.sh).
+This trains an adapter and pointer head on the example data. Reproducing the published results also requires the original data and frozen evaluation suites, including `transfer-v9`, which we do not ship here.
+
+The runtime supports multi-node distributed data parallel (DDP) training, distributed evaluation, regular checkpoints, and W&B. The [SFT](scripts/train_sft.sh) and [RLCR](scripts/train_rlcr.sh) templates record the release settings; [docs/DATA.md](docs/DATA.md) describes the mixtures and links to their builders.
 
 ## Scope
 
-The released path accepts text, JSON-renderable state, native images, and native video. Multimodal requests currently support one isolated question and a bounded visual token budget. For safety, the HTTP server disables media by default. An operator can set `JEVANY_MEDIA_ROOT` to a controlled local directory; requests may then use only files inside that directory. Network media URLs are rejected, and file size, total bytes, pixels, and declared video frames are capped. Videos without a declared frame count are rejected. See [docs/DATA.md](docs/DATA.md) for an example.
+The released path accepts text, JSON-renderable state, native images, and native video. Multimodal requests currently support one isolated question and a bounded visual token budget.
 
-The text training envelope is 2,048 packed tokens, and longer contexts have not been validated as a first-class capability. Confidence is an empirical measurement on the published distributions, not a deployment guarantee.
+The HTTP server disables media by default. To enable it, install the `multimodal` extra (included in the quick start) and set `JEVANY_MEDIA_ROOT` to a controlled local directory before starting the server. Requests may use only files inside that directory. The server rejects network media URLs and videos with no declared frame count, and it caps file size, total bytes, pixels, and declared video frames. See the [native media format](docs/DATA.md#native-media) for an example.
+
+The validated text training window is 2,048 packed tokens. The server admits requests up to 8,192 packed tokens, but we have not validated longer contexts as a capability. Calibration can shift on new data; check confidence thresholds on your own evaluation set before using them to automate decisions.
 
 ## Attribution
 
