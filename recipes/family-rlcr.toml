@@ -1,0 +1,37 @@
+# Continue the selected SFT checkpoint with the published v0.2 RLCR objective.
+# Supply --init-from, --suite and --eval-suite explicitly.
+base = "google/gemma-4-31B-it"
+base_revision = "842da3794eaa0b77d5f08bae87a17459d91ff475"
+init_from = "runs/gemma-31b-sft-selected"
+out = "runs/gemma-31b-rlcr"
+device = "cuda"
+weights_dtype = "bf16"
+dtype = "bf16"
+lora = 16
+lora_targets = "all"
+head_dim = 256
+branch_mode = "rows"
+epochs = 1
+lr = 0.000002
+head_lr = 0.000002
+weight_decay = 0.01
+batch = 1
+accum = 1
+checkpointing = 1
+seed = 0
+max_state = 1024
+max_branch = 2048
+max_packed = 2048
+rlcr = true
+rlcr_group_size = 32
+rlcr_sigma_start = 0.4
+rlcr_sigma_end = 0.2
+rlcr_policy_w = 0.25
+rlcr_ce_w = 0.5
+p_none = 0.0
+p_none_distract = 0.0
+p_distract = 0.0
+p_none_pair = 0.0
+eval_before_start = true
+eval_every_steps = 200
+checkpoint_every_steps = 200

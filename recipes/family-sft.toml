@@ -1,0 +1,32 @@
+# JevAny v0.2 SFT settings recovered from the published checkpoint's head.pt.
+# Select a catalog base/revision and a validated suite on the command line.
+base = "google/gemma-4-31B-it"
+base_revision = "842da3794eaa0b77d5f08bae87a17459d91ff475"
+out = "runs/gemma-31b-sft"
+device = "cuda"
+weights_dtype = "bf16"
+dtype = "bf16"
+lora = 16
+lora_targets = "all"
+head_dim = 256
+branch_mode = "rows"
+epochs = 2
+lr = 0.00005
+head_lr = 0.00005
+weight_decay = 0.01
+batch = 1
+accum = 1
+checkpointing = 1
+seed = 0
+max_state = 1024
+max_branch = 2048
+max_packed = 2048
+p_none = 0.10
+p_none_distract = 0.12
+p_distract = 0.15
+p_none_pair = 0.25
+eval_before_start = true
+eval_every_steps = 1000
+checkpoint_every_steps = 1000
+# Set --multimodal only for a native vision base and its matching data view.
+# Run the full schedule; choose a saved checkpoint using development NLL.
