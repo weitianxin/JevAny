@@ -12,4 +12,6 @@ Qwen3.8-27B is produced by the Qwen team. The adapters in this project require i
 
 The Phi-4 vision conversion helper adapts configuration and weight-name mappings from Hugging Face Transformers under Apache-2.0. It merges Microsoft's pretrained vision LoRA before JevAny training.
 
+The native Phi-4 Reasoning Vision adapter follows Microsoft's [published model layout and image preprocessing](https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/tree/c3e4fac79ddace21976ced56fbf1564b8bd8c89f), released under MIT. Its weights are downloaded separately from Microsoft.
+
 The README teaser uses Lucide icons. The [source records](docs/icons/sources.json) and [license notices](docs/icons/LICENSE) accompany the editable SVG.

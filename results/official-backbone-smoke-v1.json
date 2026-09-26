@@ -1,0 +1,1087 @@
+{
+  "format": "JevAny official-source backbone smoke v1",
+  "checked_at": "2026-09-26",
+  "scope": "12 optimizer steps on real pretrained weights, with an overlapping synthetic optimization probe. This verifies loading, training, media use, checkpoint reload and inference; it is not a generalization benchmark.",
+  "selection": {
+    "sources": "Publisher repositories only. No mirrors are counted as official-source validation.",
+    "size": "Current 27B/31B/24B bases, plus the current smaller releases in other families. This does not imply support for every size or specialized release.",
+    "llama": "Mature Llama 3.x variants are retained by request. Official weights require an approved Hugging Face account.",
+    "qwen": "3.8-27B is the current 27B release; 3.5-27B is a compatibility target and 3.5-0.8B is the current small starter.",
+    "gemma": "Gemma 4 dense 31B; this report does not cover the 26B MoE or unified 12B architecture.",
+    "mistral": "Current Devstral Small 2 24B and Ministral 3 14B. The larger 119B/128B releases exceed this validation target. Devstral official FP8 weights are dequantized to BF16 for training.",
+    "phi": "Current general vision model Phi-4 Reasoning Vision 15B. Native Phi3/SigLIP2 loading keeps the official weights and does not run Hub Python."
+  },
+  "released_checkpoint": {
+    "id": "tianxinwei/JevAny-27B-SFT",
+    "revision": "ad7b48b7056a9742f54aacc9b98b6b46dc2ce167",
+    "base": "Qwen/Qwen3.8-27B",
+    "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "architecture": "qwen3_5",
+    "evidence_files": [
+      "release-manifest.json",
+      "adapter_config.json"
+    ]
+  },
+  "models": [
+    {
+      "base": "Qwen/Qwen3.5-0.8B",
+      "publisher": "Qwen",
+      "source": "https://huggingface.co/Qwen/Qwen3.5-0.8B",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "published_parameter_count": 873438784,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "qwen35-starter"
+      ]
+    },
+    {
+      "base": "Qwen/Qwen3.5-27B",
+      "publisher": "Qwen",
+      "source": "https://huggingface.co/Qwen/Qwen3.5-27B",
+      "revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+      "published_parameter_count": 27781427952,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "qwen35-text",
+        "qwen35-image"
+      ]
+    },
+    {
+      "base": "Qwen/Qwen3.8-27B",
+      "publisher": "Qwen",
+      "source": "https://huggingface.co/Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "published_parameter_count": 27781427952,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "qwen38-video",
+        "qwen38-text",
+        "qwen38-text-retry"
+      ]
+    },
+    {
+      "base": "meta-llama/Llama-3.1-8B-Instruct",
+      "publisher": "meta-llama",
+      "source": "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct",
+      "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "published_parameter_count": 8030261248,
+      "gated": true,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "llama-text",
+        "llama-text-retry"
+      ]
+    },
+    {
+      "base": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+      "publisher": "meta-llama",
+      "source": "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
+      "revision": "9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+      "published_parameter_count": 10670220835,
+      "gated": true,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "llama-image"
+      ]
+    },
+    {
+      "base": "google/gemma-4-31B-it",
+      "publisher": "google",
+      "source": "https://huggingface.co/google/gemma-4-31B-it",
+      "revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "published_parameter_count": 31273088876,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "gemma4-31b",
+        "gemma4-video",
+        "gemma4-text",
+        "gemma4-text-retry"
+      ]
+    },
+    {
+      "base": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+      "publisher": "mistralai",
+      "source": "https://huggingface.co/mistralai/Devstral-Small-2-24B-Instruct-2512",
+      "revision": "55c5b41e98c2dbd21b0c8afffc540dcfc9eb5128",
+      "published_parameter_count": 24011361840,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "devstral-24b",
+        "devstral-text"
+      ]
+    },
+    {
+      "base": "mistralai/Ministral-3-14B-Instruct-2512-BF16",
+      "publisher": "mistralai",
+      "source": "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-BF16",
+      "revision": "3cea74c1ebaf5ce5f5a2553de470e2ceab825142",
+      "published_parameter_count": 13945031680,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "ministral-14b"
+      ]
+    },
+    {
+      "base": "microsoft/Phi-4-reasoning-vision-15B",
+      "publisher": "microsoft",
+      "source": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+      "revision": "c3e4fac79ddace21976ced56fbf1564b8bd8c89f",
+      "published_parameter_count": 15119518144,
+      "gated": false,
+      "official_weight_gpu_test": "passed",
+      "experiments": [
+        "phi-15b"
+      ]
+    }
+  ],
+  "allocations": [
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "world_sizes": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "verified_distinct_gpu_bindings": 8,
+      "inactive_reserved_gpus_at_training_launch": 0,
+      "utilization_note": "Ranks finish at different times; model loading and rank-0 checkpoint checks can leave reserved GPUs idle temporarily.",
+      "id": 1,
+      "resources_released": true,
+      "status": "Succeeded",
+      "failed_before_training": [],
+      "inactive_reserved_gpus_after_startup_failure": 0,
+      "reserved_gpus_waiting_for_staged_weights": []
+    },
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "world_sizes": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "verified_distinct_gpu_bindings": 8,
+      "inactive_reserved_gpus_at_training_launch": 0,
+      "utilization_note": "Ranks finish at different times; model loading and rank-0 checkpoint checks can leave reserved GPUs idle temporarily.",
+      "id": 2,
+      "resources_released": true,
+      "status": "Succeeded",
+      "failed_before_training": [],
+      "inactive_reserved_gpus_after_startup_failure": 0,
+      "reserved_gpus_waiting_for_staged_weights": []
+    },
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "world_sizes": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "verified_distinct_gpu_bindings": 8,
+      "inactive_reserved_gpus_at_training_launch": 0,
+      "utilization_note": "Ranks finish at different times; model loading and rank-0 checkpoint checks can leave reserved GPUs idle temporarily.",
+      "id": 3,
+      "resources_released": true,
+      "status": "Failed",
+      "failed_before_training": [
+        {
+          "experiment": "gemma4-text",
+          "reserved_gpus": [
+            2,
+            3
+          ]
+        }
+      ],
+      "inactive_reserved_gpus_after_startup_failure": 2,
+      "reserved_gpus_waiting_for_staged_weights": []
+    },
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "world_sizes": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "verified_distinct_gpu_bindings": 8,
+      "inactive_reserved_gpus_at_training_launch": 0,
+      "utilization_note": "Ranks finish at different times; model loading and rank-0 checkpoint checks can leave reserved GPUs idle temporarily.",
+      "id": 4,
+      "resources_released": true,
+      "status": "Failed",
+      "failed_before_training": [],
+      "inactive_reserved_gpus_after_startup_failure": 0,
+      "reserved_gpus_waiting_for_staged_weights": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "instance_type": "p4de.24xlarge",
+      "instance_count": 1,
+      "reserved_gpus_per_host": 8,
+      "processes_per_host": 8,
+      "total_gpus": 8,
+      "world_sizes": [
+        8
+      ],
+      "verified_distinct_gpu_bindings": 8,
+      "inactive_reserved_gpus_at_training_launch": 0,
+      "utilization_note": "Ranks finish at different times; model loading and rank-0 checkpoint checks can leave reserved GPUs idle temporarily.",
+      "id": 5,
+      "resources_released": true,
+      "status": "Succeeded",
+      "failed_before_training": [],
+      "inactive_reserved_gpus_after_startup_failure": 0,
+      "reserved_gpus_waiting_for_staged_weights": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "base": "Qwen/Qwen3.5-27B",
+      "base_revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+      "model_type": "qwen3_5_text",
+      "backbone_adapter": "text",
+      "branch_mode": "rows",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7569530209897265
+        },
+        {
+          "step": 4,
+          "nll": 0.522464431547919
+        },
+        {
+          "step": 8,
+          "nll": 0.3490371644957151
+        },
+        {
+          "step": 12,
+          "nll": 0.32592615972487154
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.8343188341348764e-08,
+      "prefix_cache_probability_max_delta": 0.003731340169906616,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": null,
+      "passed": true,
+      "name": "qwen35-text",
+      "allocation": 1,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 52202241024,
+        "wall_seconds": 22.042624473571777,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "Qwen/Qwen3.5-27B",
+      "base_revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+      "model_type": "qwen3_5_text",
+      "backbone_adapter": "qwen_vl",
+      "branch_mode": "rows",
+      "media": "image",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7368904570449082
+        },
+        {
+          "step": 4,
+          "nll": 0.62731006125391
+        },
+        {
+          "step": 8,
+          "nll": 0.48722489605390595
+        },
+        {
+          "step": 12,
+          "nll": 0.46484229736107063
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.595725322520394e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.28291594982147217,
+      "passed": true,
+      "name": "qwen35-image",
+      "allocation": 1,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 53069880832,
+        "wall_seconds": 38.22641921043396,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "Qwen/Qwen3.8-27B",
+      "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "model_type": "qwen3_5_text",
+      "backbone_adapter": "qwen_vl",
+      "branch_mode": "rows",
+      "media": "video",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7964504200853935
+        },
+        {
+          "step": 4,
+          "nll": 0.6030662547065289
+        },
+        {
+          "step": 8,
+          "nll": 0.33600041076866133
+        },
+        {
+          "step": 12,
+          "nll": 0.3109258718240972
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 1.945821936910619e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.4753040671348572,
+      "passed": true,
+      "name": "qwen38-video",
+      "allocation": 1,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 53069880832,
+        "wall_seconds": 43.575798988342285,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "Qwen/Qwen3.5-0.8B",
+      "base_revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "model_type": "qwen3_5_text",
+      "backbone_adapter": "text",
+      "branch_mode": "rows",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 0.0002,
+      "head_learning_rate": 0.0001,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.6891878834410138
+        },
+        {
+          "step": 4,
+          "nll": 0.01239331258155988
+        },
+        {
+          "step": 8,
+          "nll": 3.373067856476886e-05
+        },
+        {
+          "step": 12,
+          "nll": 2.5556310872906506e-05
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.781221934508807e-08,
+      "prefix_cache_probability_max_delta": 4.0531158447265625e-06,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": null,
+      "passed": true,
+      "name": "qwen35-starter",
+      "allocation": 1,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 2073856000,
+        "wall_seconds": 10.310392379760742,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "google/gemma-4-31B-it",
+      "base_revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "model_type": "gemma4_text",
+      "backbone_adapter": "gemma4_vision",
+      "branch_mode": "rows",
+      "media": "image",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 9.500544187068941
+        },
+        {
+          "step": 4,
+          "nll": 3.52336691863345
+        },
+        {
+          "step": 8,
+          "nll": 2.3463084351032797
+        },
+        {
+          "step": 12,
+          "nll": 2.6066559445339847
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 3.089435585135192e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.0031273961067199707,
+      "passed": true,
+      "name": "gemma4-31b",
+      "allocation": 2,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 66183329792,
+        "wall_seconds": 35.10867643356323,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+      "base_revision": "55c5b41e98c2dbd21b0c8afffc540dcfc9eb5128",
+      "model_type": "ministral3",
+      "backbone_adapter": "mistral_vision",
+      "branch_mode": "rows",
+      "media": "image",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7388626648196543
+        },
+        {
+          "step": 4,
+          "nll": 0.0342483726057953
+        },
+        {
+          "step": 8,
+          "nll": 1.2999325061761568e-06
+        },
+        {
+          "step": 12,
+          "nll": 3.7595685405552593e-07
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 5.121556367893021e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.9999992251396179,
+      "passed": true,
+      "name": "devstral-24b",
+      "allocation": 2,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 48510425600,
+        "wall_seconds": 16.754331827163696,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "microsoft/Phi-4-reasoning-vision-15B",
+      "base_revision": "c3e4fac79ddace21976ced56fbf1564b8bd8c89f",
+      "model_type": "phi3",
+      "backbone_adapter": "phi_reasoning_vision",
+      "branch_mode": "packed",
+      "media": "image",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7892854788334951
+        },
+        {
+          "step": 4,
+          "nll": 0.774994678944226
+        },
+        {
+          "step": 8,
+          "nll": 0.6378144878397676
+        },
+        {
+          "step": 12,
+          "nll": 0.6339497247381114
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 1.6660044455107936e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.06244036555290222,
+      "passed": true,
+      "name": "phi-15b",
+      "allocation": 2,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 30740300800,
+        "wall_seconds": 13.873674869537354,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "mistralai/Ministral-3-14B-Instruct-2512-BF16",
+      "base_revision": "3cea74c1ebaf5ce5f5a2553de470e2ceab825142",
+      "model_type": "ministral3",
+      "backbone_adapter": "mistral_vision",
+      "branch_mode": "rows",
+      "media": "image",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 1.884506891104691
+        },
+        {
+          "step": 4,
+          "nll": 0.6076032802593462
+        },
+        {
+          "step": 8,
+          "nll": 0.0004008513537308948
+        },
+        {
+          "step": 12,
+          "nll": 0.00020838458145341137
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 6.056948542720875e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.99958336353302,
+      "passed": true,
+      "name": "ministral-14b",
+      "allocation": 2,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 28220490240,
+        "wall_seconds": 16.747117042541504,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "google/gemma-4-31B-it",
+      "base_revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "model_type": "gemma4_text",
+      "backbone_adapter": "gemma4_vision",
+      "branch_mode": "rows",
+      "media": "video",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 5e-06,
+      "head_learning_rate": 5e-06,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 5.070179715094186
+        },
+        {
+          "step": 4,
+          "nll": 2.9236648840075725
+        },
+        {
+          "step": 8,
+          "nll": 0.9051124498182896
+        },
+        {
+          "step": 12,
+          "nll": 1.1650940143700235
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.701374778370848e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": 0.08554530143737793,
+      "passed": true,
+      "name": "gemma4-video",
+      "allocation": 3,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 66207251968,
+        "wall_seconds": 40.21379780769348,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "name": "gemma4-text",
+      "allocation": 3,
+      "base": "google/gemma-4-31B-it",
+      "base_revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "passed": false,
+      "error": "The training run did not reach a completed smoke report."
+    },
+    {
+      "base": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+      "base_revision": "55c5b41e98c2dbd21b0c8afffc540dcfc9eb5128",
+      "model_type": "ministral3",
+      "backbone_adapter": "text",
+      "branch_mode": "rows",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 4.883828286457991
+        },
+        {
+          "step": 4,
+          "nll": 0.00216295186821451
+        },
+        {
+          "step": 8,
+          "nll": 2.266786304636151e-06
+        },
+        {
+          "step": 12,
+          "nll": 1.0578469294964923e-06
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.972509604073139e-08,
+      "prefix_cache_probability_max_delta": 4.76837158203125e-07,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": null,
+      "passed": true,
+      "name": "devstral-text",
+      "allocation": 3,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 47634113024,
+        "wall_seconds": 10.03105878829956,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "Qwen/Qwen3.8-27B",
+      "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "model_type": "qwen3_5_text",
+      "backbone_adapter": "text",
+      "branch_mode": "rows",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7339260653430655
+        },
+        {
+          "step": 4,
+          "nll": 0.43069167354816446
+        },
+        {
+          "step": 8,
+          "nll": 0.21722244963964374
+        },
+        {
+          "step": 12,
+          "nll": 0.18657808182698596
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.9536475033029603e-08,
+      "prefix_cache_probability_max_delta": 0.01392453908920288,
+      "prefix_cache_supported": null,
+      "media_probability_max_delta": null,
+      "passed": false,
+      "name": "qwen38-text",
+      "allocation": 3,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 52202241024,
+        "wall_seconds": 22.972564458847046,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "meta-llama/Llama-3.1-8B-Instruct",
+      "base_revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "model_type": "llama",
+      "backbone_adapter": "text",
+      "branch_mode": "packed",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.9652745509766251
+        },
+        {
+          "step": 4,
+          "nll": 0.32800146314079554
+        },
+        {
+          "step": 8,
+          "nll": 0.17889881529931942
+        },
+        {
+          "step": 12,
+          "nll": 0.1619162881758057
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 7.038258498237582e-08,
+      "prefix_cache_probability_max_delta": 0.012396752834320068,
+      "prefix_cache_supported": true,
+      "media_probability_max_delta": null,
+      "passed": false,
+      "name": "llama-text",
+      "allocation": 4,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 16295101952,
+        "wall_seconds": 7.771460771560669,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+      "base_revision": "9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+      "model_type": "mllama_text_model",
+      "backbone_adapter": "llama_vision",
+      "branch_mode": "rows",
+      "media": "image",
+      "mixed_text": true,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 1.0050617595425884
+        },
+        {
+          "step": 4,
+          "nll": 0.28826501270639227
+        },
+        {
+          "step": 8,
+          "nll": 0.03492587369719375
+        },
+        {
+          "step": 12,
+          "nll": 0.026087021847399722
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.513347684476088e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": false,
+      "media_probability_max_delta": 0.9485265612602234,
+      "passed": true,
+      "name": "llama-image",
+      "allocation": 4,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 27491790848,
+        "wall_seconds": 42.59285354614258,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "google/gemma-4-31B-it",
+      "base_revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "model_type": "gemma4_text",
+      "backbone_adapter": "text",
+      "branch_mode": "rows",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 5e-06,
+      "head_learning_rate": 5e-06,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 1.4341113696907135
+        },
+        {
+          "step": 4,
+          "nll": 0.7963467358241489
+        },
+        {
+          "step": 8,
+          "nll": 0.39575455647646063
+        },
+        {
+          "step": 12,
+          "nll": 0.36156193320842583
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.957920241022151e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": false,
+      "media_probability_max_delta": null,
+      "passed": true,
+      "name": "gemma4-text-retry",
+      "allocation": 4,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 64863078400,
+        "wall_seconds": 16.54453444480896,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "Qwen/Qwen3.8-27B",
+      "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "model_type": "qwen3_5_text",
+      "backbone_adapter": "text",
+      "branch_mode": "rows",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 2,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.7339260653430655
+        },
+        {
+          "step": 4,
+          "nll": 0.43069167354816446
+        },
+        {
+          "step": 8,
+          "nll": 0.21722244963964374
+        },
+        {
+          "step": 12,
+          "nll": 0.18657808182698596
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 4.9536475033029603e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": false,
+      "media_probability_max_delta": null,
+      "passed": true,
+      "name": "qwen38-text-retry",
+      "allocation": 4,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 2,
+        "peak_device_bytes": 52202241024,
+        "wall_seconds": 23.927735567092896,
+        "dtype": "bf16"
+      }
+    },
+    {
+      "base": "meta-llama/Llama-3.1-8B-Instruct",
+      "base_revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "model_type": "llama",
+      "backbone_adapter": "text",
+      "branch_mode": "packed",
+      "media": null,
+      "mixed_text": false,
+      "steps": 12,
+      "world_size": 8,
+      "learning_rate": 2e-05,
+      "head_learning_rate": 2e-05,
+      "losses": [
+        {
+          "step": 0,
+          "nll": 0.9652745509766251
+        },
+        {
+          "step": 4,
+          "nll": 0.3268718043488634
+        },
+        {
+          "step": 8,
+          "nll": 0.1827058895327445
+        },
+        {
+          "step": 12,
+          "nll": 0.16709992513392424
+        }
+      ],
+      "adapter_tensors_finite": true,
+      "lora_updated": true,
+      "checkpoint_probability_max_delta": 6.475338631961591e-08,
+      "prefix_cache_probability_max_delta": null,
+      "prefix_cache_supported": false,
+      "media_probability_max_delta": null,
+      "passed": true,
+      "name": "llama-text-retry",
+      "allocation": 5,
+      "training": {
+        "optimizer_steps": 12,
+        "world_size": 8,
+        "peak_device_bytes": 16294585344,
+        "wall_seconds": 8.12313985824585,
+        "dtype": "bf16"
+      }
+    }
+  ],
+  "environment": {
+    "torch": "2.6.0+cu126",
+    "transformers": "5.17.0",
+    "peft": "0.21.0",
+    "accelerate": "1.15.0",
+    "gpu": "NVIDIA A100 80GB",
+    "TORCH_NCCL_USE_COMM_NONBLOCKING": "0",
+    "allocation_4_and_5_network": {
+      "NCCL_NET": "Socket",
+      "NCCL_NET_PLUGIN": "none"
+    }
+  },
+  "local_validation": {
+    "command": "python -m pytest tests -m 'not server' -q",
+    "passed": 142,
+    "skipped": 2,
+    "deselected": 7,
+    "additional": "Run in an isolated copy of tracked source plus these changes. Includes missing Phi vision weights, BF16/FP16 cache rejection and serving fallback."
+  },
+  "limitations": [
+    "Audio is outside the current request/training format; the selected Gemma 31B checkpoint has no audio encoder.",
+    "The report preserves intermediate loss fluctuations; final loss reduction is the smoke criterion.",
+    "Historical mirror results remain in earlier reports and are not upgraded to official validation.",
+    "Prefix caching is enabled only for validated FP32 backbones. BF16/FP16 models and Qwen3.5/3.8 recurrent text backbones use full-forward inference. Older runs record the cache behavior at their tested source version; absent prefix_cache_supported fields are retained as null."
+  ],
+  "resolved_failures": [
+    {
+      "experiment": "llama-text",
+      "allocation": 4,
+      "stage": "prefix-cache inference parity",
+      "failure": "Training and checkpoint reload passed, but BF16 prefix reuse differed from full-forward probabilities by 0.012396752834320068.",
+      "resolution": "Enable cache reuse only for validated FP32 backbones; BF16/FP16 models use full-forward inference through the shared capability contract.",
+      "retest": "llama-text-retry"
+    },
+    {
+      "experiment": "gemma4-text",
+      "allocation": 3,
+      "stage": "distributed initialization",
+      "failure": "SIGSEGV in NCCL initialization before training; two reserved GPUs were inactive after the process exited.",
+      "resolution": "Use the socket network backend without an external network plugin for the single-host retest.",
+      "retest": "gemma4-text-retry"
+    },
+    {
+      "experiment": "qwen38-text",
+      "allocation": 3,
+      "stage": "prefix-cache inference parity",
+      "failure": "Training and checkpoint reload passed, but prefix reuse differed from full-forward probabilities by 0.01392453908920288.",
+      "resolution": "Disable prefix reuse for qwen3_5_text; serving selects full-forward inference, and direct cache calls reject unsupported use. Keep the original failure and require a fresh training/reload/inference check.",
+      "retest": "qwen38-text-retry"
+    }
+  ]
+}

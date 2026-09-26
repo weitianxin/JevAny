@@ -12,7 +12,7 @@ from jevany.checkpoint import Checkpoint, Meta, write_meta
 from jevany.model import DecisionModel, load_preprocessor
 
 
-FAMILIES = ["qwen", "llama", "gemma", "pixtral", "phi"]
+FAMILIES = ["qwen", "llama", "gemma", "gemma4", "pixtral", "mistral3", "phi", "phi_reasoning"]
 
 
 @pytest.fixture(autouse=True)
@@ -26,10 +26,12 @@ def single_thread():
 def make_vision_base(path, family):
     special = {
         "image_token": "<|image_pad|>" if family == "qwen" else "<image>",
-        "audio_token": "<audio>", "video_token": "<|video_pad|>",
+        "audio_token": "<audio>", "video_token": "<|video|>" if family == "gemma4" else "<|video_pad|>",
         "vision_start_token": "<|vision_start|>", "vision_end_token": "<|vision_end|>",
         "boi_token": "<start_of_image>", "eoi_token": "<end_of_image>",
     }
+    if family == "gemma4":
+        special.update(boa_token="<start_of_audio>", eoa_token="<end_of_audio>")
     words = ["[UNK]", "[PAD]", "[EOS]", "[BOS]", "state", "choose", "red", "blue",
              *special.values(), "[IMG_BREAK]", "[IMG_END]"]
     raw = Tokenizer(WordLevel({word: i for i, word in enumerate(words)}, unk_token="[UNK]"))
@@ -81,9 +83,30 @@ def make_vision_base(path, family):
             image_processor=hf.Gemma3ImageProcessor(size={"height": 28, "width": 28}),
             tokenizer=tok, image_seq_length=4,
         )
-    elif family == "pixtral":
-        config = hf.LlavaConfig(
-            text_config=hf.MistralConfig(**common, sliding_window=None).to_dict(),
+    elif family == "gemma4":
+        config = hf.Gemma4Config(
+            text_config={**common, "head_dim": 8, "global_head_dim": 8,
+                         "hidden_size_per_layer_input": 0, "num_kv_shared_layers": 0,
+                         "sliding_window": 16, "layer_types": ["sliding_attention", "full_attention"],
+                         "rope_parameters": {"sliding_attention": {"rope_type": "default", "rope_theta": 10000},
+                                             "full_attention": {"rope_type": "default", "rope_theta": 10000}}},
+            vision_config=dict(hidden_size=32, intermediate_size=64, num_hidden_layers=1,
+                               num_attention_heads=4, num_key_value_heads=4, head_dim=8,
+                               patch_size=2, pooling_kernel_size=2, position_embedding_size=1024),
+            audio_config=None, image_token_id=tok.image_token_id, video_token_id=tok.video_token_id,
+            boi_token_id=tok.boi_token_id, eoi_token_id=tok.eoi_token_id,
+        )
+        processor = hf.Gemma4Processor(
+            image_processor=hf.Gemma4ImageProcessor(patch_size=2, pooling_kernel_size=2, max_soft_tokens=70),
+            video_processor=hf.Gemma4VideoProcessor(patch_size=2, pooling_kernel_size=2, max_soft_tokens=70),
+            feature_extractor=hf.Gemma4AudioFeatureExtractor(), tokenizer=tok,
+        )
+    elif family in ("pixtral", "mistral3"):
+        text_config = (hf.Ministral3Config(**common, head_dim=8) if family == "mistral3"
+                       else hf.MistralConfig(**common, sliding_window=None))
+        config_class = hf.Mistral3Config if family == "mistral3" else hf.LlavaConfig
+        config = config_class(
+            text_config=text_config.to_dict(),
             vision_config=dict(model_type="pixtral", hidden_size=32, intermediate_size=64,
                                num_hidden_layers=1, num_attention_heads=4, image_size=32, patch_size=8),
             image_token_index=tok.image_token_id, vision_feature_layer=-1, vision_feature_select_strategy="full",
@@ -91,7 +114,34 @@ def make_vision_base(path, family):
         processor = hf.PixtralProcessor(
             image_processor=hf.PixtralImageProcessor(size={"longest_edge": 32}, patch_size=8),
             tokenizer=tok, patch_size=8, image_token=tok.image_token,
+            spatial_merge_size=2 if family == "mistral3" else 1,
         )
+    elif family == "phi_reasoning":
+        import json
+        from safetensors.torch import save_file
+        from jevany.phi_vision import PhiReasoningProcessor, native_config
+        from transformers.models.siglip2.image_processing_pil_siglip2 import Siglip2ImageProcessorPil
+        raw_config = {**common, "model_type": "phi4-siglip", "original_max_position_embeddings": 2048,
+                      "min_num_patches": 4, "max_num_patches": 16,
+                      "vision_config": dict(hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+                                            num_attention_heads=4, patch_size=2, num_patches=16)}
+        processor = PhiReasoningProcessor(Siglip2ImageProcessorPil(patch_size=2), tok,
+                                          min_num_patches=4, max_num_patches=16)
+        processor.save_pretrained(path)
+        model = hf.LlavaModel(native_config(raw_config))
+        original = {}
+        for key, value in model.state_dict().items():
+            for old, new in (("vision_tower.", "model.vision_tower.vision_tower."),
+                             ("multi_modal_projector.linear_1.", "model.mm_projector.0."),
+                             ("multi_modal_projector.linear_2.", "model.mm_projector.2."),
+                             ("language_model.", "model.")):
+                if key.startswith(old):
+                    key = new + key.removeprefix(old)
+                    break
+            original[key] = value
+        save_file(original, path / "model.safetensors")
+        (path / "config.json").write_text(json.dumps(raw_config))
+        return
     else:
         config = hf.Phi4MultimodalConfig(
             **common, original_max_position_embeddings=2048,
@@ -123,6 +173,57 @@ def record(image, **changes):
               "questions": [{"instr": "choose", "options": ["red", "blue"], "label": 0}]}
     result.update(changes)
     return result
+
+
+@pytest.mark.parametrize("family", ["gemma4", "mistral3"])
+def test_current_vision_base_text_training(tmp_path, family):
+    base = tmp_path / "base"
+    make_vision_base(base, family)
+    tokenizer = load_preprocessor(base)
+    model = DecisionModel(base, tokenizer, "cpu", lora=2, head_dim=8)
+    assert not any("vision" in name for name, _ in model.named_parameters())
+    encoded = model.encode(tokenizer, record(None, media=[]))
+    loss = torch.nn.functional.cross_entropy(model(encoded)[0][None], torch.tensor([0]))
+    loss.backward()
+    assert torch.isfinite(loss)
+    assert any("lora_" in name and value.grad is not None and value.grad.abs().sum() > 0
+               for name, value in model.named_parameters())
+
+
+def test_gemma4_native_video(tmp_path):
+    import av
+    base = tmp_path / "base"
+    make_vision_base(base, "gemma4")
+    video = tmp_path / "sample.mp4"
+    with av.open(str(video), "w") as output:
+        stream = output.add_stream("libx264", rate=4)
+        stream.width = stream.height = 28
+        stream.pix_fmt = "yuv420p"
+        for _ in range(8):
+            for packet in stream.encode(av.VideoFrame.from_image(Image.new("RGB", (28, 28), "red"))):
+                output.mux(packet)
+        for packet in stream.encode():
+            output.mux(packet)
+    processor = load_preprocessor(base, multimodal=True)
+    model = DecisionModel(base, processor, "cpu", lora=2, head_dim=8, multimodal=True)
+    encoded = model.encode(processor, record(None, media=[{"type": "video", "uri": str(video)}]))
+    assert "pixel_values_videos" in encoded["mm"]
+    loss = model(encoded)[0].sum()
+    loss.backward()
+    assert torch.isfinite(loss)
+
+
+def test_phi_reasoning_rejects_incomplete_official_weights(tmp_path):
+    from safetensors.torch import load_file, save_file
+    base = tmp_path / "base"
+    make_vision_base(base, "phi_reasoning")
+    weights = load_file(base / "model.safetensors")
+    missing = next(key for key in weights if key.startswith("model.vision_tower."))
+    weights.pop(missing)
+    save_file(weights, base / "model.safetensors")
+    adapter = get_backbone_adapter(source=base, multimodal=True)
+    with pytest.raises(ValueError, match="incomplete Phi vision load"):
+        adapter.load_model(base, revision=None, dtype=torch.float32, attn="eager")
 
 
 @pytest.mark.parametrize("family", FAMILIES)
@@ -177,7 +278,7 @@ def test_native_media_train_and_reload(tmp_path, family):
     assert torch.isfinite(model.probs(model.encode(processor, multiple))[0]).all()
     with pytest.raises(ValueError, match="exactly one"):
         model.encode(processor, record(image, questions=record(image)["questions"] * 2))
-    if family != "qwen":
+    if family not in ("qwen", "gemma4"):
         with pytest.raises(ValueError, match="does not support"):
             model.encode(processor, record(image, media=[{"type": "video", "uri": str(image)}]))
     with pytest.raises(ValueError, match="prefix caching does not support media"):

@@ -79,7 +79,7 @@ jevany data validate data/starter/train.jsonl
 
 ### SFT
 
-Supervised fine-tuning fits a Jev model to labelled decisions. The starter recipe uses `Qwen/Qwen2.5-0.5B` on a CUDA GPU and writes the checkpoint to `runs/my-jev`:
+Supervised fine-tuning fits a Jev model to labelled decisions. The starter recipe uses `Qwen/Qwen3.5-0.8B` on a CUDA GPU and writes the checkpoint to `runs/my-jev`:
 
 ```bash
 jevany train --config recipes/sft.toml --dry-run
@@ -100,28 +100,26 @@ This recipe loads `runs/my-jev` and writes `runs/my-jev-rlcr`. Keep the base and
 
 ### Supported Backbones
 
-These text bases have recorded 12-step SFT, checkpoint reload and inference checks:
+These official backbones share the same trainer:
 
-| Family | Tested text bases |
+| Family | Official bases |
 |---|---|
-| Qwen | `Qwen/Qwen2.5-0.5B`, `Qwen/Qwen3-0.6B` |
-| Llama | `unsloth/Llama-3.2-1B` |
-| Gemma | `unsloth/gemma-3-1b-pt` |
-| Mistral | `mistralai/Mistral-7B-v0.3` |
-| Phi | `microsoft/Phi-4-mini-instruct` |
+| Qwen | `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.5-0.8B` |
+| Llama | `meta-llama/Llama-3.1-8B-Instruct`, `meta-llama/Llama-3.2-11B-Vision-Instruct` |
+| Gemma | `google/gemma-4-31B-it` |
+| Mistral | `mistralai/Devstral-Small-2-24B-Instruct-2512`, `mistralai/Ministral-3-14B-Instruct-2512-BF16` |
+| Phi | `microsoft/Phi-4-reasoning-vision-15B` |
 
 Select a different base with the same trainer:
 
 ```bash
 jevany train --config recipes/sft.toml \
-  --base microsoft/Phi-4-mini-instruct --out runs/phi-jev
+  --base meta-llama/Llama-3.1-8B-Instruct --out runs/llama-jev
 ```
 
-The [compatibility report](results/backbone-smoke-v1.json) records the tested revisions, Llama/Gemma mirrors and short-run results. These checks establish integration and optimization behavior; task quality needs a separate evaluation.
+Meta weights require approved Hugging Face access. Set `multimodal = true` for native vision training; image and video support follows the selected base.
 
-Native image training supports Qwen VL, Llama Vision, Gemma 3, Pixtral and Phi-4 Multimodal (after conversion); Qwen also supports video. Choose a vision base and set `multimodal = true`. See the [setup instructions](docs/TRAINING.md#native-multimodal-training) and [GPU checks](results/multimodal-backbone-smoke-v1.json).
-
-The [training guide](docs/TRAINING.md) covers custom adapters, CPU overrides and checkpoint selection. For multiple GPUs or hosts, use [`infra/train.sh`](infra/train.sh); DDP keeps a full model on each GPU.
+Train on local GPUs or with `torchrun`; DDP keeps a full base on each GPU. The [training guide](docs/TRAINING.md) covers model settings, native media and custom adapters.
 
 ## Pretrained Models
 

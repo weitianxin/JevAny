@@ -278,9 +278,13 @@ class DecisionModel(nn.Module):
     @property
     def inference_capabilities(self) -> InferenceCapabilities:
         """Use the same adapter contract after training and checkpoint reload."""
+        from dataclasses import replace
         capabilities = self.adapter.inference_capabilities(self.lm.config)
+        # Changing sequence shapes in a cached pass amplified BF16 rounding on
+        # real Llama/Qwen checkpoints. Keep prefix reuse on validated FP32 paths.
+        if self.lm.dtype != torch.float32:
+            capabilities = replace(capabilities, prefix_cache=False)
         if not self.multimodal and capabilities.media_types:
-            from dataclasses import replace
             capabilities = replace(capabilities, media_types=(), max_media_questions=None)
         return capabilities
 
@@ -392,11 +396,16 @@ class DecisionModel(nn.Module):
         h = self.lm(input_ids=ids, position_ids=pos, attention_mask=att, past_key_values=cache, use_cache=True).last_hidden_state.float()
         return [F.softmax(self.head(h[i, r["decide"]], h[i, torch.tensor(r["opts"], device=self.device)]), -1).cpu() for i, r in enumerate(rows)]
 
+    def _check_prefix_support(self, enc):
+        if enc.get("multimodal"):
+            raise ValueError("prefix caching does not support media; use probs()")
+        if not self.inference_capabilities.prefix_cache:
+            raise ValueError("prefix caching is not supported by this backbone; use probs()")
+
     @torch.no_grad()
     def prefix(self, enc):
         """Run the state tokens only. Returns (n_state_tokens, kv cache, state hidden states [Ls, d])."""
-        if enc.get("multimodal"):
-            raise ValueError("prefix caching does not support media; use probs()")
+        self._check_prefix_support(enc)
         Ls = enc["seg"].count(0)
         ids = torch.tensor([enc["ids"][:Ls]], device=self.device); pos = torch.tensor([enc["pos"][:Ls]], device=self.device)
         # the cache must know the layer types (hybrid backbones keep recurrent + conv states per DeltaNet layer)
@@ -407,8 +416,7 @@ class DecisionModel(nn.Module):
     def probs_and_prefix(self, enc):
         """One full pass that also returns the state prefix (KV cropped to the state, state hidden states): a cache miss
         costs a single forward pass, not two."""
-        if enc.get("multimodal"):
-            raise ValueError("prefix caching does not support media; use probs()")
+        self._check_prefix_support(enc)
         Ls = enc["seg"].count(0)
         if self.branch_mode == "rows":
             # recurrent layers cannot be cropped back to the state, so a hybrid miss is a state pass (kept as the prefix)
@@ -427,8 +435,7 @@ class DecisionModel(nn.Module):
     def probs_with_prefix(self, enc, prefix):
         """probs() for a record whose state tokens equal the cached prefix's; only the branches run. The cache is cropped
         back to the state afterwards so it can be reused."""
-        if enc.get("multimodal"):
-            raise ValueError("prefix caching does not support media; use probs()")
+        self._check_prefix_support(enc)
         Ls, cache, h_state = prefix
         if enc["seg"].count(0) != Ls: raise ValueError("prefix does not match this record's state")
         if self.branch_mode == "rows":

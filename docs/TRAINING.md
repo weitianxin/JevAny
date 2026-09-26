@@ -20,7 +20,7 @@ The starter has 24 original synthetic training tickets and 8 separate developmen
 tickets, each covering `choice`, `noul`, and `score`. It teaches the workflow; it
 is too small to train a general-purpose decision model.
 
-The recipe uses `Qwen/Qwen2.5-0.5B`, BF16 CUDA weights, LoRA rank 16 and three epochs.
+The recipe uses `Qwen/Qwen3.5-0.8B`, BF16 CUDA weights, LoRA rank 16 and three epochs.
 Replace `data` with your own labelled JSONL and choose a backbone that fits your
 device. For a CPU experiment, override the CUDA settings:
 
@@ -44,7 +44,7 @@ limits and backbone compatibility are checked when training starts.
 
 | Recipe | Starting point | Output |
 |---|---|---|
-| [`sft.toml`](../recipes/sft.toml) | Open Qwen2.5-0.5B base | `runs/my-jev` |
+| [`sft.toml`](../recipes/sft.toml) | Open Qwen3.5-0.8B base | `runs/my-jev` |
 | [`finetune.toml`](../recipes/finetune.toml) | Released JevAny-27B-SFT adapter | `runs/domain-jev` |
 | [`rlcr.toml`](../recipes/rlcr.toml) | `runs/my-jev` from the small SFT recipe | `runs/my-jev-rlcr` |
 
@@ -93,7 +93,7 @@ A text-only build with 500 examples from ARC/QASC/CommonsenseQA:
 jevany data build-sft --out data/text \
   --helpsteer 0 --agent 0 --hard-text 500 \
   --scienceqa 0 --aokvqa 0 --video 0 --eval-per-source 0 \
-  --tokenizer Qwen/Qwen2.5-0.5B
+  --tokenizer Qwen/Qwen3.5-0.8B
 jevany train --config recipes/sft.toml \
   --data data/text/train.jsonl --out runs/text-jev
 ```
@@ -152,24 +152,35 @@ the base component of a Transformers causal language model, adds a pointer head,
 and trains LoRA plus any newly added decision-token embeddings. The same trainer,
 checkpoint format and serving API apply across model families.
 
-| Family | Example base | Adaptation |
-|---|---|---|
-| Qwen | `Qwen/Qwen3-0.6B` | Reuses existing delimiters where available and preserves the Qwen LoRA layout |
-| Llama | `meta-llama/Llama-3.2-1B` | Adds five decision tokens; uses the base model's input embedding interface |
-| Gemma | `google/gemma-3-1b-pt` | Adds decision tokens; uses independent rows for sliding-window attention |
-| Mistral | `mistralai/Mistral-7B-v0.3` | Supports full attention and sliding-window configurations |
-| Phi | `microsoft/Phi-4-mini-instruct` | Supports fused QKV and MLP projections through `all` or `attn` LoRA targets |
+Current model choices use the publishers' own repositories (checked 2026-09-26):
 
-These are representative text backbones, not a claim about every model carrying
-the same family name. Some upstream weights require accepting their license and
-authenticating with Hugging Face. The starter remains Qwen2.5; released adapters
-still use their original Qwen base and cannot be moved onto another backbone.
+| Family | Official base | Size | Native media |
+|---|---|---|---|
+| Qwen | `Qwen/Qwen3.8-27B` | 27B | Images, video |
+| Llama | `meta-llama/Llama-3.1-8B-Instruct`; `meta-llama/Llama-3.2-11B-Vision-Instruct` | 8B / 11B | Images on the Vision variant |
+| Gemma | `google/gemma-4-31B-it` | 31B | Images, video |
+| Mistral | `mistralai/Devstral-Small-2-24B-Instruct-2512`; `mistralai/Ministral-3-14B-Instruct-2512-BF16` | 24B / 14B | Images |
+| Phi | `microsoft/Phi-4-reasoning-vision-15B` | 15B | Images |
+
+These choices cover current general-purpose or coding bases near the requested
+27B scale. Llama stays on the mature 3.x family. Larger releases are not implied
+to fit this DDP trainer: every GPU holds a full base. The starter uses the latest
+small Qwen release, `Qwen/Qwen3.5-0.8B`; `Qwen/Qwen3.5-27B` is also checked.
+
+Meta's official weights require an approved Hugging Face account. Third-party
+mirrors are not used for the current validation. Exact source revisions and test
+status are recorded in the [official-source report](../results/official-backbone-smoke-v1.json).
+
+The released JevAny adapters identify `Qwen/Qwen3.8-27B` in their release manifest
+and adapter configuration. Its Transformers architecture is `qwen3_5`.
+Architecture compatibility does not make different base revisions interchangeable:
+load each adapter with its recorded base and revision.
 
 Select the base in the existing recipe or on the command line:
 
 ```bash
 jevany train --config recipes/sft.toml \
-  --base meta-llama/Llama-3.2-1B --out runs/llama-decisions
+  --base meta-llama/Llama-3.1-8B-Instruct --out runs/llama-decisions
 ```
 
 The optional adapter settings are:
@@ -185,7 +196,11 @@ lora_targets = "all"     # all linear layers, preserving the existing Qwen layou
 requiring a custom attention mask and supports sliding-window and recurrent
 backbones. `packed` requires an adapter that declares support for that mask;
 unsupported combinations fail before training. Option isolation requires packed
-mode. Prefix caching is checked against uncached inference in the backbone tests.
+mode. Prefix caching is enabled only for validated FP32 backbones. BF16/FP16
+models and Qwen's `qwen3_5_text` recurrent architecture use full-forward inference:
+real Qwen 27B and Llama 8B checks found excessive BF16 drift when reusing prefix
+states. Serving selects full-forward inference automatically; unsupported direct
+prefix-cache calls fail explicitly.
 
 `attn` includes fused projections such as Phi's `qkv_proj`. A fused QKV layer
 cannot apply the `qv` preset to Q and V independently; use `attn`, `all`, or explicit
@@ -226,11 +241,11 @@ loop, LoRA settings and checkpoint loading stay the same:
 
 | Family | Vision base | Adapter | Media |
 |---|---|---|---|
-| Qwen | `Qwen/Qwen3-VL-2B-Instruct`; released Qwen 27B base | `qwen_vl` | Images, video |
+| Qwen | `Qwen/Qwen3.8-27B`; `Qwen/Qwen3.5-27B` | `qwen_vl` | Images, video |
 | Llama | `meta-llama/Llama-3.2-11B-Vision-Instruct` | `llama_vision` | Images |
-| Gemma | `google/gemma-3-4b-it` | `gemma_vision` | Images |
-| Mistral | `mistral-community/pixtral-12b` (Transformers format) | `pixtral` | Images |
-| Phi | Native conversion of `microsoft/Phi-4-multimodal-instruct` | `phi_vision` | Images |
+| Gemma | `google/gemma-4-31B-it` | `gemma4_vision` | Images, video |
+| Mistral | Official Devstral Small 2 / Ministral 3 above | `mistral_vision` | Images |
+| Phi | `microsoft/Phi-4-reasoning-vision-15B` | `phi_reasoning_vision` | Images |
 
 `auto` selects from the base's configuration. A text-only variant does not gain
 vision support by setting the flag. Unsupported media types fail with an error.
@@ -241,7 +256,8 @@ For example, on a local CUDA GPU:
 ```bash
 python -m pip install -e '.[train,multimodal]'
 jevany train --config recipes/sft.toml --multimodal \
-  --base google/gemma-3-4b-it --data data/images.jsonl --out runs/gemma-vision
+  --base google/gemma-4-31B-it --data data/images.jsonl --out runs/gemma-vision \
+  --lr 0.00002 --head-lr 0.00002
 ```
 
 Each media record contains one question. Native media records do not support
@@ -260,22 +276,21 @@ processor and selected adapter, so serving and subsequent training use the same
 encoding. Text-only and image records can share a run; DDP accounts for Llama's
 cross-attention parameters being unused on text-only records.
 
-Microsoft's original Phi-4 Multimodal release uses the older `phi4mm` format.
-Convert it once with the included public helper:
+Phi-4 Reasoning Vision loads the official weights directly into native Phi3,
+SigLIP2 and projector components. The adapter preserves the source image patch
+budget and penultimate vision features, validates all weight names, and saves its
+processor with the checkpoint. No Hub Python code or separate conversion is needed.
+Select `--multimodal` for this base even when a run contains only text records,
+so the native Phi loader is used.
 
-```bash
-python -m scripts.convert_phi4_vision \
-  --source microsoft/Phi-4-multimodal-instruct \
-  --revision 93f923e1a7727d1c4f446756212d9d3e8fcc5d81 --out models/phi4-vision
-jevany train --config recipes/sft.toml --multimodal \
-  --base models/phi4-vision --data data/images.jsonl --out runs/phi-vision \
-  --lr 0.00002 --head-lr 0.00002
-```
+Devstral's official FP8 weights are dequantized for BF16 LoRA training, including
+on A100 GPUs. Ministral's listed release already contains BF16 weights. Both use
+the upstream tokenizer regex correction. The text adapter can extract a language
+decoder from a composite vision base for text-only training.
 
-The converter merges the original pretrained vision LoRA, checks every native
-weight, and preserves the media token IDs. `conversion.json` records the source
-revision. The output is a full image/text base; keep it available when loading
-checkpoints trained from it. The speech LoRA is not retained.
+Older Gemma 3, Pixtral and Phi-4 Multimodal adapters remain loadable. The original
+`phi4mm` release still requires [`scripts.convert_phi4_vision`](../scripts/convert_phi4_vision.py);
+it is separate from the current 15B Reasoning Vision model.
 
 For another native vision architecture, subclass `VisionAdapter` from
 `jevany.backbones`. Set `media_types` and `language_model_path`; override
@@ -306,45 +321,49 @@ To check pretrained weights without completing a training run:
 
 ```bash
 python -m scripts.smoke_backbone \
-  --base Qwen/Qwen3-0.6B --steps 12 --out runs/smoke-qwen
+  --base Qwen/Qwen3.5-0.8B --steps 12 --out runs/smoke-qwen
 
 TORCH_NCCL_USE_COMM_NONBLOCKING=0 \
 torchrun --standalone --nproc_per_node=2 --module scripts.smoke_backbone \
-  --base meta-llama/Llama-3.2-1B --steps 12 --out runs/smoke-llama-ddp
+  --base Qwen/Qwen3.8-27B --steps 12 --lr 0.00002 --head-lr 0.00002 \
+  --out runs/smoke-qwen-ddp
 ```
 
 Use `--revision` to pin weights and `--device cpu` for a sufficiently small base.
+Use `--base-load-path /path/to/snapshot` to load a predownloaded copy while keeping
+the official `--base` and `--revision` in the checkpoint.
 The smoke script exposes `--lr` and `--head-lr` for bases with different gradient
 scales; its default head learning rate is `1e-4`.
 The script runs the actual trainer, measures uncalibrated NLL before and during
-training, reloads the checkpoint, and checks predictions and prefix-cache results.
+training, reloads the checkpoint, and checks predictions. It checks prefix-cache
+parity where supported and explicit rejection elsewhere.
 It writes `smoke.json`, per-rank GPU identity, and the trainer's evaluation
 history. A passing run requires finite adapter weights, updated LoRA weights,
 lower final NLL, and successful prediction checks. Its small evaluation probe
 intentionally reuses training examples; this is an optimization and compatibility
 test, not an accuracy benchmark.
 
-The [recorded GPU checks](../results/backbone-smoke-v1.json) cover six pretrained
-bases across the five families and four additional two-GPU DDP runs, each with
-12 optimizer steps. The report pins the weight revisions, identifies the public
-Llama/Gemma mirrors, and includes all probe losses and reload/cache differences.
+The [official-source GPU checks](../results/official-backbone-smoke-v1.json)
+record the exact publisher, revision, model size, GPU allocation, optimizer steps,
+loss trajectory and checkpoint checks. All five families have passing checks,
+including Qwen 27B, Gemma 31B and Devstral 24B. The report keeps failed attempts
+alongside their successful retests.
 
 For native media, the same smoke script generates its own image or video files:
 
 ```bash
-python -m scripts.smoke_backbone --base Qwen/Qwen3-VL-2B-Instruct \
-  --media image --mixed-text --steps 12 --out runs/smoke-qwen-vision
+python -m scripts.smoke_backbone --base Qwen/Qwen3.8-27B \
+  --media image --mixed-text --steps 12 --lr 0.00002 --head-lr 0.00002 \
+  --out runs/smoke-qwen-vision
 ```
 
 Use `--media video` for a video-capable base, or run the same module under
 `torchrun`. The media check also requires predictions to change when the media
 changes while the question and state stay fixed.
 
-The [native-media GPU results](../results/multimodal-backbone-smoke-v1.json)
-include all five families, mixed text/image records, Qwen video, the existing
-Qwen 27B base, and an eight-rank Pixtral run. Each run uses 12 optimizer steps.
-The report retains the initial Phi loss failure and Pixtral's loss fluctuations;
-their final checks use `--lr 0.00002 --head-lr 0.00002`.
+Historical [text](../results/backbone-smoke-v1.json) and
+[media](../results/multimodal-backbone-smoke-v1.json) reports remain available for
+older checkpoints. Their Llama/Gemma mirror runs are not official-source evidence.
 
 The PyTorch 2.6 / CUDA 12.6 container used for the GPU checks required explicit
 `TORCH_NCCL_USE_COMM_NONBLOCKING=0`: a standalone collective probe returned

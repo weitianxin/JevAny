@@ -1,7 +1,7 @@
 """Short real-backbone train/save/reload check, also usable under torchrun.
 
 Run from the repository root:
-    python -m scripts.smoke_backbone --base Qwen/Qwen3-0.6B --out runs/smoke-qwen
+    python -m scripts.smoke_backbone --base Qwen/Qwen3.5-0.8B --out runs/smoke-qwen
 
 The evaluation probe intentionally reuses the tiny training fixture: this checks
 optimization and serialization, not generalization or task quality.
@@ -17,7 +17,7 @@ import time
 import torch
 
 from jevany.backbones import decision_tokens
-from jevany.checkpoint import Checkpoint
+from jevany.checkpoint import Checkpoint, LoadOptions
 from jevany.data import load_records, materialize
 from jevany.predictors import ModelPredictor
 from jevany.model import tokenizer_of
@@ -87,6 +87,8 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", required=True)
     parser.add_argument("--revision", default="")
+    parser.add_argument("--base-load-path", type=Path,
+                        help="load a local copy while retaining the official base and revision in the checkpoint")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=12)
     parser.add_argument("--lr", type=float, default=0.0002)
@@ -134,6 +136,8 @@ def main(argv: list[str] | None = None) -> None:
     ]
     if args.media:
         command.append("--multimodal")
+    if args.base_load_path:
+        command += ["--base-load-path", str(args.base_load_path)]
     train(command)
     if rank:
         return
@@ -148,7 +152,8 @@ def main(argv: list[str] | None = None) -> None:
     history = [json.loads(line) for line in (checkpoint_path / "training_eval/history.jsonl").read_text().splitlines()]
     losses = [{"step": point["optimizer_step"], "nll": point["clean"]["nll"]} for point in history]
     checkpoint = Checkpoint(checkpoint_path)
-    tokenizer, model = checkpoint.load(args.device)
+    tokenizer, model = checkpoint.load(
+        args.device, LoadOptions(base_load_path=str(args.base_load_path) if args.base_load_path else None))
     predictor = ModelPredictor(model, tokenizer, args.device)
     records = load_split(fixture, "development")
     saved_rows = read_json(checkpoint_path / f"training_eval/step-{args.steps:06d}/development/rows.json")
@@ -163,15 +168,24 @@ def main(argv: list[str] | None = None) -> None:
     encoded = model.encode(tokenizer, materialize(records[0]))
     cache_delta = None
     media_delta = None
+    prefix_supported = model.inference_capabilities.prefix_cache
     if args.media:
         second = model.encode(tokenizer, materialize(records[1]))
         media_delta = max(float((a - b).abs().max()) for a, b in zip(model.probs(encoded), model.probs(second)))
-    else:
+    elif prefix_supported:
         direct = model.probs(encoded)
         first, prefix = model.probs_and_prefix(encoded)
         cached = model.probs_with_prefix(encoded, prefix)
         cache_delta = max(float((left - right).abs().max())
                           for left, right in zip(direct + direct, first + cached))
+    else:
+        try:
+            model.probs_and_prefix(encoded)
+        except ValueError as error:
+            if "prefix caching is not supported" not in str(error):
+                raise
+        else:
+            raise AssertionError("unsupported prefix caching must fail explicitly")
     tok = tokenizer_of(tokenizer)
     from safetensors.torch import load_file
     weights = load_file(checkpoint_path / "adapter_model.safetensors")
@@ -187,6 +201,7 @@ def main(argv: list[str] | None = None) -> None:
         "world_size": world_size, "losses": losses, "adapter_tensors_finite": finite,
         "lora_updated": lora_updated, "checkpoint_probability_max_delta": maximum_delta,
         "prefix_cache_probability_max_delta": cache_delta,
+        "prefix_cache_supported": prefix_supported,
         "media_probability_max_delta": media_delta,
         "training": read_json(checkpoint_path / "training_metrics.json"),
         "scope": "Real pretrained weights; repeated tiny training fixture; no generalization claim.",

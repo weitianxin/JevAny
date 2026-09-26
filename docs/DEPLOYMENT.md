@@ -125,6 +125,9 @@ A branch includes its shared state. State and branch limits are capped at the
 backbone's context window; the packed limit covers the complete request, including
 all branches. Oversized inputs are rejected without truncation. Set the cache size
 to zero to disable reuse. Native media requests bypass the text prefix cache.
+Prefix reuse is limited to validated FP32 backbones. BF16/FP16 models and the
+recurrent Qwen3.5/3.8 architecture use complete forward passes. The runtime reports
+the effective cache capability; requesting a cache size does not override it.
 
 Explicit CLI flags override environment values. Passing an `InferenceOptions`
 object in Python uses that whole object; otherwise settings are read from the

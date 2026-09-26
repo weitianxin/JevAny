@@ -1,5 +1,5 @@
 # Continue the small SFT recipe. Override data with your domain examples.
-base = "Qwen/Qwen2.5-0.5B"
+base = "Qwen/Qwen3.5-0.8B"
 init_from = "runs/my-jev"
 data = "data/starter/train.jsonl"
 out = "runs/my-jev-rlcr"

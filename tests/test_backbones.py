@@ -8,7 +8,7 @@ from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from transformers import (
     AutoModelForCausalLM, Gemma3TextConfig, GPT2Config, LlamaConfig, MistralConfig,
-    Phi3Config, PreTrainedTokenizerFast, Qwen3Config,
+    Phi3Config, PreTrainedTokenizerFast, Qwen3Config, Qwen3_5TextConfig,
 )
 
 from jevany.backbones import DECISION_TOKENS, LEGACY_TOKENS, decision_tokens, prepare_tokenizer
@@ -44,6 +44,11 @@ def make_base(path, family, *, legacy=False):
                   max_position_embeddings=512, pad_token_id=1, eos_token_id=2, bos_token_id=2)
     configurations = {
         "qwen": lambda: Qwen3Config(**common, head_dim=8),
+        "qwen35": lambda: Qwen3_5TextConfig(
+            **common, head_dim=8, layer_types=["linear_attention", "full_attention"],
+            linear_num_key_heads=2, linear_num_value_heads=2,
+            linear_key_head_dim=8, linear_value_head_dim=8,
+        ),
         "llama": lambda: LlamaConfig(**common),
         "gemma": lambda: Gemma3TextConfig(**common, head_dim=8, query_pre_attn_scalar=8,
                                          sliding_window=16, layer_types=["sliding_attention", "full_attention"]),
@@ -143,6 +148,42 @@ def test_legacy_tokens_and_checkpoint_stay_compatible(tmp_path):
     tok, restored = Checkpoint(checkpoint).load("cpu")
     for left, right in zip(expected, restored.probs(encode(tok, RECORD))):
         torch.testing.assert_close(left, right, atol=2e-6, rtol=1e-5)
+
+
+@pytest.mark.parametrize("family,dtype", [
+    ("qwen35", torch.float32), ("llama", torch.float16), ("llama", torch.bfloat16),
+])
+def test_unsupported_prefix_cache_uses_full_forward_in_serving(tmp_path, family, dtype):
+    from jevany.inference import InferenceOptions
+    from jevany.checkpoint import LoadOptions
+    from jevany.runtime import JevModel
+    base = tmp_path / "base"
+    make_base(base, family)
+    tokenizer = load_tokenizer(base)
+    model = DecisionModel(base, tokenizer, "cpu", lora=2, head_dim=8, dtype=dtype)
+    assert model.lm.dtype == dtype
+    encoded = model.encode(tokenizer, RECORD)
+    assert not model.inference_capabilities.prefix_cache
+    assert all(torch.isfinite(value).all() for value in model.probs(encoded))
+    for call in (lambda: model.prefix(encoded), lambda: model.probs_and_prefix(encoded),
+                 lambda: model.probs_with_prefix(encoded, None)):
+        with pytest.raises(ValueError, match="prefix caching is not supported"):
+            call()
+    checkpoint = tmp_path / "checkpoint"
+    model.lm.save_pretrained(checkpoint, save_embedding_layers=False)
+    tokenizer.save_pretrained(checkpoint)
+    write_meta(checkpoint, Meta(base=str(base), head=model.head.state_dict(), lora=2, head_dim=8,
+                               special_embeddings=True, tokenizer_saved=True, branch_mode=model.branch_mode))
+    runtime = JevModel.from_pretrained(
+        checkpoint, device="cpu", options=LoadOptions(dtype=dtype, merge=False),
+        inference_options=InferenceOptions(prefix_cache_size=1, prefix_min_tokens=0),
+    ).runtime
+    assert not runtime.describe()["prefix_cache"]["enabled"]
+    first, first_info = runtime.probs(RECORD)
+    second, second_info = runtime.probs(RECORD)
+    assert first == second
+    assert not first_info["prefix_cache_hit"] and not second_info["prefix_cache_hit"]
+    assert not runtime.prefix_cache
 
 
 def test_invalid_tokenizer_and_adapter_configuration(tmp_path):

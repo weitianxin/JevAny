@@ -97,6 +97,14 @@ def prepare_embeddings(model: PreTrainedModel, tokenizer: PreTrainedTokenizerBas
     return ids
 
 
+def frozen_weight_options(config: dict) -> dict:
+    """Load released FP8 bases as ordinary weights for portable LoRA training."""
+    if (config.get("quantization_config") or {}).get("quant_method") == "fp8":
+        from transformers import FineGrainedFP8Config
+        return {"quantization_config": FineGrainedFP8Config(dequantize=True)}
+    return {}
+
+
 class BackboneAdapter:
     """Transformers text backbone contract; override methods for other layouts.
 
@@ -110,14 +118,23 @@ class BackboneAdapter:
     conditional_parameters = False
 
     def load_preprocessor(self, name: str, revision: str | None = None):
-        return prepare_tokenizer(AutoTokenizer.from_pretrained(name, revision=revision))
+        return prepare_tokenizer(AutoTokenizer.from_pretrained(name, revision=revision, fix_mistral_regex=True))
 
     def load_model(self, name: str, *, revision: str | None, dtype: torch.dtype,
                    attn: str) -> tuple[PreTrainedModel, PreTrainedModel | None]:
         config = AutoConfig.from_pretrained(name, revision=revision)
         if config.is_encoder_decoder:
             raise ValueError("the text adapter requires a decoder-only text base; select a suitable backbone_adapter")
-        causal = AutoModelForCausalLM.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn)
+        kwargs = frozen_weight_options(config.to_dict())
+        if getattr(config, "text_config", None) is not None:
+            native = AutoModel.from_pretrained(name, revision=revision, dtype=dtype,
+                                                attn_implementation=attn, **kwargs)
+            decoder = getattr(native, "language_model", None)
+            if decoder is None:
+                raise ValueError("composite base has no language_model; provide a custom backbone_adapter")
+            return decoder, None
+        causal = AutoModelForCausalLM.from_pretrained(name, revision=revision, dtype=dtype,
+                                                     attn_implementation=attn, **kwargs)
         if causal.base_model is causal:
             raise ValueError("causal model does not expose its base_model; provide a custom backbone_adapter")
         return causal.base_model, None
@@ -170,7 +187,8 @@ class BackboneAdapter:
         return InferenceCapabilities(
             context_window=getattr(config, "max_position_embeddings", None),
             prefix_cache=config.model_type in {
-                "qwen2", "qwen3", "qwen3_5_text", "llama", "mistral",
+                # Qwen's recurrent 27B path failed BF16 prefix/full-forward parity.
+                "qwen2", "qwen3", "llama", "mistral",
                 "phi3", "gemma", "gemma2", "gemma3_text", "gpt2",
             },
             media_types=tuple(sorted(self.media_types)),
@@ -210,13 +228,15 @@ class VisionAdapter(BackboneAdapter):
     language_model_path = "language_model"
 
     def load_preprocessor(self, name: str, revision: str | None = None):
-        processor = AutoProcessor.from_pretrained(name, revision=revision)
+        processor = AutoProcessor.from_pretrained(name, revision=revision, fix_mistral_regex=True)
         prepare_tokenizer(processor.tokenizer)
         return processor
 
     def load_model(self, name: str, *, revision: str | None, dtype: torch.dtype,
                    attn: str) -> tuple[PreTrainedModel, PreTrainedModel | None]:
-        model = AutoModel.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn)
+        config, _ = PretrainedConfig.get_config_dict(name, revision=revision)
+        model = AutoModel.from_pretrained(name, revision=revision, dtype=dtype, attn_implementation=attn,
+                                          **frozen_weight_options(config))
         model.requires_grad_(False)
         if not self.language_model_path:
             return model, None
@@ -284,8 +304,25 @@ class GemmaVisionAdapter(VisionAdapter):
     name = "gemma_vision"
 
 
+class Gemma4VisionAdapter(VisionAdapter):
+    name = "gemma4_vision"
+    media_types = frozenset({"image", "video"})
+
+    def process_media(self, processor, media: list[dict], text: str):
+        prefix, images, videos = [], [], []
+        for item in media:
+            prefix.append(processor.image_token if item["type"] == "image" else processor.video_token)
+            (images if item["type"] == "image" else videos).append(item["uri"])
+        return processor(text=["".join(prefix) + text], images=images or None, videos=videos or None,
+                         return_tensors="pt", videos_kwargs={"num_frames": 4, "fps": None})
+
+
 class PixtralVisionAdapter(VisionAdapter):
     name = "pixtral"
+
+
+class MistralVisionAdapter(VisionAdapter):
+    name = "mistral_vision"
 
 
 class PhiVisionAdapter(VisionAdapter):
@@ -323,8 +360,9 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
                 raise ValueError("Phi-4's original weights need native conversion first; run "
                                  "python -m scripts.convert_phi4_vision --source <base> --revision <commit> --out <directory>, "
                                  "then train with --base <directory> --multimodal")
-            types = {"mllama": "llama_vision", "gemma3": "gemma_vision",
-                     "llava": "pixtral", "phi4_multimodal": "phi_vision"}
+            types = {"mllama": "llama_vision", "gemma3": "gemma_vision", "gemma4": "gemma4_vision",
+                     "llava": "pixtral", "mistral3": "mistral_vision", "phi4_multimodal": "phi_vision",
+                     "phi4-siglip": "phi_reasoning_vision"}
             name = ("qwen_vl" if model_type and model_type.startswith("qwen") and config.get("vision_config")
                     else types.get(model_type))
             if name is None:
@@ -332,8 +370,12 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
                                  "provide backbone_adapter='module:Class'")
         else:
             name = "text"
+    if name == "phi_reasoning_vision":
+        from .phi_vision import PhiReasoningVisionAdapter
+        return PhiReasoningVisionAdapter()
     builtins = {"text": BackboneAdapter, "qwen_vl": QwenVisionAdapter,
                 "llama_vision": LlamaVisionAdapter, "gemma_vision": GemmaVisionAdapter,
+                "gemma4_vision": Gemma4VisionAdapter, "mistral_vision": MistralVisionAdapter,
                 "pixtral": PixtralVisionAdapter, "phi_vision": PhiVisionAdapter}
     if name in builtins:
         if multimodal and name == "text":
@@ -341,7 +383,7 @@ def get_backbone_adapter(name: str = "auto", *, multimodal: bool = False,
         return builtins[name]()
     module, separator, attribute = name.partition(":")
     if not separator or not module or not attribute:
-        raise ValueError(f"backbone_adapter must be auto, {', '.join(builtins)}, or module:Class")
+        raise ValueError(f"backbone_adapter must be auto, {', '.join(builtins)}, phi_reasoning_vision, or module:Class")
     adapter_class = getattr(importlib.import_module(module), attribute)
     if not isinstance(adapter_class, type) or not issubclass(adapter_class, BackboneAdapter):
         raise ValueError(f"{name} must subclass jevany.backbones.BackboneAdapter")

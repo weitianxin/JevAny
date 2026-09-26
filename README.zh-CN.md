@@ -79,7 +79,7 @@ jevany data validate data/starter/train.jsonl
 
 ### SFT
 
-监督微调让 Jev 模型学习带标签的决策。入门 recipe 使用 `Qwen/Qwen2.5-0.5B` 和 CUDA GPU，将 checkpoint 写入 `runs/my-jev`：
+监督微调让 Jev 模型学习带标签的决策。入门 recipe 使用 `Qwen/Qwen3.5-0.8B` 和 CUDA GPU，将 checkpoint 写入 `runs/my-jev`：
 
 ```bash
 jevany train --config recipes/sft.toml --dry-run
@@ -100,28 +100,26 @@ jevany train --config recipes/rlcr.toml
 
 ### 支持的基座
 
-以下文本基座已有 12 步 SFT、checkpoint 重载和推理检查记录：
+同一训练器支持以下五个系列的官方基座：
 
-| 系列 | 已测试的文本基座 |
+| 系列 | 官方基座 |
 |---|---|
-| Qwen | `Qwen/Qwen2.5-0.5B`、`Qwen/Qwen3-0.6B` |
-| Llama | `unsloth/Llama-3.2-1B` |
-| Gemma | `unsloth/gemma-3-1b-pt` |
-| Mistral | `mistralai/Mistral-7B-v0.3` |
-| Phi | `microsoft/Phi-4-mini-instruct` |
+| Qwen | `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.5-0.8B` |
+| Llama | `meta-llama/Llama-3.1-8B-Instruct`, `meta-llama/Llama-3.2-11B-Vision-Instruct` |
+| Gemma | `google/gemma-4-31B-it` |
+| Mistral | `mistralai/Devstral-Small-2-24B-Instruct-2512`, `mistralai/Ministral-3-14B-Instruct-2512-BF16` |
+| Phi | `microsoft/Phi-4-reasoning-vision-15B` |
 
 使用同一训练器切换基座：
 
 ```bash
 jevany train --config recipes/sft.toml \
-  --base microsoft/Phi-4-mini-instruct --out runs/phi-jev
+  --base meta-llama/Llama-3.1-8B-Instruct --out runs/llama-jev
 ```
 
-[兼容性记录](results/backbone-smoke-v1.json) 包含测试过的权重版本、Llama/Gemma 镜像和短程训练结果。这些检查验证了模型接入和优化过程，任务效果仍需单独评估。
+Meta 权重需要已获授权的 Hugging Face 账号。原生视觉模型设置 `multimodal = true` 后可训练图片，并按模型能力支持视频。
 
-原生图片训练支持 Qwen VL、Llama Vision、Gemma 3、Pixtral 和转换后的 Phi-4 Multimodal；Qwen 还支持视频。选择视觉基座并设置 `multimodal = true`。参见[接入方式](docs/TRAINING.md#native-multimodal-training)和 [GPU 验证](results/multimodal-backbone-smoke-v1.json)。
-
-[训练指南](docs/TRAINING.md) 介绍了自定义 adapter、CPU 参数和 checkpoint 选择。多 GPU 或多机训练使用 [`infra/train.sh`](infra/train.sh)；DDP 会在每块 GPU 上保留完整模型。
+可在本地 GPU 上训练，或用 `torchrun` 启动多卡训练；DDP 在每块 GPU 上保留完整基座。[训练指南](docs/TRAINING.md) 列出了各模型配置、多模态用法和自定义 adapter 接口。
 
 ## 预训练模型
 
