@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" aria-labelledby="title description" width="1340" height="220" viewBox="0 0 1340 220" role="img">
   <title id="title">JevAny: Your Jev from Any Model to Any Application</title>
   <desc id="description">JevAny logo on a navy tile beside the project name, with the tagline below. Jev is purple and Any is teal.</desc>
+  <rect width="1340" height="220" rx="24" fill="#ffffff" />
   <g id="jevany-logo" transform="translate(428.5 16) scale(0.21875)"><rect width="512" height="512" rx="96" fill="#101629" />
   <g fill="none" stroke="#8b5cf6" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
     <path d="M144 128 256 240V128" />

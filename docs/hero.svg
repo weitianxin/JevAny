@@ -58,6 +58,7 @@ SOFTWARE.
       <path d="M2 1 6 4 2 7" fill="none" stroke="#8290a6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
     </marker>
   </defs>
+  <rect width="1340" height="332" rx="24" fill="#ffffff" />
   <g id="diagram" transform="translate(-100 -92)">
     <rect x="256" y="104" width="560" height="292" rx="22" fill="none" stroke="#d7c8e8" stroke-width="1.5" />
     <rect x="864" y="104" width="552" height="292" rx="22" fill="none" stroke="#b9d7d2" stroke-width="1.5" />
