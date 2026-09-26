@@ -15,9 +15,16 @@ def test_mixed_fixture_evaluates_media_and_text_rows(tmp_path):
     training = (fixture / "train.jsonl").read_text().splitlines()
     for split in ("calibration", "development"):
         rows = [json.loads(line) for line in (fixture / f"{split}.jsonl").read_text().splitlines()]
-        assert len(rows) == len(training) == 8
-        assert sum(bool(row.get("media")) for row in rows) == 6
-        assert sum(not row.get("media") for row in rows) == 2
+        assert len(training) == 8
+        assert len(rows) == 16
+        assert len({row["_meta"]["id"] for row in rows}) == 16
+        assert sum(bool(row.get("media")) for row in rows) == 12
+        assert sum(not row.get("media") for row in rows) == 4
+        for original, reversed_row in zip(rows[:8], rows[8:]):
+            left, right = original["questions"]["color"], reversed_row["questions"]["color"]
+            assert list(left["criteria"]) == list(reversed(right["criteria"]))
+            assert left["label"] == right["label"]
+            assert original.get("media") == reversed_row.get("media")
 
 
 @pytest.mark.parametrize("family", ["llama", "gemma4_unified"])

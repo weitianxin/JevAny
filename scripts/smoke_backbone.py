@@ -120,6 +120,17 @@ def prepare_fixture(directory: Path, media: str | None = None, mixed_text: bool 
             rows.append(row)
     write_jsonl(directory / "train.jsonl", rows)
     probe = load_records(directory / "train.jsonl")
+    if media:
+        # Training permutes choices even when none/distractor augmentation is off.
+        # Score both orders so the probe covers the same binary-choice task.
+        probe += [
+            {**record, "_meta": {**record["_meta"], "id": record["_meta"]["id"] + "-reversed"},
+             "questions": {
+                 name: {**question, "criteria": dict(reversed(list(question["criteria"].items())))}
+                 for name, question in record["questions"].items()
+             }}
+            for record in probe
+        ]
     files = {}
     for split in ("calibration", "development"):
         path = directory / f"{split}.jsonl"

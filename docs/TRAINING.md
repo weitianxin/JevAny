@@ -366,7 +366,8 @@ history. A passing SFT run requires finite adapter weights, updated LoRA weights
 lower final NLL, and successful prediction checks. Its small evaluation probe
 intentionally reuses training examples; this is an optimization and compatibility
 test, not an accuracy benchmark. The probe covers all eight training rows,
-including both media and text rows when `--mixed-text` is enabled.
+including both media and text rows when `--mixed-text` is enabled. Media probes
+score each row in both choice orders, matching the trainer's option permutation.
 
 To check RLCR continuation and serving from the resulting checkpoint:
 
