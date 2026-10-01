@@ -1,6 +1,6 @@
 # JevAny homepage
 
-The homepage is a static site, published at https://simplejev.github.io/JevAny/.
+The homepage is a static site, published at https://simplejev.org/JevAny/.
 It has no runtime dependencies or third-party requests.
 
 Preview from the repository root:

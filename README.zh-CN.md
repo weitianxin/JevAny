@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://simplejev.github.io/JevAny/"><img alt="项目主页" src="https://img.shields.io/badge/website-JevAny-2dd4bf"></a>
+  <a href="https://simplejev.org/JevAny/"><img alt="项目主页" src="https://img.shields.io/badge/website-JevAny-2dd4bf"></a>
   <a href="https://huggingface.co/collections/SimpleJev/jevany-adaptive-decision-systems-6abc8fd39266b1c17b11b4e6"><img alt="模型" src="https://img.shields.io/badge/%F0%9F%A4%97-checkpoints-ffb000"></a>
   <a href="docs/API.md"><img alt="API 文档" src="https://img.shields.io/badge/docs-API-0ea5e9"></a>
   <a href="docs/CASES.md"><img alt="示例" src="https://img.shields.io/badge/examples-gallery-8b5cf6"></a>
